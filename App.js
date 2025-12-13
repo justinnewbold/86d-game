@@ -62,13 +62,30 @@ Context for this response: ${context}
 Respond as Chef Marcus in 2-3 sentences. Be conversational, direct, and genuinely helpful. If things are going badly, be honest but constructive. If things are going well, acknowledge it without being over the top. Reference specific numbers from the game state when relevant.`;
 
   try {
-    const response = await fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
+    // Get API key from window (injected by index.html) or use empty string
+    const apiKey = typeof window !== 'undefined' ? (window.GEMINI_API_KEY || '') : '';
+    
+    if (!apiKey) {
+      return getFallbackResponse(context, game);
+    }
+    
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { 
+            temperature: 0.8, 
+            maxOutputTokens: 200,
+            topP: 0.95
+          }
+        })
+      }
+    );
     const data = await response.json();
-    return data.response || getFallbackResponse(context, game);
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || getFallbackResponse(context, game);
   } catch (error) {
     console.log('AI Error:', error);
     return getFallbackResponse(context, game);
