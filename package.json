@@ -1,6 +1,6 @@
 {
   "name": "86d-game",
-  "version": "2.2.0",
+  "version": "3.5.0",
   "description": "86'd - A realistic restaurant business simulator for iOS, Android, and Web",
   "main": "expo/AppEntry",
   "scripts": {
