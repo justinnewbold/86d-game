@@ -1,0 +1,32 @@
+{
+  "name": "86d-game",
+  "version": "2.2.0",
+  "description": "86'd - A realistic restaurant business simulator for iOS, Android, and Web",
+  "main": "expo/AppEntry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "build:ios": "eas build --platform ios",
+    "build:android": "eas build --platform android"
+  },
+  "dependencies": {
+    "@react-native-community/slider": "^5.1.1",
+    "expo": "~54.0.29",
+    "expo-file-system": "~19.0.21",
+    "expo-linear-gradient": "^15.0.8",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-web": "~0.19.13"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0"
+  },
+  "private": true,
+  "author": "Justin Newbold",
+  "license": "MIT"
+}
