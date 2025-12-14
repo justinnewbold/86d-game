@@ -5957,6 +5957,8 @@ const styles = StyleSheet.create({
   tabTextActive: { color: colors.background },
   tabContent: { padding: 10 },
   sectionTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+  sectionSubtitle: { color: colors.textSecondary, fontSize: 14, fontWeight: '700', marginTop: 15, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
 
   // Health Meters
   healthMeters: { flexDirection: 'row', gap: 10, marginBottom: 10 },
