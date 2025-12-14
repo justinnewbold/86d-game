@@ -531,7 +531,313 @@ const HALL_OF_FAME_CATEGORIES = [
   { id: 'most_staff', name: 'Most Staff', icon: '👥', stat: 'maxStaff', format: (v) => `${v} employees` },
 ];
 
+// ============================================
+// PHASE 6: ADVANCED BUSINESS & ENDGAME SYSTEMS
+// ============================================
 
+// INVESTOR SYSTEM - Angels, VCs, Private Equity
+const INVESTOR_TYPES = [
+  { 
+    id: 'angel', name: 'Angel Investor', icon: '👼', 
+    minValuation: 250000, maxValuation: 1000000, equityRange: [5, 15],
+    investment: [50000, 150000], boardSeat: false, 
+    personality: 'supportive', controlLevel: 0.1,
+    terms: 'Flexible terms, industry connections, patient capital'
+  },
+  { 
+    id: 'restaurant_fund', name: 'Restaurant Fund', icon: '🍽️', 
+    minValuation: 500000, maxValuation: 3000000, equityRange: [15, 30],
+    investment: [200000, 500000], boardSeat: true, 
+    personality: 'operational', controlLevel: 0.3,
+    terms: 'Operating expertise, vendor relationships, expects 5-year exit'
+  },
+  { 
+    id: 'vc', name: 'Venture Capital', icon: '🚀', 
+    minValuation: 2000000, maxValuation: 10000000, equityRange: [20, 35],
+    investment: [500000, 2000000], boardSeat: true, 
+    personality: 'aggressive', controlLevel: 0.4,
+    terms: 'Expects rapid scaling, board control, 3-5 year exit to IPO or acquisition'
+  },
+  { 
+    id: 'pe', name: 'Private Equity', icon: '🏦', 
+    minValuation: 5000000, maxValuation: 50000000, equityRange: [51, 80],
+    investment: [2000000, 10000000], boardSeat: true, 
+    personality: 'cost-cutting', controlLevel: 0.7,
+    terms: 'Majority stake, operational changes, debt financing, 5-7 year hold'
+  },
+  { 
+    id: 'strategic', name: 'Strategic Investor', icon: '🤝', 
+    minValuation: 3000000, maxValuation: 20000000, equityRange: [10, 30],
+    investment: [500000, 3000000], boardSeat: true, 
+    personality: 'strategic', controlLevel: 0.3,
+    terms: 'Synergy focus, possible future acquisition, access to resources'
+  },
+];
+
+const INVESTOR_DEMANDS = [
+  { id: 'growth_target', name: 'Growth Mandate', description: 'Open 3 new locations in 12 months', type: 'expansion' },
+  { id: 'cost_cutting', name: 'Cost Optimization', description: 'Reduce labor to 28% of revenue', type: 'efficiency' },
+  { id: 'cfo_hire', name: 'Professional Management', description: 'Hire a CFO within 6 months', type: 'hiring' },
+  { id: 'franchise_push', name: 'Franchise Acceleration', description: 'Sell 5 franchises this year', type: 'franchise' },
+  { id: 'tech_upgrade', name: 'Technology Investment', description: 'Implement enterprise POS system', type: 'capex' },
+  { id: 'marketing_spend', name: 'Brand Building', description: 'Spend $100K on marketing', type: 'marketing' },
+];
+
+// REAL ESTATE SYSTEM - Own vs Lease
+const REAL_ESTATE_OPTIONS = [
+  { 
+    id: 'triple_net', name: 'Triple Net Lease', icon: '📋',
+    description: 'Pay base rent plus taxes, insurance, maintenance',
+    baseRentMod: 0.8, additionalCosts: 0.25, flexibility: 'high',
+    termYears: 5, renewalOption: true
+  },
+  { 
+    id: 'gross_lease', name: 'Gross Lease', icon: '🏠',
+    description: 'All-inclusive rent, landlord covers expenses',
+    baseRentMod: 1.2, additionalCosts: 0, flexibility: 'medium',
+    termYears: 3, renewalOption: true
+  },
+  { 
+    id: 'percentage_lease', name: 'Percentage Lease', icon: '📊',
+    description: 'Lower base rent + percentage of gross sales',
+    baseRentMod: 0.5, salesPercentage: 0.06, flexibility: 'medium',
+    termYears: 5, renewalOption: true
+  },
+  { 
+    id: 'own_property', name: 'Purchase Property', icon: '🏢',
+    description: 'Buy the building outright',
+    downPayment: 0.25, mortgageRate: 0.065, termYears: 30,
+    appreciation: 0.03, flexibility: 'low', equity: true
+  },
+  { 
+    id: 'sale_leaseback', name: 'Sale-Leaseback', icon: '🔄',
+    description: 'Sell property, lease it back - unlock capital',
+    cashUnlock: 0.9, newRentMod: 1.1, flexibility: 'medium',
+    termYears: 15, renewalOption: true
+  },
+];
+
+// CATERING & EVENTS SYSTEM - B2B Revenue
+const CATERING_TYPES = [
+  { id: 'corporate_lunch', name: 'Corporate Lunch', icon: '💼', avgOrder: 800, frequency: 'weekly', margin: 0.35, setupCost: 2000 },
+  { id: 'corporate_event', name: 'Corporate Event', icon: '🎉', avgOrder: 5000, frequency: 'monthly', margin: 0.40, setupCost: 5000 },
+  { id: 'wedding', name: 'Wedding Catering', icon: '💒', avgOrder: 15000, frequency: 'seasonal', margin: 0.45, setupCost: 10000 },
+  { id: 'private_party', name: 'Private Parties', icon: '🎂', avgOrder: 2000, frequency: 'weekly', margin: 0.38, setupCost: 3000 },
+  { id: 'food_service', name: 'Contract Food Service', icon: '🏢', avgOrder: 3000, frequency: 'daily', margin: 0.25, setupCost: 15000 },
+  { id: 'meal_prep', name: 'Meal Prep Service', icon: '📦', avgOrder: 500, frequency: 'weekly', margin: 0.30, setupCost: 5000 },
+];
+
+const CATERING_CONTRACTS = [
+  { id: 'tech_campus', name: 'Tech Campus Cafeteria', icon: '💻', weeklyRevenue: 8000, term: 52, margin: 0.22, requirement: 'High volume capacity' },
+  { id: 'hospital', name: 'Hospital Café', icon: '🏥', weeklyRevenue: 5000, term: 104, margin: 0.20, requirement: 'Health certifications' },
+  { id: 'university', name: 'University Dining', icon: '🎓', weeklyRevenue: 12000, term: 40, margin: 0.18, requirement: 'Seasonal, volume swings' },
+  { id: 'office_tower', name: 'Office Tower Exclusive', icon: '🏙️', weeklyRevenue: 6000, term: 52, margin: 0.28, requirement: 'Premium quality' },
+];
+
+// FOOD TRUCK FLEET SYSTEM
+const FOOD_TRUCKS = [
+  { id: 'basic', name: 'Basic Food Truck', icon: '🚚', cost: 45000, capacity: 100, range: 'local', maintenance: 500, permits: 2000 },
+  { id: 'premium', name: 'Premium Food Truck', icon: '🚛', cost: 85000, capacity: 150, range: 'regional', maintenance: 750, permits: 3000 },
+  { id: 'trailer', name: 'Concession Trailer', icon: '🎪', cost: 25000, capacity: 80, range: 'events', maintenance: 300, permits: 1500 },
+  { id: 'cart', name: 'Food Cart', icon: '🛒', cost: 8000, capacity: 40, range: 'downtown', maintenance: 100, permits: 500 },
+];
+
+const TRUCK_EVENTS = [
+  { id: 'farmers_market', name: 'Farmers Market', icon: '🥬', fee: 150, avgRevenue: 1200, frequency: 'weekly' },
+  { id: 'food_festival', name: 'Food Festival', icon: '🎪', fee: 500, avgRevenue: 5000, frequency: 'monthly' },
+  { id: 'corporate_park', name: 'Office Park Lunch', icon: '🏢', fee: 100, avgRevenue: 800, frequency: 'daily' },
+  { id: 'brewery', name: 'Brewery Partnership', icon: '🍺', fee: 0, revShare: 0.15, avgRevenue: 1500, frequency: 'weekly' },
+  { id: 'concert', name: 'Concert/Stadium', icon: '🎸', fee: 1000, avgRevenue: 8000, frequency: 'event' },
+  { id: 'private_event', name: 'Private Event Booking', icon: '🎂', fee: 0, avgRevenue: 2500, frequency: 'booking' },
+];
+
+// MEDIA & CELEBRITY SYSTEM
+const MEDIA_OPPORTUNITIES = [
+  { id: 'local_news', name: 'Local News Feature', icon: '📺', cost: 0, reputationBoost: 5, reachBoost: 0.05, duration: 4 },
+  { id: 'food_magazine', name: 'Food Magazine Article', icon: '📰', cost: 500, reputationBoost: 10, reachBoost: 0.08, duration: 8 },
+  { id: 'podcast_guest', name: 'Podcast Appearance', icon: '🎙️', cost: 0, reputationBoost: 3, reachBoost: 0.03, duration: 12 },
+  { id: 'cooking_show', name: 'Cooking Show Guest', icon: '👨‍🍳', cost: 0, reputationBoost: 15, reachBoost: 0.15, duration: 8, minReputation: 70 },
+  { id: 'reality_show', name: 'Reality TV Appearance', icon: '🎬', cost: 0, reputationBoost: 25, reachBoost: 0.30, duration: 16, minReputation: 80 },
+  { id: 'own_show', name: 'Own TV Series', icon: '⭐', cost: 0, reputationBoost: 40, reachBoost: 0.50, weeklyIncome: 10000, minReputation: 90 },
+];
+
+const BRAND_DEALS = [
+  { id: 'cookbook', name: 'Cookbook Deal', icon: '📚', advance: 50000, royalty: 0.08, effort: 'high', minReputation: 75 },
+  { id: 'product_line', name: 'Retail Product Line', icon: '🏪', advance: 100000, royalty: 0.05, effort: 'medium', minReputation: 80 },
+  { id: 'endorsement', name: 'Brand Endorsement', icon: '📢', fee: 25000, duration: 52, effort: 'low', minReputation: 70 },
+  { id: 'consulting', name: 'Restaurant Consulting', icon: '💼', fee: 5000, perEngagement: true, effort: 'high', minReputation: 85 },
+  { id: 'licensing', name: 'Brand Licensing', icon: '™️', upfront: 200000, royalty: 0.03, effort: 'low', minReputation: 90 },
+];
+
+// ECONOMIC CYCLES SYSTEM
+const ECONOMIC_CONDITIONS = [
+  { 
+    id: 'boom', name: 'Economic Boom', icon: '📈',
+    revenueMultiplier: 1.25, costMultiplier: 1.1, laborMarket: 'tight',
+    consumerConfidence: 1.3, tipMultiplier: 1.2, description: 'High spending, hard to hire'
+  },
+  { 
+    id: 'stable', name: 'Stable Economy', icon: '➡️',
+    revenueMultiplier: 1.0, costMultiplier: 1.0, laborMarket: 'normal',
+    consumerConfidence: 1.0, tipMultiplier: 1.0, description: 'Steady as she goes'
+  },
+  { 
+    id: 'slowdown', name: 'Economic Slowdown', icon: '📉',
+    revenueMultiplier: 0.9, costMultiplier: 0.95, laborMarket: 'loose',
+    consumerConfidence: 0.85, tipMultiplier: 0.9, description: 'Cautious spending, easier hiring'
+  },
+  { 
+    id: 'recession', name: 'Recession', icon: '🔻',
+    revenueMultiplier: 0.75, costMultiplier: 0.85, laborMarket: 'abundant',
+    consumerConfidence: 0.6, tipMultiplier: 0.7, description: 'Survival mode, cut costs'
+  },
+  { 
+    id: 'inflation', name: 'High Inflation', icon: '💸',
+    revenueMultiplier: 1.1, costMultiplier: 1.35, laborMarket: 'tight',
+    consumerConfidence: 0.9, tipMultiplier: 0.85, description: 'Costs rising faster than prices'
+  },
+];
+
+const ECONOMIC_EVENTS = [
+  { id: 'rate_hike', name: 'Interest Rate Hike', effect: { loanRates: 0.02, expansion: -0.2 }, duration: 26 },
+  { id: 'stimulus', name: 'Government Stimulus', effect: { revenue: 0.15, tips: 0.25 }, duration: 12 },
+  { id: 'supply_shock', name: 'Supply Chain Disruption', effect: { foodCost: 0.2, availability: -0.15 }, duration: 16 },
+  { id: 'labor_shortage', name: 'Labor Shortage', effect: { wages: 0.15, retention: -0.1 }, duration: 20 },
+  { id: 'gas_spike', name: 'Fuel Price Spike', effect: { deliveryCost: 0.3, supplyCost: 0.1 }, duration: 8 },
+];
+
+// ADVANCED EXIT STRATEGIES
+const EXIT_OPTIONS = [
+  { 
+    id: 'ipo', name: 'Initial Public Offering (IPO)', icon: '📈',
+    minValuation: 50000000, minLocations: 50, preparationTime: 104,
+    cost: 2000000, valuationMultiple: 1.5, description: 'Go public on stock exchange'
+  },
+  { 
+    id: 'strategic_sale', name: 'Strategic Acquisition', icon: '🤝',
+    minValuation: 5000000, minLocations: 5, preparationTime: 26,
+    cost: 100000, valuationMultiple: 1.2, description: 'Sell to larger restaurant group'
+  },
+  { 
+    id: 'pe_buyout', name: 'PE Leveraged Buyout', icon: '🏦',
+    minValuation: 10000000, minLocations: 10, preparationTime: 26,
+    cost: 150000, valuationMultiple: 1.0, description: 'Private equity acquires majority'
+  },
+  { 
+    id: 'spac', name: 'SPAC Merger', icon: '🚀',
+    minValuation: 25000000, minLocations: 25, preparationTime: 52,
+    cost: 500000, valuationMultiple: 1.3, description: 'Merge with blank check company'
+  },
+  { 
+    id: 'management_buyout', name: 'Management Buyout', icon: '👔',
+    minValuation: 2000000, minLocations: 3, preparationTime: 13,
+    cost: 50000, valuationMultiple: 0.9, description: 'Sell to your management team'
+  },
+  { 
+    id: 'esop', name: 'Employee Ownership (ESOP)', icon: '👥',
+    minValuation: 3000000, minLocations: 3, preparationTime: 52,
+    cost: 100000, valuationMultiple: 0.85, description: 'Gradual sale to employees'
+  },
+  { 
+    id: 'family_succession', name: 'Family Succession', icon: '👨‍👩‍👧‍👦',
+    minValuation: 0, minLocations: 1, preparationTime: 104,
+    cost: 25000, valuationMultiple: 0, description: 'Pass to next generation'
+  },
+];
+
+// PHASE 6 SCENARIOS
+const PHASE_6_SCENARIOS = [
+  {
+    id: 'vc_interest', type: 'opportunity', title: '🚀 VC Interest',
+    message: 'A venture capital firm sees potential in your brand. They want to invest $1M for 25% equity and a board seat. They expect 10x growth in 5 years.',
+    options: [
+      { text: 'Accept the investment', successChance: 1.0, success: { cash: 1000000, equity: -25, addInvestor: 'vc' }, fail: {} },
+      { text: 'Negotiate for 20%', successChance: 0.5, success: { cash: 1000000, equity: -20, addInvestor: 'vc' }, fail: { reputation: -2 } },
+      { text: 'Decline - stay independent', successChance: 1.0, success: { reputation: 5 }, fail: {} },
+    ],
+    lesson: 'VC money comes with strings. Make sure your vision aligns with their timeline.',
+    minValuation: 2000000,
+  },
+  {
+    id: 'real_estate_opportunity', type: 'opportunity', title: '🏢 Buy Your Building',
+    message: 'Your landlord is selling the building. You have first right of refusal at $800K. Property values have been rising 5% annually.',
+    options: [
+      { text: 'Buy it (25% down)', successChance: 0.9, success: { cash: -200000, addProperty: true, monthlyRent: 0 }, fail: { cash: -50000 } },
+      { text: 'Negotiate lower price', successChance: 0.4, success: { cash: -160000, addProperty: true }, fail: { newLandlord: true, rentIncrease: 0.15 } },
+      { text: 'Pass - stay a tenant', successChance: 1.0, success: { newLandlord: true, rentIncrease: 0.1 }, fail: {} },
+    ],
+    lesson: 'Owning real estate builds wealth but ties up capital. Know your priorities.',
+    minCash: 200000,
+  },
+  {
+    id: 'catering_contract', type: 'opportunity', title: '💼 Corporate Contract',
+    message: 'A Fortune 500 company wants you to cater their campus cafeteria. $6K/week guaranteed for 2 years, but you need to hire dedicated staff.',
+    options: [
+      { text: 'Accept the contract', successChance: 0.85, success: { weeklyIncome: 6000, hireRequired: 5, addContract: 'tech_campus' }, fail: { reputation: -10, penalty: 25000 } },
+      { text: 'Counter with higher margin', successChance: 0.4, success: { weeklyIncome: 7500, hireRequired: 5 }, fail: {} },
+      { text: 'Decline - focus on restaurant', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'Contract food service is steady but low-margin. It\'s a different business model.',
+    minLocations: 1,
+    minReputation: 65,
+  },
+  {
+    id: 'food_truck_offer', type: 'opportunity', title: '🚚 Food Truck Opportunity',
+    message: 'A food truck builder is offering a custom truck at 30% off ($55K). Perfect for testing new markets and events.',
+    options: [
+      { text: 'Buy the truck', successChance: 1.0, success: { cash: -55000, addTruck: 'premium' }, fail: {} },
+      { text: 'Start with a cart instead ($8K)', successChance: 1.0, success: { cash: -8000, addTruck: 'cart' }, fail: {} },
+      { text: 'Not interested right now', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'Food trucks are lower risk expansion but operationally complex. Start small.',
+    minCash: 60000,
+  },
+  {
+    id: 'tv_show_invite', type: 'opportunity', title: '🎬 Reality Show Invitation',
+    message: 'A food reality show wants to feature your restaurant! Great exposure but they want drama and access for 3 weeks.',
+    options: [
+      { text: 'Accept - embrace the spotlight', successChance: 0.7, success: { reputation: 25, reach: 0.3, morale: -10 }, fail: { reputation: -15, morale: -20 } },
+      { text: 'Accept with conditions', successChance: 0.5, success: { reputation: 15, reach: 0.2 }, fail: { reputation: -5 } },
+      { text: 'Decline politely', successChance: 1.0, success: { reputation: 2 }, fail: {} },
+    ],
+    lesson: 'Media exposure is a double-edged sword. The wrong story can hurt more than help.',
+    minReputation: 75,
+  },
+  {
+    id: 'recession_hits', type: 'crisis', title: '📉 Economic Recession',
+    message: 'The economy has entered recession. Consumer spending is down 25% and unemployment is rising. How do you adapt?',
+    options: [
+      { text: 'Cut costs aggressively', successChance: 0.8, success: { costs: -0.2, morale: -15, quality: -0.1 }, fail: { reputation: -10, morale: -25 } },
+      { text: 'Launch value menu', successChance: 0.7, success: { avgTicket: -0.15, covers: 0.1, reputation: 5 }, fail: { margin: -0.1 } },
+      { text: 'Double down on quality', successChance: 0.5, success: { reputation: 15, premiumCustomers: 0.2 }, fail: { cash: -20000, covers: -0.2 } },
+    ],
+    lesson: 'Recessions test your business model. Value and quality both have paths forward.',
+    economic: 'recession',
+  },
+  {
+    id: 'cookbook_deal', type: 'opportunity', title: '📚 Cookbook Offer',
+    message: 'A publisher wants to release your cookbook. $50K advance plus 8% royalties. You\'ll need to dedicate significant time.',
+    options: [
+      { text: 'Accept the deal', successChance: 0.8, success: { cash: 50000, reputation: 10, burnout: 15 }, fail: { reputation: -5 } },
+      { text: 'Negotiate ghostwriter', successChance: 0.6, success: { cash: 35000, reputation: 8 }, fail: {} },
+      { text: 'Decline - too busy', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'Side projects can build your brand but distract from operations. Delegate well.',
+    minReputation: 75,
+  },
+  {
+    id: 'ipo_banker', type: 'opportunity', title: '📈 IPO Discussion',
+    message: 'An investment banker believes your company could go public. The process would take 2 years and cost $2M, but could value you at 1.5x current.',
+    options: [
+      { text: 'Begin IPO process', successChance: 0.6, success: { startIPO: true, cash: -500000 }, fail: { cash: -200000, reputation: -10 } },
+      { text: 'Explore SPAC merger instead', successChance: 0.5, success: { startSPAC: true, cash: -250000 }, fail: {} },
+      { text: 'Not ready yet', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'Public companies face scrutiny private ones don\'t. Make sure you\'re ready.',
+    minValuation: 25000000,
+    minLocations: 25,
+  },
+];
 
 // ============================================
 // EMPIRE SCENARIOS (Multi-location specific)
@@ -970,6 +1276,17 @@ export default function App() {
   const [themesUsed, setThemesUsed] = useState(['dark']);
   const autoAdvanceRef = useRef(null);
   
+  // Phase 6: Advanced Business states
+  const [investorModal, setInvestorModal] = useState(false);
+  const [cateringModal, setCateringModal] = useState(false);
+  const [foodTruckModal, setFoodTruckModal] = useState(false);
+  const [mediaModal, setMediaModal] = useState(false);
+  const [realEstateModal, setRealEstateModal] = useState(false);
+  const [exitStrategyModal, setExitStrategyModal] = useState(false);
+  const [economyModal, setEconomyModal] = useState(false);
+  const [currentEconomy, setCurrentEconomy] = useState('stable');
+  const [economyWeeksRemaining, setEconomyWeeksRemaining] = useState(0);
+  
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
@@ -1069,6 +1386,44 @@ export default function App() {
         locationsClosed: 0,
         franchisesSold: 0,
       },
+      
+      // Phase 6: Investors
+      investors: [],
+      totalEquitySold: 0,
+      boardMembers: 0,
+      investorDemands: [],
+      
+      // Phase 6: Real Estate
+      ownedProperties: [],
+      totalPropertyValue: 0,
+      mortgages: [],
+      
+      // Phase 6: Catering & Events
+      cateringEnabled: false,
+      cateringContracts: [],
+      cateringRevenue: 0,
+      cateringCapacity: 0,
+      
+      // Phase 6: Food Trucks
+      foodTrucks: [],
+      truckEvents: [],
+      truckRevenue: 0,
+      
+      // Phase 6: Media & Celebrity
+      mediaAppearances: [],
+      brandDeals: [],
+      publicProfile: 0,
+      cookbookSales: 0,
+      
+      // Phase 6: Economic Conditions
+      economicCondition: 'stable',
+      economicEffects: {},
+      economyCycleWeek: 0,
+      
+      // Phase 6: Exit Planning
+      exitStrategy: null,
+      exitProgress: 0,
+      ipoReady: false,
     };
     
     setGame(initialGame);
@@ -2192,7 +2547,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v7.0.0 • Phase 4 • Polish & Advanced</Text>
+          <Text style={styles.versionText}>v8.0.0 • Phase 6 • Advanced Business</Text>
         </View>
       </SafeAreaView>
     );
@@ -2659,6 +3014,31 @@ export default function App() {
                   <TouchableOpacity style={styles.quickAction} onPress={() => setMilestonesModal(true)}>
                     <Text style={styles.quickActionIcon}>🏆</Text>
                     <Text style={styles.quickActionText}>Milestones</Text>
+                  </TouchableOpacity>
+                  {/* Phase 6 Quick Actions */}
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setInvestorModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏦</Text>
+                    <Text style={styles.quickActionText}>Investors</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setCateringModal(true)}>
+                    <Text style={styles.quickActionIcon}>🍽️</Text>
+                    <Text style={styles.quickActionText}>Catering</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setFoodTruckModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚚</Text>
+                    <Text style={styles.quickActionText}>Trucks</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setMediaModal(true)}>
+                    <Text style={styles.quickActionIcon}>📺</Text>
+                    <Text style={styles.quickActionText}>Media</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setExitStrategyModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚪</Text>
+                    <Text style={styles.quickActionText}>Exit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: currentEconomy === 'recession' ? colors.accent : currentEconomy === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
+                    <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === currentEconomy)?.icon || '📊'}</Text>
+                    <Text style={styles.quickActionText}>Economy</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -3616,7 +3996,7 @@ export default function App() {
                   <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
                 </TouchableOpacity>
                 
-                <Text style={styles.versionText}>86'd v7.0.0 - Phase 5</Text>
+                <Text style={styles.versionText}>86'd v8.0.0 - Phase 6</Text>
               </ScrollView>
             </View>
           </View>
@@ -3709,6 +4089,488 @@ export default function App() {
                     </View>
                   </TouchableOpacity>
                 ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ============================================ */}
+        {/* PHASE 6: INVESTOR MODAL */}
+        {/* ============================================ */}
+        <Modal visible={investorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏦 Investor Relations</Text>
+                <TouchableOpacity onPress={() => setInvestorModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.investorSummary}>
+                  <Text style={styles.sectionSubtitle}>Ownership Structure</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Equity:</Text>
+                    <Text style={styles.statValue}>{game?.equity || 100}%</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Investors:</Text>
+                    <Text style={styles.statValue}>{game?.investors?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Board Members:</Text>
+                    <Text style={styles.statValue}>{game?.boardMembers || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Current Valuation:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text>
+                  </View>
+                </View>
+                
+                {game?.investors?.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionSubtitle}>Current Investors</Text>
+                    {game.investors.map((inv, idx) => (
+                      <View key={idx} style={styles.investorCard}>
+                        <Text style={styles.investorIcon}>{INVESTOR_TYPES.find(t => t.id === inv.type)?.icon || '👤'}</Text>
+                        <View style={styles.investorInfo}>
+                          <Text style={styles.investorName}>{inv.name}</Text>
+                          <Text style={styles.investorDetails}>{inv.equity}% equity • {inv.boardSeat ? 'Board seat' : 'No board seat'}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                
+                <Text style={styles.sectionSubtitle}>Available Investors</Text>
+                {INVESTOR_TYPES.filter(inv => 
+                  (game?.empireValuation || 0) >= inv.minValuation && 
+                  (game?.empireValuation || 0) <= inv.maxValuation
+                ).map(inv => (
+                  <TouchableOpacity
+                    key={inv.id}
+                    style={styles.investorOption}
+                    onPress={() => {
+                      const investAmount = Math.floor((inv.investment[0] + inv.investment[1]) / 2);
+                      const equityAsk = Math.floor((inv.equityRange[0] + inv.equityRange[1]) / 2);
+                      if ((game?.equity || 100) >= equityAsk) {
+                        setGame(g => ({
+                          ...g,
+                          corporateCash: (g.corporateCash || 0) + investAmount,
+                          equity: g.equity - equityAsk,
+                          investors: [...(g.investors || []), { 
+                            type: inv.id, 
+                            name: inv.name, 
+                            equity: equityAsk, 
+                            invested: investAmount,
+                            boardSeat: inv.boardSeat,
+                            joinedWeek: g.week 
+                          }],
+                          boardMembers: (g.boardMembers || 0) + (inv.boardSeat ? 1 : 0),
+                        }));
+                        addNotification(`${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`, 'success');
+                        setInvestorModal(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.investorOptionIcon}>{inv.icon}</Text>
+                    <View style={styles.investorOptionInfo}>
+                      <Text style={styles.investorOptionName}>{inv.name}</Text>
+                      <Text style={styles.investorOptionTerms}>{inv.terms}</Text>
+                      <View style={styles.investorOptionStats}>
+                        <Text style={styles.investorStat}>💰 {formatCurrency(inv.investment[0])}-{formatCurrency(inv.investment[1])}</Text>
+                        <Text style={styles.investorStat}>📊 {inv.equityRange[0]}-{inv.equityRange[1]}% equity</Text>
+                        {inv.boardSeat && <Text style={styles.investorStat}>🪑 Board seat</Text>}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {INVESTOR_TYPES.filter(inv => 
+                  (game?.empireValuation || 0) >= inv.minValuation && 
+                  (game?.empireValuation || 0) <= inv.maxValuation
+                ).length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>No investors interested at current valuation</Text>
+                    <Text style={styles.emptyStateHint}>Build to ${formatCurrency(250000)} valuation to attract angels</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: CATERING MODAL */}
+        <Modal visible={cateringModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🍽️ Catering & Events</Text>
+                <TouchableOpacity onPress={() => setCateringModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.cateringSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Catering Revenue:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.cateringRevenue || 0)}/week</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Active Contracts:</Text>
+                    <Text style={styles.statValue}>{game?.cateringContracts?.length || 0}</Text>
+                  </View>
+                </View>
+                
+                {!game?.cateringEnabled && (
+                  <TouchableOpacity
+                    style={styles.enableButton}
+                    onPress={() => {
+                      if ((game?.corporateCash || 0) >= 10000) {
+                        setGame(g => ({ ...g, cateringEnabled: true, corporateCash: g.corporateCash - 10000 }));
+                        addNotification('🍽️ Catering division launched! $10K invested.', 'success');
+                      }
+                    }}
+                  >
+                    <Text style={styles.enableButtonText}>🚀 Launch Catering Division ($10K)</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {game?.cateringEnabled && (
+                  <>
+                    <Text style={styles.sectionSubtitle}>Available Contracts</Text>
+                    {CATERING_CONTRACTS.filter(c => !game?.cateringContracts?.find(cc => cc.id === c.id)).map(contract => (
+                      <TouchableOpacity
+                        key={contract.id}
+                        style={styles.contractCard}
+                        onPress={() => {
+                          setGame(g => ({
+                            ...g,
+                            cateringContracts: [...(g.cateringContracts || []), { ...contract, startWeek: g.week, weeksRemaining: contract.term }],
+                          }));
+                          addNotification(`📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`, 'success');
+                        }}
+                      >
+                        <Text style={styles.contractIcon}>{contract.icon}</Text>
+                        <View style={styles.contractInfo}>
+                          <Text style={styles.contractName}>{contract.name}</Text>
+                          <Text style={styles.contractDetails}>{formatCurrency(contract.weeklyRevenue)}/week • {contract.term} weeks • {(contract.margin * 100).toFixed(0)}% margin</Text>
+                          <Text style={styles.contractRequirement}>⚠️ {contract.requirement}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                    
+                    <Text style={styles.sectionSubtitle}>Catering Services</Text>
+                    {CATERING_TYPES.map(service => (
+                      <View key={service.id} style={styles.serviceCard}>
+                        <Text style={styles.serviceIcon}>{service.icon}</Text>
+                        <View style={styles.serviceInfo}>
+                          <Text style={styles.serviceName}>{service.name}</Text>
+                          <Text style={styles.serviceDetails}>Avg Order: {formatCurrency(service.avgOrder)} • {(service.margin * 100).toFixed(0)}% margin</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: FOOD TRUCK MODAL */}
+        <Modal visible={foodTruckModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚚 Food Truck Fleet</Text>
+                <TouchableOpacity onPress={() => setFoodTruckModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.truckSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Fleet Size:</Text>
+                    <Text style={styles.statValue}>{game?.foodTrucks?.length || 0} trucks</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Weekly Revenue:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.truckRevenue || 0)}</Text>
+                  </View>
+                </View>
+                
+                {game?.foodTrucks?.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionSubtitle}>Your Fleet</Text>
+                    {game.foodTrucks.map((truck, idx) => (
+                      <View key={idx} style={styles.truckCard}>
+                        <Text style={styles.truckIcon}>{FOOD_TRUCKS.find(t => t.id === truck.type)?.icon || '🚚'}</Text>
+                        <View style={styles.truckInfo}>
+                          <Text style={styles.truckName}>{truck.name}</Text>
+                          <Text style={styles.truckDetails}>Weekly Revenue: {formatCurrency(truck.weeklyRevenue || 0)}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                
+                <Text style={styles.sectionSubtitle}>Purchase Truck</Text>
+                {FOOD_TRUCKS.map(truck => (
+                  <TouchableOpacity
+                    key={truck.id}
+                    style={styles.truckOption}
+                    onPress={() => {
+                      if ((game?.corporateCash || 0) >= truck.cost) {
+                        setGame(g => ({
+                          ...g,
+                          corporateCash: g.corporateCash - truck.cost,
+                          foodTrucks: [...(g.foodTrucks || []), { 
+                            type: truck.id, 
+                            name: `${setup.name} Truck #${(g.foodTrucks?.length || 0) + 1}`,
+                            weeklyRevenue: 0,
+                            events: [],
+                          }],
+                        }));
+                        addNotification(`🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`, 'success');
+                      } else {
+                        addNotification(`Need ${formatCurrency(truck.cost)} to purchase`, 'warning');
+                      }
+                    }}
+                  >
+                    <Text style={styles.truckOptionIcon}>{truck.icon}</Text>
+                    <View style={styles.truckOptionInfo}>
+                      <Text style={styles.truckOptionName}>{truck.name}</Text>
+                      <Text style={styles.truckOptionDetails}>
+                        Cost: {formatCurrency(truck.cost)} • Capacity: {truck.capacity}/day • Maintenance: {formatCurrency(truck.maintenance)}/week
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {game?.foodTrucks?.length > 0 && (
+                  <>
+                    <Text style={styles.sectionSubtitle}>Book Events</Text>
+                    {TRUCK_EVENTS.map(event => (
+                      <TouchableOpacity
+                        key={event.id}
+                        style={styles.eventOption}
+                        onPress={() => {
+                          addNotification(`🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`, 'success');
+                        }}
+                      >
+                        <Text style={styles.eventIcon}>{event.icon}</Text>
+                        <View style={styles.eventInfo}>
+                          <Text style={styles.eventName}>{event.name}</Text>
+                          <Text style={styles.eventDetails}>Fee: {formatCurrency(event.fee)} • Avg Revenue: {formatCurrency(event.avgRevenue)}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: MEDIA MODAL */}
+        <Modal visible={mediaModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📺 Media & Celebrity</Text>
+                <TouchableOpacity onPress={() => setMediaModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.mediaSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Public Profile:</Text>
+                    <Text style={styles.statValue}>{game?.publicProfile || 0}/100</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Media Appearances:</Text>
+                    <Text style={styles.statValue}>{game?.mediaAppearances?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Brand Deals:</Text>
+                    <Text style={styles.statValue}>{game?.brandDeals?.length || 0}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Media Opportunities</Text>
+                {MEDIA_OPPORTUNITIES.filter(m => !m.minReputation || (getActiveLocation()?.reputation || 0) >= m.minReputation).map(media => (
+                  <TouchableOpacity
+                    key={media.id}
+                    style={styles.mediaOption}
+                    onPress={() => {
+                      setGame(g => ({
+                        ...g,
+                        publicProfile: Math.min(100, (g.publicProfile || 0) + media.reputationBoost),
+                        mediaAppearances: [...(g.mediaAppearances || []), { ...media, week: g.week }],
+                      }));
+                      addNotification(`${media.icon} ${media.name}! +${media.reputationBoost} profile`, 'success');
+                    }}
+                  >
+                    <Text style={styles.mediaIcon}>{media.icon}</Text>
+                    <View style={styles.mediaInfo}>
+                      <Text style={styles.mediaName}>{media.name}</Text>
+                      <Text style={styles.mediaDetails}>+{media.reputationBoost} profile • +{(media.reachBoost * 100).toFixed(0)}% reach</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                <Text style={styles.sectionSubtitle}>Brand Deals</Text>
+                {BRAND_DEALS.filter(d => (getActiveLocation()?.reputation || 0) >= d.minReputation).map(deal => (
+                  <TouchableOpacity
+                    key={deal.id}
+                    style={styles.dealOption}
+                    onPress={() => {
+                      setGame(g => ({
+                        ...g,
+                        corporateCash: g.corporateCash + (deal.advance || deal.fee || 0),
+                        brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week }],
+                      }));
+                      addNotification(`📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`, 'success');
+                      setMediaModal(false);
+                    }}
+                  >
+                    <Text style={styles.dealIcon}>{deal.icon}</Text>
+                    <View style={styles.dealInfo}>
+                      <Text style={styles.dealName}>{deal.name}</Text>
+                      <Text style={styles.dealDetails}>
+                        {deal.advance ? `Advance: ${formatCurrency(deal.advance)}` : deal.fee ? `Fee: ${formatCurrency(deal.fee)}` : ''}
+                        {deal.royalty ? ` • ${(deal.royalty * 100).toFixed(0)}% royalty` : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: EXIT STRATEGY MODAL */}
+        <Modal visible={exitStrategyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚪 Exit Strategies</Text>
+                <TouchableOpacity onPress={() => setExitStrategyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.exitSummary}>
+                  <Text style={styles.sectionSubtitle}>Your Empire</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Valuation:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Locations:</Text>
+                    <Text style={styles.statValue}>{game?.locations?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Equity:</Text>
+                    <Text style={styles.statValue}>{game?.equity || 100}%</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Payout:</Text>
+                    <Text style={[styles.statValue, { color: colors.primary }]}>{formatCurrency((game?.empireValuation || 0) * ((game?.equity || 100) / 100))}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Exit Options</Text>
+                {EXIT_OPTIONS.map(exit => {
+                  const eligible = (game?.empireValuation || 0) >= exit.minValuation && 
+                                   (game?.locations?.length || 0) >= exit.minLocations;
+                  return (
+                    <TouchableOpacity
+                      key={exit.id}
+                      style={[styles.exitOption, !eligible && styles.exitOptionLocked]}
+                      disabled={!eligible}
+                      onPress={() => {
+                        if (exit.id === 'family_succession') {
+                          // End game with family succession
+                          addNotification('🏆 Congratulations! You passed your empire to the next generation!', 'achievement');
+                          setGame(g => ({ ...g, exitStrategy: exit.id, exitProgress: 100 }));
+                        } else {
+                          setGame(g => ({ 
+                            ...g, 
+                            exitStrategy: exit.id, 
+                            exitProgress: 0,
+                            corporateCash: g.corporateCash - exit.cost 
+                          }));
+                          addNotification(`📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`, 'info');
+                        }
+                        setExitStrategyModal(false);
+                      }}
+                    >
+                      <Text style={styles.exitIcon}>{exit.icon}</Text>
+                      <View style={styles.exitInfo}>
+                        <Text style={styles.exitName}>{exit.name}</Text>
+                        <Text style={styles.exitDesc}>{exit.description}</Text>
+                        <View style={styles.exitRequirements}>
+                          <Text style={[styles.exitReq, (game?.empireValuation || 0) >= exit.minValuation ? styles.exitReqMet : styles.exitReqUnmet]}>
+                            💰 {formatCurrency(exit.minValuation)}+ valuation
+                          </Text>
+                          <Text style={[styles.exitReq, (game?.locations?.length || 0) >= exit.minLocations ? styles.exitReqMet : styles.exitReqUnmet]}>
+                            🏪 {exit.minLocations}+ locations
+                          </Text>
+                          <Text style={styles.exitReq}>⏱️ {exit.preparationTime} weeks</Text>
+                          <Text style={styles.exitReq}>💵 {formatCurrency(exit.cost)} cost</Text>
+                          <Text style={[styles.exitReq, { color: colors.success }]}>
+                            📈 {exit.valuationMultiple}x valuation multiple
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: ECONOMY MODAL */}
+        <Modal visible={economyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📊 Economic Conditions</Text>
+                <TouchableOpacity onPress={() => setEconomyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {ECONOMIC_CONDITIONS.map(condition => {
+                  const isActive = currentEconomy === condition.id;
+                  return (
+                    <View key={condition.id} style={[styles.economyCard, isActive && styles.economyCardActive]}>
+                      <View style={styles.economyHeader}>
+                        <Text style={styles.economyIcon}>{condition.icon}</Text>
+                        <View style={styles.economyInfo}>
+                          <Text style={styles.economyName}>{condition.name}</Text>
+                          {isActive && <Text style={styles.economyActive}>CURRENT</Text>}
+                        </View>
+                      </View>
+                      <Text style={styles.economyDesc}>{condition.description}</Text>
+                      <View style={styles.economyEffects}>
+                        <Text style={[styles.economyEffect, condition.revenueMultiplier > 1 ? styles.positive : condition.revenueMultiplier < 1 ? styles.negative : null]}>
+                          Revenue: {condition.revenueMultiplier > 1 ? '+' : ''}{((condition.revenueMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={[styles.economyEffect, condition.costMultiplier < 1 ? styles.positive : condition.costMultiplier > 1 ? styles.negative : null]}>
+                          Costs: {condition.costMultiplier > 1 ? '+' : ''}{((condition.costMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={[styles.economyEffect, condition.tipMultiplier > 1 ? styles.positive : condition.tipMultiplier < 1 ? styles.negative : null]}>
+                          Tips: {condition.tipMultiplier > 1 ? '+' : ''}{((condition.tipMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={styles.economyEffect}>Labor Market: {condition.laborMarket}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
               </ScrollView>
             </View>
           </View>
@@ -4307,6 +5169,103 @@ const styles = StyleSheet.create({
   prestigeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.purple, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 10 },
   prestigeBadgeText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
 
+  // ============================================
+  // PHASE 6: ADVANCED BUSINESS STYLES
+  // ============================================
+  
+  // Investor Modal Styles
+  investorSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  investorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  investorIcon: { fontSize: 28, marginRight: 12 },
+  investorInfo: { flex: 1 },
+  investorName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  investorDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  investorOption: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  investorOptionIcon: { fontSize: 32, marginRight: 12 },
+  investorOptionInfo: { flex: 1 },
+  investorOptionName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  investorOptionTerms: { color: colors.textSecondary, fontSize: 12, marginBottom: 8, lineHeight: 18 },
+  investorOptionStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  investorStat: { color: colors.textMuted, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+
+  // Catering Modal Styles
+  cateringSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  enableButton: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
+  enableButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  contractCard: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  contractIcon: { fontSize: 28, marginRight: 12 },
+  contractInfo: { flex: 1 },
+  contractName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  contractDetails: { color: colors.success, fontSize: 12, marginTop: 4 },
+  contractRequirement: { color: colors.warning, fontSize: 11, marginTop: 4 },
+  serviceCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  serviceIcon: { fontSize: 24, marginRight: 12 },
+  serviceInfo: { flex: 1 },
+  serviceName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  serviceDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Food Truck Modal Styles
+  truckSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  truckCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  truckIcon: { fontSize: 28, marginRight: 12 },
+  truckInfo: { flex: 1 },
+  truckName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  truckDetails: { color: colors.textSecondary, fontSize: 12 },
+  truckOption: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  truckOptionIcon: { fontSize: 32, marginRight: 12 },
+  truckOptionInfo: { flex: 1 },
+  truckOptionName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  truckOptionDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
+  eventOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  eventIcon: { fontSize: 24, marginRight: 12 },
+  eventInfo: { flex: 1 },
+  eventName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  eventDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Media Modal Styles
+  mediaSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  mediaOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  mediaIcon: { fontSize: 24, marginRight: 12 },
+  mediaInfo: { flex: 1 },
+  mediaName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  mediaDetails: { color: colors.success, fontSize: 11 },
+  dealOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  dealIcon: { fontSize: 24, marginRight: 12 },
+  dealInfo: { flex: 1 },
+  dealName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  dealDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Exit Strategy Modal Styles
+  exitSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  exitOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12, flexDirection: 'row' },
+  exitOptionLocked: { opacity: 0.5 },
+  exitIcon: { fontSize: 32, marginRight: 12 },
+  exitInfo: { flex: 1 },
+  exitName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  exitDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 8 },
+  exitRequirements: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  exitReq: { color: colors.textMuted, fontSize: 10, backgroundColor: colors.surface, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  exitReqMet: { color: colors.success },
+  exitReqUnmet: { color: colors.accent },
+
+  // Economy Modal Styles
+  economyCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  economyCardActive: { borderWidth: 2, borderColor: colors.primary },
+  economyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  economyIcon: { fontSize: 28, marginRight: 12 },
+  economyInfo: { flex: 1 },
+  economyName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  economyActive: { color: colors.primary, fontSize: 10, fontWeight: '700', backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  economyDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 10 },
+  economyEffects: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  economyEffect: { color: colors.textMuted, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+  positive: { color: colors.success },
+  negative: { color: colors.accent },
+
+  // Empty State
+  emptyState: { alignItems: 'center', padding: 20 },
+  emptyStateText: { color: colors.textMuted, fontSize: 14, textAlign: 'center' },
+  emptyStateHint: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 },
 
 });
 
