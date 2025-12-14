@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   SafeAreaView, StatusBar, Modal, Dimensions, ActivityIndicator, Animated,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
+// Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
 
@@ -2824,7 +2824,7 @@ export default function App() {
                     {setup.capital >= 300000 && "Ready to scale fast if you execute."}
                   </Text>
                 </View>
-                <Slider style={styles.slider} minimumValue={50000} maximumValue={500000} step={10000} value={setup.capital} onValueChange={(v) => setSetup(s => ({ ...s, capital: v }))} minimumTrackTintColor={colors.primary} maximumTrackTintColor={colors.surfaceLight} thumbTintColor={colors.primary} />
+                <TextInput style={[styles.input, {textAlign: "center"}]} value={String(setup.capital)} onChangeText={(v) => setSetup(s => ({ ...s, capital: parseInt(v) || 50000 }))} keyboardType="numeric" placeholder="Starting Capital" placeholderTextColor={colors.textMuted} />
                 <View style={styles.sliderLabels}><Text style={styles.sliderLabel}>$50K</Text><Text style={styles.sliderLabel}>$500K</Text></View>
               </>
             )}
