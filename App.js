@@ -651,6 +651,119 @@ const PHASE7_ACHIEVEMENTS = [
   { id: 'leaderboard_top10', name: 'Top 10', description: 'Reach top 10 on any leaderboard', icon: '🏅', reward: 50000 },
   { id: 'social_influencer', name: 'Social Influencer', description: 'Share 10 achievements', icon: '📱', reward: 10000 },
   { id: 'full_coverage', name: 'Fully Staffed', description: 'Have all shifts covered with no gaps', icon: '✅', reward: 12000 },
+  // Bonus Achievements
+  { id: 'perfect_inspection', name: 'Perfect Score', description: 'Get 100% on a health inspection', icon: '🏥', reward: 35000 },
+  { id: 'happy_hour_king', name: 'Happy Hour King', description: 'Run 50 successful happy hours', icon: '🍺', reward: 15000 },
+  { id: 'reservation_master', name: 'Fully Booked', description: 'Have 100% reservation capacity for a week', icon: '📋', reward: 20000 },
+  { id: 'daily_special_streak', name: 'Special Streak', description: 'Run daily specials for 30 consecutive days', icon: '🌟', reward: 18000 },
+  { id: 'menu_engineer', name: 'Menu Engineer', description: 'Optimize menu to 40%+ stars', icon: '📊', reward: 25000 },
+];
+
+// ============================================
+// BONUS SYSTEMS: OPERATIONS POLISH
+// ============================================
+
+// HEALTH INSPECTION SYSTEM
+const HEALTH_INSPECTION_CATEGORIES = [
+  { id: 'food_safety', name: 'Food Safety', icon: '🥩', weight: 0.25, description: 'Temperature control, cross-contamination prevention' },
+  { id: 'cleanliness', name: 'Cleanliness', icon: '🧹', weight: 0.20, description: 'Kitchen and dining area sanitation' },
+  { id: 'pest_control', name: 'Pest Control', icon: '🪳', weight: 0.15, description: 'No evidence of pests or infestations' },
+  { id: 'employee_hygiene', name: 'Employee Hygiene', icon: '🧤', weight: 0.15, description: 'Handwashing, proper attire, health policies' },
+  { id: 'equipment', name: 'Equipment', icon: '🔧', weight: 0.15, description: 'Proper maintenance and calibration' },
+  { id: 'documentation', name: 'Documentation', icon: '📋', weight: 0.10, description: 'Records, permits, training logs' },
+];
+
+const INSPECTION_GRADES = [
+  { grade: 'A', minScore: 90, color: '#22c55e', effect: { reputation: 10, customerMod: 1.15 }, description: 'Excellent! Displayed prominently.' },
+  { grade: 'B', minScore: 80, color: '#eab308', effect: { reputation: 0, customerMod: 1.0 }, description: 'Good. Minor violations corrected.' },
+  { grade: 'C', minScore: 70, color: '#f97316', effect: { reputation: -10, customerMod: 0.85 }, description: 'Acceptable. Improvement needed.' },
+  { grade: 'D', minScore: 60, color: '#ef4444', effect: { reputation: -25, customerMod: 0.6 }, description: 'Poor. Follow-up inspection required.' },
+  { grade: 'F', minScore: 0, color: '#7f1d1d', effect: { reputation: -50, customerMod: 0 }, description: 'CLOSED for violations!' },
+];
+
+// DAILY SPECIALS SYSTEM
+const SPECIAL_TYPES = [
+  { id: 'soup', name: 'Soup of the Day', icon: '🍲', foodCostMod: 0.7, marginBoost: 0.15, prepTime: 'low' },
+  { id: 'catch', name: "Chef's Catch", icon: '🐟', foodCostMod: 1.2, marginBoost: 0.25, prepTime: 'medium' },
+  { id: 'pasta', name: 'Fresh Pasta', icon: '🍝', foodCostMod: 0.6, marginBoost: 0.20, prepTime: 'high' },
+  { id: 'seasonal', name: 'Seasonal Feature', icon: '🌸', foodCostMod: 0.9, marginBoost: 0.18, prepTime: 'medium' },
+  { id: 'comfort', name: 'Comfort Classic', icon: '🍖', foodCostMod: 0.75, marginBoost: 0.12, prepTime: 'low' },
+  { id: 'vegan', name: 'Vegan Special', icon: '🥗', foodCostMod: 0.65, marginBoost: 0.22, prepTime: 'low' },
+];
+
+const SPECIAL_PROMOTIONS = [
+  { id: 'none', name: 'No Promotion', icon: '➖', discount: 0, orderBoost: 1.0 },
+  { id: 'half_price', name: 'Half Price', icon: '💰', discount: 0.5, orderBoost: 2.5 },
+  { id: 'bogo', name: 'Buy One Get One', icon: '🎁', discount: 0.33, orderBoost: 1.8 },
+  { id: 'kids_eat_free', name: 'Kids Eat Free', icon: '👶', discount: 0.15, orderBoost: 1.4 },
+  { id: 'senior_discount', name: 'Senior Discount', icon: '👴', discount: 0.2, orderBoost: 1.3 },
+];
+
+// HAPPY HOUR SYSTEM
+const HAPPY_HOUR_PRESETS = [
+  { id: 'classic', name: 'Classic Happy Hour', icon: '🍺', hours: '4PM-7PM', drinkDiscount: 0.5, appetizerDiscount: 0.3, revenueBoost: 1.4 },
+  { id: 'late_night', name: 'Late Night Special', icon: '🌙', hours: '9PM-Close', drinkDiscount: 0.4, appetizerDiscount: 0.25, revenueBoost: 1.3 },
+  { id: 'lunch_rush', name: 'Power Lunch', icon: '💼', hours: '11AM-2PM', drinkDiscount: 0.2, appetizerDiscount: 0.4, revenueBoost: 1.5 },
+  { id: 'weekend_brunch', name: 'Boozy Brunch', icon: '🥂', hours: 'Sat-Sun 10AM-2PM', drinkDiscount: 0.3, appetizerDiscount: 0.2, revenueBoost: 1.6 },
+  { id: 'reverse', name: 'Reverse Happy Hour', icon: '🔄', hours: '9PM-11PM', drinkDiscount: 0.45, appetizerDiscount: 0.35, revenueBoost: 1.35 },
+];
+
+const DRINK_SPECIALS = [
+  { id: 'well_drinks', name: 'Well Drinks', icon: '🥃', cost: 2, price: 4, margin: 0.5 },
+  { id: 'house_wine', name: 'House Wine', icon: '🍷', cost: 3, price: 6, margin: 0.5 },
+  { id: 'draft_beer', name: 'Draft Beer', icon: '🍺', cost: 1.5, price: 4, margin: 0.625 },
+  { id: 'signature_cocktail', name: 'Signature Cocktails', icon: '🍹', cost: 4, price: 10, margin: 0.6 },
+  { id: 'premium_spirits', name: 'Premium Spirits', icon: '🥂', cost: 6, price: 14, margin: 0.57 },
+];
+
+// RESERVATION SYSTEM
+const RESERVATION_PLATFORMS = [
+  { id: 'phone', name: 'Phone Only', icon: '📞', cost: 0, bookingFee: 0, noShowRate: 0.15, maxCapacity: 0.6 },
+  { id: 'opentable', name: 'OpenTable', icon: '📱', cost: 199, bookingFee: 1.5, noShowRate: 0.08, maxCapacity: 0.9 },
+  { id: 'resy', name: 'Resy', icon: '✨', cost: 249, bookingFee: 2, noShowRate: 0.06, maxCapacity: 0.95 },
+  { id: 'direct', name: 'Direct Booking (Website)', icon: '🌐', cost: 500, bookingFee: 0, noShowRate: 0.10, maxCapacity: 0.75 },
+  { id: 'walkins', name: 'Walk-ins Only', icon: '🚶', cost: 0, bookingFee: 0, noShowRate: 0, maxCapacity: 0.5 },
+];
+
+const TABLE_TURN_TIMES = [
+  { id: 'fast_casual', time: 30, icon: '⚡', description: 'Fast casual - 30 min average' },
+  { id: 'casual_dining', time: 60, icon: '🍽️', description: 'Casual dining - 1 hour average' },
+  { id: 'upscale_casual', time: 90, icon: '🥂', description: 'Upscale casual - 1.5 hours' },
+  { id: 'fine_dining', time: 120, icon: '👔', description: 'Fine dining - 2 hours' },
+  { id: 'tasting_menu', time: 180, icon: '🎭', description: 'Tasting menu - 3 hours' },
+];
+
+// MENU ENGINEERING SYSTEM (Boston Matrix)
+const MENU_CATEGORIES = [
+  { id: 'stars', name: 'Stars ⭐', icon: '⭐', profitability: 'high', popularity: 'high', action: 'Maintain and highlight', color: '#22c55e' },
+  { id: 'plowhorses', name: 'Plowhorses 🐴', icon: '🐴', profitability: 'low', popularity: 'high', action: 'Increase price or reduce cost', color: '#eab308' },
+  { id: 'puzzles', name: 'Puzzles 🧩', icon: '🧩', profitability: 'high', popularity: 'low', action: 'Promote or reposition', color: '#3b82f6' },
+  { id: 'dogs', name: 'Dogs 🐕', icon: '🐕', profitability: 'low', popularity: 'low', action: 'Remove or redesign', color: '#ef4444' },
+];
+
+const MENU_PRICING_STRATEGIES = [
+  { id: 'charm', name: 'Charm Pricing', icon: '✨', description: 'End prices in .99 or .95', effect: 1.03 },
+  { id: 'round', name: 'Round Numbers', icon: '⭕', description: 'Clean prices like $15, $20', effect: 1.0 },
+  { id: 'anchor', name: 'Anchor Item', icon: '⚓', description: 'High-priced item makes others seem reasonable', effect: 1.08 },
+  { id: 'bundle', name: 'Bundle Deals', icon: '📦', description: 'Combine items for perceived value', effect: 1.12 },
+  { id: 'decoy', name: 'Decoy Pricing', icon: '🎯', description: 'Medium option between cheap and premium', effect: 1.06 },
+];
+
+// POS & TECHNOLOGY UPGRADES
+const POS_SYSTEMS = [
+  { id: 'basic_register', name: 'Basic Cash Register', icon: '💵', cost: 500, monthlyFee: 0, features: ['Cash only', 'Manual tracking'], efficiency: 0.7 },
+  { id: 'square', name: 'Square POS', icon: '⬜', cost: 0, monthlyFee: 0, processingFee: 0.026, features: ['Card processing', 'Basic analytics', 'Inventory'], efficiency: 0.9 },
+  { id: 'toast', name: 'Toast POS', icon: '🍞', cost: 0, monthlyFee: 99, processingFee: 0.024, features: ['Full restaurant features', 'Kitchen display', 'Online ordering'], efficiency: 1.0 },
+  { id: 'lightspeed', name: 'Lightspeed Restaurant', icon: '💡', cost: 0, monthlyFee: 189, processingFee: 0.022, features: ['Advanced analytics', 'Multi-location', 'Table management'], efficiency: 1.1 },
+  { id: 'custom', name: 'Custom Enterprise', icon: '🏢', cost: 25000, monthlyFee: 500, processingFee: 0.018, features: ['Full customization', 'API integrations', 'Dedicated support'], efficiency: 1.2 },
+];
+
+const TECH_UPGRADES = [
+  { id: 'kds', name: 'Kitchen Display System', icon: '📺', cost: 2500, benefit: 'Reduce ticket times 20%', efficiency: 1.2 },
+  { id: 'handheld', name: 'Handheld Ordering', icon: '📱', cost: 3500, benefit: 'Faster table service', efficiency: 1.15 },
+  { id: 'self_order', name: 'Self-Order Kiosks', icon: '🖥️', cost: 8000, benefit: 'Reduce labor, increase upsells', efficiency: 1.25 },
+  { id: 'inventory_mgmt', name: 'Inventory Management', icon: '📦', cost: 1500, benefit: 'Reduce waste 30%', wasteReduction: 0.3 },
+  { id: 'scheduling_sw', name: 'Scheduling Software', icon: '📅', cost: 1000, benefit: 'Optimize labor costs', laborSavings: 0.05 },
 ];
 
 // HALL OF FAME CATEGORIES
@@ -1490,6 +1603,14 @@ export default function App() {
   const [shareModal, setShareModal] = useState(false);
   const [soundFeedback, setSoundFeedback] = useState(null);
   
+  // Bonus Systems
+  const [healthInspectionModal, setHealthInspectionModal] = useState(false);
+  const [dailySpecialsModal, setDailySpecialsModal] = useState(false);
+  const [happyHourModal, setHappyHourModal] = useState(false);
+  const [reservationsModal, setReservationsModal] = useState(false);
+  const [menuEngineeringModal, setMenuEngineeringModal] = useState(false);
+  const [posSystemModal, setPosSystemModal] = useState(false);
+  
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
@@ -1660,6 +1781,39 @@ export default function App() {
       leaderboardRank: {},
       cloudSaveEnabled: false,
       lastCloudSync: null,
+      
+      // Bonus: Health Inspection
+      lastInspectionWeek: 0,
+      lastInspectionScore: 85,
+      inspectionGrade: 'B',
+      inspectionsTotal: 0,
+      perfectInspections: 0,
+      
+      // Bonus: Daily Specials & Happy Hour
+      dailySpecialEnabled: false,
+      currentSpecial: null,
+      specialStreak: 0,
+      happyHourEnabled: false,
+      happyHourPreset: 'classic',
+      happyHoursRun: 0,
+      
+      // Bonus: Reservations
+      reservationPlatform: 'phone',
+      reservationCapacity: 0.6,
+      noShowRate: 0.15,
+      
+      // Bonus: Menu Engineering
+      menuAnalyzed: false,
+      menuStarsPct: 0.25,
+      menuPuzzlesPct: 0.25,
+      menuPlowhorsePct: 0.25,
+      menuDogsPct: 0.25,
+      pricingStrategy: 'round',
+      
+      // Bonus: POS & Tech
+      posSystem: 'basic_register',
+      techUpgrades: [],
+      processingFees: 0,
     };
     
     setGame(initialGame);
