@@ -1292,27 +1292,34 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('test')}>
             <Text style={styles.startButtonText}>TEST DATA STRUCTURES</Text>
           </TouchableOpacity>
-          <Text style={styles.version}>v8.5.0 - 2500 Line Test</Text>
+          <Text style={styles.version}>v8.5.0 - Fixed Test</Text>
         </ScrollView>
       </SafeAreaView>
     );
   }
   
-  // Test screen - verify data structures loaded
+  // Test screen - verify data structures loaded (using CORRECT variable names)
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={{ padding: 20 }}>
         <Text style={{ color: '#fff', fontSize: 18, marginBottom: 10 }}>Data Structures Loaded:</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ CONCEPTS: {CONCEPTS.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ CUISINES: {CUISINES.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ STAFF_TEMPLATES: {STAFF_TEMPLATES.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ LOCATION_TYPES: {LOCATION_TYPES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ STAFF_ROLES: {STAFF_ROLES.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ EQUIPMENT: {EQUIPMENT.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ UPGRADES: {UPGRADES.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MARKETING_CHANNELS: {MARKETING_CHANNELS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ SCENARIOS: {SCENARIOS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ DELIVERY_PLATFORMS: {DELIVERY_PLATFORMS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ VIRTUAL_BRANDS: {VIRTUAL_BRANDS.length} items</Text>
         <Text style={{ color: '#0f0', fontSize: 14 }}>✓ LOANS: {LOANS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ ACHIEVEMENTS: {ACHIEVEMENTS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MARKETS: {MARKETS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ FRANCHISE_TIERS: {FRANCHISE_TIERS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ VENDORS: {VENDORS.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MILESTONES: {MILESTONES.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ DIFFICULTY_MODES: {DIFFICULTY_MODES.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ THEMES: {Object.keys(THEMES).length} themes</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ INVESTOR_TYPES: {INVESTOR_TYPES.length} items</Text>
+        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ CATERING_TYPES: {CATERING_TYPES.length} items</Text>
         <TouchableOpacity style={styles.startButton} onPress={() => setScreen('welcome')}>
           <Text style={styles.startButtonText}>BACK</Text>
         </TouchableOpacity>
