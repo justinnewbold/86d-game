@@ -1276,53 +1276,1493 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
 // ============================================
 // MAIN APP COMPONENT
 // ============================================
-
 export default function App() {
+  // Screen State
   const [screen, setScreen] = useState('welcome');
+  const [onboardingStep, setOnboardingStep] = useState(0);
   
-  // Welcome Screen
-  if (screen === 'welcome') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <ScrollView contentContainerStyle={styles.welcomeContainer}>
-          <Text style={styles.logo}>86'd</Text>
-          <Text style={styles.tagline}>Restaurant Business Simulator</Text>
-          <Text style={styles.subtitle}>"The restaurant business doesn't care about your dreams."</Text>
-          <TouchableOpacity style={styles.startButton} onPress={() => setScreen('test')}>
-            <Text style={styles.startButtonText}>TEST DATA STRUCTURES</Text>
-          </TouchableOpacity>
-          <Text style={styles.version}>v8.5.0 - Fixed Test</Text>
-        </ScrollView>
-      </SafeAreaView>
+  // Setup State
+  const [setup, setSetup] = useState({
+    cuisine: null,
+    capital: 75000,
+    name: '',
+    location: 'urban_neighborhood',
+    market: 'same_city',
+    goal: 'survive',
+    experience: 'none',
+    difficulty: 'normal',
+  });
+  
+  // Game State
+  const [game, setGame] = useState(null);
+  
+  // Active Location (for multi-location management)
+  const [activeLocationId, setActiveLocationId] = useState(null);
+  
+  // UI State
+  const [activeTab, setActiveTab] = useState('overview');
+  const [scenario, setScenario] = useState(null);
+  const [scenarioResult, setScenarioResult] = useState(null);
+  const [aiMessage, setAiMessage] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  
+  // Modal State
+  const [cuisineModal, setCuisineModal] = useState(false);
+  const [cuisineSearch, setCuisineSearch] = useState('');
+  const [staffModal, setStaffModal] = useState(false);
+  const [trainingModal, setTrainingModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [marketingModal, setMarketingModal] = useState(false);
+  const [deliveryModal, setDeliveryModal] = useState(false);
+  const [analyticsModal, setAnalyticsModal] = useState(false);
+  const [loanModal, setLoanModal] = useState(false);
+  const [saveModal, setSaveModal] = useState(false);
+  const [aiChatModal, setAiChatModal] = useState(false);
+  const [aiChatInput, setAiChatInput] = useState('');
+  const [expansionModal, setExpansionModal] = useState(false);
+  const [franchiseModal, setFranchiseModal] = useState(false);
+  const [empireModal, setEmpireModal] = useState(false);
+  const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city' });
+  
+  // Phase 4: New modal states
+  const [tutorialModal, setTutorialModal] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [vendorModal, setVendorModal] = useState(false);
+  const [competitorModal, setCompetitorModal] = useState(false);
+  const [eventsModal, setEventsModal] = useState(false);
+  const [sellLocationModal, setSellLocationModal] = useState(false);
+  const [milestonesModal, setMilestonesModal] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
+  
+  // Phase 5: Settings & Engagement states
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [hallOfFameModal, setHallOfFameModal] = useState(false);
+  const [statsModal, setStatsModal] = useState(false);
+  const [difficultyModal, setDifficultyModal] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('dark');
+  const [difficulty, setDifficulty] = useState('normal');
+  const [gameSpeed, setGameSpeed] = useState('pause');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [showTips, setShowTips] = useState(true);
+  const [currentTip, setCurrentTip] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [hallOfFame, setHallOfFame] = useState([]);
+  const [prestigeLevel, setPrestigeLevel] = useState(0);
+  const [totalRunsCompleted, setTotalRunsCompleted] = useState(0);
+  const [themesUsed, setThemesUsed] = useState(['dark']);
+  const autoAdvanceRef = useRef(null);
+  
+  // Phase 6: Advanced Business states
+  const [investorModal, setInvestorModal] = useState(false);
+  const [cateringModal, setCateringModal] = useState(false);
+  const [foodTruckModal, setFoodTruckModal] = useState(false);
+  const [mediaModal, setMediaModal] = useState(false);
+  const [realEstateModal, setRealEstateModal] = useState(false);
+  const [exitStrategyModal, setExitStrategyModal] = useState(false);
+  const [economyModal, setEconomyModal] = useState(false);
+  const [currentEconomy, setCurrentEconomy] = useState('stable');
+  const [economyWeeksRemaining, setEconomyWeeksRemaining] = useState(0);
+  
+  // Save State
+  const [savedGames, setSavedGames] = useState([]);
+
+  // Get active location
+  const getActiveLocation = useCallback(() => {
+    if (!game || !game.locations) return null;
+    return game.locations.find(l => l.id === activeLocationId) || game.locations[0];
+  }, [game, activeLocationId]);
+
+  // Initialize Game
+  const initGame = useCallback(() => {
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    const locationType = LOCATION_TYPES.find(t => t.id === setup.location);
+    
+    const firstLocation = createLocation(
+      1,
+      setup.name || `${cuisine.name} - Original`,
+      setup.location,
+      setup.market,
+      setup.cuisine,
+      setup.capital * 0.7 // 70% goes to first location, 30% reserve
     );
-  }
+    
+    firstLocation.staff = [
+      { id: 1, name: generateName(), role: 'Line Cook', wage: 16, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
+    ];
+    
+    const initialGame = {
+      week: 0,
+      
+      // Empire-level
+      locations: [firstLocation],
+      franchises: [],
+      corporateStaff: [],
+      
+      // Finances
+      corporateCash: setup.capital * 0.3, // 30% corporate reserve
+      totalRevenue: 0,
+      totalProfit: 0,
+      loans: [],
+      equity: 100,
+      
+      // Empire metrics
+      empireValuation: setup.capital,
+      brandStrength: 50,
+      
+      // Progress
+      achievements: ['first_week'],
+      scenariosSeen: [],
+      profitStreak: 0,
+      
+      // Owner
+      burnout: 0,
+      ownerHours: 65,
+      
+      // Franchise system
+      franchiseEnabled: false,
+      franchiseFee: 35000,
+      royaltyRate: 0.05,
+      
+      // Phase 4: Competition
+      competitors: [generateCompetitor(setup.cuisine, setup.location)],
+      
+      // Phase 4: Vendors
+      vendors: [{
+        id: 'sysco',
+        name: 'Sysco',
+        weeksUsed: 0,
+        deal: null,
+        priceLevel: 1.0,
+        relationship: 50,
+      }],
+      
+      // Phase 4: Events & Calendar
+      currentSeason: 'fall',
+      upcomingEvents: [],
+      completedEvents: [],
+      
+      // Phase 4: Milestones
+      unlockedMilestones: [],
+      milestoneRewards: 0,
+      
+      // Phase 4: Tutorial
+      tutorialComplete: false,
+      tutorialProgress: 0,
+      
+      // Phase 4: Statistics
+      stats: {
+        peakWeeklyRevenue: 0,
+        peakWeeklyProfit: 0,
+        totalCustomersServed: 0,
+        employeesHired: 1,
+        employeesFired: 0,
+        scenariosWon: 0,
+        scenariosLost: 0,
+        locationsOpened: 1,
+        locationsClosed: 0,
+        franchisesSold: 0,
+      },
+      
+      // Phase 6: Investors
+      investors: [],
+      totalEquitySold: 0,
+      boardMembers: 0,
+      investorDemands: [],
+      
+      // Phase 6: Real Estate
+      ownedProperties: [],
+      totalPropertyValue: 0,
+      mortgages: [],
+      
+      // Phase 6: Catering & Events
+      cateringEnabled: false,
+      cateringContracts: [],
+      cateringRevenue: 0,
+      cateringCapacity: 0,
+      
+      // Phase 6: Food Trucks
+      foodTrucks: [],
+      truckEvents: [],
+      truckRevenue: 0,
+      
+      // Phase 6: Media & Celebrity
+      mediaAppearances: [],
+      brandDeals: [],
+      publicProfile: 0,
+      cookbookSales: 0,
+      
+      // Phase 6: Economic Conditions
+      economicCondition: 'stable',
+      economicEffects: {},
+      economyCycleWeek: 0,
+      
+      // Phase 6: Exit Planning
+      exitStrategy: null,
+      exitProgress: 0,
+      ipoReady: false,
+    };
+    
+    setGame(initialGame);
+    setActiveLocationId(1);
+    setScreen('dashboard');
+    
+    // Initial AI greeting
+    setTimeout(async () => {
+      setAiLoading(true);
+      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup);
+      setAiMessage(response);
+      setAiLoading(false);
+    }, 500);
+  }, [setup]);
+
+  // ============================================
+  // LOCATION PROCESSING
+  // ============================================
+  const processLocationWeek = useCallback((location, cuisine) => {
+    const type = LOCATION_TYPES.find(t => t.id === location.locationType);
+    
+    // Calculate modifiers
+    const equipCapacityMod = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
+    const upgradeCapacityMod = location.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
+    const marketingReachMod = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
+    const staffQualityMod = location.staff.length > 0 ? location.staff.reduce((sum, s) => sum + s.skill, 0) / location.staff.length / 20 : 0;
+    const moraleMod = (location.morale - 50) / 200;
+    const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
+    
+    // Covers calculation
+    let weekCovers = location.isGhostKitchen ? 0 : Math.floor(location.covers * (type?.trafficMod || 1));
+    weekCovers = Math.floor(weekCovers * (1 + equipCapacityMod + upgradeCapacityMod + marketingReachMod + staffQualityMod + managerBonus));
+    weekCovers = Math.floor(weekCovers * (1 + location.reputation / 200));
+    weekCovers = Math.floor(weekCovers * (1 + moraleMod));
+    weekCovers = Math.floor(weekCovers * (0.85 + Math.random() * 0.3));
+    
+    // Revenue calculation
+    let totalSpend = 0;
+    for (let i = 0; i < weekCovers; i++) {
+      const rand = Math.random();
+      let cumulative = 0;
+      let type = CUSTOMER_TYPES[0];
+      for (const ct of CUSTOMER_TYPES) {
+        cumulative += ct.frequency;
+        if (rand <= cumulative) { type = ct; break; }
+      }
+      totalSpend += location.avgTicket * type.spendMod * (0.9 + Math.random() * 0.2);
+    }
+    
+    const dineInRevenue = totalSpend;
+    
+    // Delivery revenue
+    const deliveryOrders = location.delivery.platforms.length > 0 ? Math.floor((location.isGhostKitchen ? 80 : weekCovers * 0.25) * location.delivery.platforms.length / 3) : 0;
+    const avgCommission = location.delivery.platforms.length > 0 
+      ? location.delivery.platforms.reduce((sum, p) => sum + (DELIVERY_PLATFORMS.find(dp => dp.id === p)?.commission || 0.25), 0) / location.delivery.platforms.length 
+      : 0;
+    const deliveryRevenue = deliveryOrders * location.avgTicket * (1 - avgCommission);
+    
+    // Virtual brand revenue
+    const virtualBrandRevenue = location.virtualBrands.reduce((sum, vb) => {
+      const brand = VIRTUAL_BRANDS.find(v => v.id === vb);
+      if (!brand) return sum;
+      const orders = Math.floor(15 + Math.random() * 20);
+      return sum + orders * brand.avgTicket * 0.70;
+    }, 0);
+    
+    // Bar revenue
+    const barRevenue = location.upgrades.includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
+    
+    const baseRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
+    
+    // Apply economic multiplier (passed from parent via game state)
+    const economicMultiplier = location.economicRevenueMultiplier || 1;
+    const totalRevenue = baseRevenue * economicMultiplier;
+    
+    // Costs (also affected by economic conditions)
+    const economicCostMultiplier = location.economicCostMultiplier || 1;
+    const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
+    const laborCost = location.staff.reduce((sum, s) => sum + s.wage * 40, 0);
+    const rent = location.rent;
+    const utilities = Math.floor(rent * 0.15);
+    const marketingCost = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
+    const equipmentMaint = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
+    const ccFees = totalRevenue * 0.025;
+    
+    const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + ccFees;
+    const weekProfit = totalRevenue - totalCosts;
+    
+    // Update staff
+    const updatedStaff = location.staff.map(s => {
+      let newMorale = s.morale;
+      if (weekProfit > 0) newMorale += 2;
+      if (weekProfit < -1000) newMorale -= 5;
+      newMorale = Math.max(20, Math.min(100, newMorale + (Math.random() - 0.5) * 5));
+      const skillGain = s.weeks > 0 && s.weeks % 8 === 0 && s.skill < 10 ? 0.5 : 0;
+      return { ...s, weeks: s.weeks + 1, morale: Math.round(newMorale), skill: Math.min(10, s.skill + skillGain) };
+    }).filter(s => !(s.morale < 30 && Math.random() < 0.3)); // Staff quits
+    
+    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + s.morale, 0) / updatedStaff.length : 50;
+    
+    // Update history
+    const newHistory = [...location.weeklyHistory, { 
+      week: location.weeksOpen + 1, 
+      revenue: totalRevenue, 
+      profit: weekProfit, 
+      covers: weekCovers + deliveryOrders,
+    }].slice(-52);
+    
+    return {
+      ...location,
+      cash: location.cash + weekProfit,
+      totalRevenue: location.totalRevenue + totalRevenue,
+      totalProfit: location.totalProfit + weekProfit,
+      lastWeekRevenue: totalRevenue,
+      lastWeekProfit: weekProfit,
+      lastWeekCovers: weekCovers + deliveryOrders,
+      staff: updatedStaff,
+      morale: Math.round(avgMorale),
+      weeksOpen: location.weeksOpen + 1,
+      weeklyHistory: newHistory,
+      reputation: Math.min(100, Math.max(0, location.reputation + (weekProfit > 0 ? 1 : -1))),
+      delivery: { ...location.delivery, orders: location.delivery.orders + deliveryOrders },
+    };
+  }, []);
+
+  // ============================================
+  // MAIN WEEK PROCESSING
+  // ============================================
+  const processWeek = useCallback(async () => {
+    if (!game) return;
+    
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    
+    setGame(g => {
+      // Get current economic condition and its effects
+      const currentCondition = ECONOMIC_CONDITIONS.find(e => e.id === g.economicCondition) || ECONOMIC_CONDITIONS[1]; // default to stable
+      const economicRevenueMultiplier = currentCondition.revenueMultiplier;
+      const economicCostMultiplier = currentCondition.costMultiplier;
+      
+      // Apply economic effects to all locations before processing
+      const locationsWithEconomics = g.locations.map(loc => ({
+        ...loc,
+        economicRevenueMultiplier,
+        economicCostMultiplier,
+      }));
+      
+      // Process all locations
+      const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine));
+      
+      // Calculate empire totals
+      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
+      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + l.lastWeekRevenue, 0);
+      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + l.lastWeekProfit, 0);
+      
+      // Process franchise royalties
+      const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
+      
+      // PHASE 6: Catering Revenue
+      const cateringRevenue = g.cateringEnabled ? g.cateringContracts.reduce((sum, contract) => {
+        const contractData = CATERING_CONTRACTS.find(c => c.id === contract.id);
+        return sum + (contractData?.weeklyRevenue || 0);
+      }, 0) : 0;
+      
+      // PHASE 6: Food Truck Revenue
+      const truckRevenue = g.foodTrucks.reduce((sum, truck) => {
+        const eventRevenue = truck.currentEvent ? (truck.eventRevenue || 800) : 0;
+        return sum + eventRevenue;
+      }, 0);
+      
+      // PHASE 6: Media/Brand Deal Revenue
+      const brandDealRevenue = g.brandDeals.reduce((sum, deal) => {
+        const dealData = BRAND_DEALS.find(d => d.id === deal.id);
+        if (dealData?.type === 'royalty' && deal.active) {
+          return sum + (dealData.weeklyRoyalty || 0);
+        }
+        return sum;
+      }, 0);
+      
+      // PHASE 6: Property appreciation (if owning properties)
+      const propertyAppreciation = g.ownedProperties.reduce((sum, prop) => {
+        return sum + (prop.value * 0.0006); // ~3% annual = 0.06% weekly
+      }, 0);
+      
+      // Loan payments from corporate
+      const loanPayments = g.loans.reduce((sum, l) => {
+        const loan = LOANS.find(lo => lo.id === l.type);
+        return sum + (loan?.weeklyPayment || 0);
+      }, 0);
+      
+      // PHASE 6: Mortgage payments
+      const mortgagePayments = g.mortgages.reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
+      
+      // Corporate costs (management, district managers, etc)
+      const corporateCosts = g.corporateStaff.reduce((sum, s) => sum + s.wage * 40, 0);
+      const marketCosts = g.locations.reduce((sum, l) => {
+        const mkt = MARKETS.find(m => m.id === l.market);
+        return sum + (mkt?.managementCost || 0);
+      }, 0);
+      
+      // Update corporate cash with all Phase 6 revenue streams
+      const newCorporateCash = g.corporateCash 
+        + franchiseRoyalties 
+        + cateringRevenue 
+        + truckRevenue 
+        + brandDealRevenue
+        + propertyAppreciation
+        - loanPayments 
+        - mortgagePayments
+        - corporateCosts 
+        - marketCosts;
+      
+      // Calculate empire valuation
+      const empireValuation = calculateEmpireValuation({ ...g, locations: updatedLocations }, setup);
+      
+      // PHASE 6: Update property values
+      const updatedProperties = g.ownedProperties.map(prop => ({
+        ...prop,
+        value: prop.value * 1.0006 // ~3% annual appreciation
+      }));
+      
+      // PHASE 6: Exit Strategy Progress
+      let newExitProgress = g.exitProgress;
+      if (g.exitStrategy && g.exitProgress < 100) {
+        const exitOption = EXIT_OPTIONS.find(e => e.id === g.exitStrategy);
+        if (exitOption) {
+          const progressPerWeek = 100 / exitOption.preparationTime;
+          newExitProgress = Math.min(100, g.exitProgress + progressPerWeek);
+        }
+      }
+      
+      // PHASE 6: Economic Cycle Transitions (small chance each week)
+      let newEconomicCondition = g.economicCondition;
+      if (Math.random() < 0.03) { // 3% chance per week to shift
+        const currentIdx = ECONOMIC_CONDITIONS.findIndex(e => e.id === g.economicCondition);
+        const shift = Math.random() < 0.5 ? -1 : 1;
+        const newIdx = Math.max(0, Math.min(ECONOMIC_CONDITIONS.length - 1, currentIdx + shift));
+        if (newIdx !== currentIdx) {
+          newEconomicCondition = ECONOMIC_CONDITIONS[newIdx].id;
+          setTimeout(() => {
+            addNotification(`📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`, 
+              newIdx < currentIdx ? 'warning' : 'info');
+          }, 1000);
+        }
+      }
+      
+      // PHASE 6: Media reputation boost
+      const mediaBoost = g.mediaAppearances.reduce((sum, app) => {
+        const media = MEDIA_OPPORTUNITIES.find(m => m.id === app.id);
+        return sum + (media?.reputationBoost || 0) * 0.1; // Decay over time
+      }, 0);
+      
+      // Apply media boost to primary location reputation
+      if (updatedLocations.length > 0 && mediaBoost > 0) {
+        updatedLocations[0].reputation = Math.min(100, updatedLocations[0].reputation + mediaBoost);
+      }
+      
+      // Update achievements
+      const newAchievements = [...g.achievements];
+      const weekNum = g.week + 1;
+      const totalLocations = updatedLocations.length;
+      const totalFranchises = g.franchises.length;
+      const totalUnits = totalLocations + totalFranchises;
+      
+      if (weekNum >= 4 && !newAchievements.includes('first_month')) newAchievements.push('first_month');
+      if (weekNum >= 13 && !newAchievements.includes('three_months')) newAchievements.push('three_months');
+      if (weekNum >= 26 && !newAchievements.includes('six_months')) newAchievements.push('six_months');
+      if (weekNum >= 52 && !newAchievements.includes('survivor')) newAchievements.push('survivor');
+      if (weekNum >= 104 && !newAchievements.includes('two_years')) newAchievements.push('two_years');
+      if (totalWeekProfit > 0 && !newAchievements.includes('first_profit')) newAchievements.push('first_profit');
+      if (totalLocations >= 2 && !newAchievements.includes('second_location')) newAchievements.push('second_location');
+      if (totalLocations >= 3 && !newAchievements.includes('three_locations')) newAchievements.push('three_locations');
+      if (totalLocations >= 5 && !newAchievements.includes('five_locations')) newAchievements.push('five_locations');
+      if (totalLocations >= 10 && !newAchievements.includes('ten_locations')) newAchievements.push('ten_locations');
+      if (totalFranchises >= 1 && !newAchievements.includes('first_franchise')) newAchievements.push('first_franchise');
+      if (totalFranchises >= 5 && !newAchievements.includes('franchise_five')) newAchievements.push('franchise_five');
+      if (totalFranchises >= 10 && !newAchievements.includes('franchise_ten')) newAchievements.push('franchise_ten');
+      if (empireValuation >= 1000000 && !newAchievements.includes('million_valuation')) newAchievements.push('million_valuation');
+      if (empireValuation >= 5000000 && !newAchievements.includes('five_million')) newAchievements.push('five_million');
+      if (empireValuation >= 10000000 && !newAchievements.includes('ten_million')) newAchievements.push('ten_million');
+      
+      // Check for scenarios
+      const allScenarios = [...SCENARIOS, ...EMPIRE_SCENARIOS, ...PHASE_6_SCENARIOS, ...INVESTOR_SCENARIOS];
+      const hasInvestors = (g.investors?.length || 0) > 0;
+      const investorTypes = g.investors?.map(inv => inv.type) || [];
+      
+      const availableScenarios = allScenarios.filter(s => {
+        if (g.scenariosSeen.includes(s.id)) return false;
+        if (s.minWeek && weekNum < s.minWeek) return false;
+        if (s.minCash && totalLocationCash + newCorporateCash < s.minCash) return false;
+        if (s.minLocations && totalLocations < s.minLocations) return false;
+        if (s.maxLocations && totalLocations > s.maxLocations) return false;
+        if (s.minFranchises && totalFranchises < s.minFranchises) return false;
+        if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
+        if (s.minValuation && empireValuation < s.minValuation) return false;
+        // Phase 6: Investor requirements
+        if (s.requiresInvestors && !hasInvestors) return false;
+        if (s.investorType && !investorTypes.includes(s.investorType)) return false;
+        // Phase 6: Economic condition requirements
+        if (s.economic && g.economicCondition !== s.economic) return false;
+        return true;
+      });
+      
+      if (Math.random() < 0.15 && availableScenarios.length > 0 && weekNum > 1) {
+        const randomScenario = availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
+        setTimeout(() => setScenario(randomScenario), 500);
+      }
+      
+      // Check game end conditions
+      const lowestCash = Math.min(...updatedLocations.map(l => l.cash), newCorporateCash);
+      if (lowestCash < -50000) {
+        setTimeout(() => setScreen('gameover'), 100);
+      }
+      
+      // Check win conditions
+      const goal = GOALS.find(gl => gl.id === setup.goal);
+      if (goal && goal.id !== 'sandbox') {
+        if (goal.target.weeks && weekNum >= goal.target.weeks) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.cash && totalLocationCash + newCorporateCash >= goal.target.cash) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.locations && totalLocations >= goal.target.locations) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.totalUnits && totalUnits >= goal.target.totalUnits) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.valuation && empireValuation >= goal.target.valuation) setTimeout(() => setScreen('win'), 100);
+      }
+      
+      // Phase 6: Exit strategy completion
+      if (newExitProgress >= 100 && g.exitStrategy) {
+        const exitOption = EXIT_OPTIONS.find(e => e.id === g.exitStrategy);
+        if (exitOption) {
+          const finalPayout = empireValuation * exitOption.valuationMultiple * ((g.equity || 100) / 100);
+          setTimeout(() => {
+            addNotification(`🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`, 'achievement');
+            setScreen('win');
+          }, 500);
+        }
+      }
+      
+      // Update owner burnout
+      const locationsWithoutManagers = updatedLocations.filter(l => !l.manager).length;
+      const burnoutChange = locationsWithoutManagers > 1 ? 8 : locationsWithoutManagers === 1 ? 3 : -2;
+      
+      return {
+        ...g,
+        week: weekNum,
+        locations: updatedLocations,
+        corporateCash: newCorporateCash,
+        totalRevenue: g.totalRevenue + totalWeekRevenue,
+        totalProfit: g.totalProfit + totalWeekProfit,
+        empireValuation,
+        achievements: newAchievements,
+        profitStreak: totalWeekProfit > 0 ? g.profitStreak + 1 : 0,
+        burnout: Math.min(100, Math.max(0, g.burnout + burnoutChange)),
+        // Phase 6 state updates
+        cateringRevenue: (g.cateringRevenue || 0) + cateringRevenue,
+        truckRevenue: (g.truckRevenue || 0) + truckRevenue,
+        ownedProperties: updatedProperties,
+        exitProgress: newExitProgress,
+        economicCondition: newEconomicCondition,
+        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
+      };
+    });
+    
+    // Get AI commentary
+    setTimeout(async () => {
+      if (game) {
+        setAiLoading(true);
+        const totalLocations = game.locations?.length || 1;
+        const context = totalLocations > 1 
+          ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
+          : game.locations?.[0]?.lastWeekProfit > 0 
+            ? 'Weekly summary - profitable week.'
+            : 'Weekly summary - lost money this week.';
+        const response = await getAIMentorResponse(context, game, setup);
+        setAiMessage(response);
+        setAiLoading(false);
+        
+        // Phase 4: Check milestones after week processing
+        checkMilestones();
+        
+        // Phase 4: Check competition
+        checkCompetition();
+      }
+    }, 800);
+  }, [game, setup, processLocationWeek, checkMilestones, checkCompetition]);
+
+  // ============================================
+  // ACTION HANDLERS
+  // ============================================
   
-  // Test screen - verify data structures loaded (using CORRECT variable names)
+  const hireStaff = (template, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc || loc.cash < template.wage * 40) return;
+    
+    const newStaff = {
+      id: Date.now(),
+      name: generateName(),
+      role: template.role,
+      wage: template.wage,
+      skill: 3 + Math.floor(Math.random() * 3),
+      weeks: 0,
+      training: [],
+      morale: 65 + Math.floor(Math.random() * 20),
+      icon: template.icon,
+      department: template.department,
+      canManage: template.canManage || false,
+      canManageMultiple: template.canManageMultiple || false,
+    };
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - template.wage * 40,
+        staff: [...l.staff, newStaff],
+      } : l),
+      achievements: g.achievements.includes('first_hire') ? g.achievements : [...g.achievements, 'first_hire'],
+    }));
+    setStaffModal(false);
+  };
+
+  const hireCorporateStaff = (template) => {
+    if (!game || game.corporateCash < template.wage * 40) return;
+    
+    const newStaff = {
+      id: Date.now(),
+      name: generateName(),
+      role: template.role,
+      wage: template.wage,
+      skill: 5 + Math.floor(Math.random() * 3),
+      weeks: 0,
+      training: [],
+      morale: 70,
+      icon: template.icon,
+      department: template.department,
+      canManageMultiple: template.canManageMultiple || false,
+    };
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash - template.wage * 40,
+      corporateStaff: [...g.corporateStaff, newStaff],
+    }));
+  };
+
+  const fireStaff = (staffId, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        staff: l.staff.filter(s => s.id !== staffId),
+        morale: Math.max(30, l.morale - 10),
+        manager: l.manager?.id === staffId ? null : l.manager,
+      } : l),
+    }));
+  };
+
+  const promoteToManager = (staffId, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc) return;
+    
+    const staff = loc.staff.find(s => s.id === staffId);
+    if (!staff || !staff.canManage) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        manager: staff,
+        staff: l.staff.map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
+      } : l),
+    }));
+  };
+
+  const startTraining = (program) => {
+    if (!selectedStaff || !game) return;
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < program.cost) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - program.cost,
+        staff: l.staff.map(s => s.id === selectedStaff.id ? {
+          ...s,
+          training: [...s.training, program.id],
+          skill: Math.min(10, s.skill + program.skillBoost),
+          morale: Math.min(100, s.morale + program.morale),
+          canManage: program.id === 'management' || program.id === 'multi_unit' ? true : s.canManage,
+        } : s),
+      } : l),
+    }));
+    setTrainingModal(false);
+    setSelectedStaff(null);
+  };
+
+  const addMenuItem = () => {
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    const loc = getActiveLocation();
+    if (!cuisine || !loc) return;
+    
+    const priceVariance = 0.7 + Math.random() * 0.6;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        menu: [...l.menu, {
+          id: Date.now(),
+          name: generateMenuItem(setup.cuisine),
+          price: Math.round(cuisine.avgTicket * priceVariance * 100) / 100,
+          cost: cuisine.avgTicket * cuisine.foodCost * priceVariance,
+          popular: Math.random() > 0.7,
+          is86d: false,
+        }],
+      } : l),
+    }));
+  };
+
+  const toggle86 = (itemId) => {
+    const loc = getActiveLocation();
+    if (!loc) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        menu: l.menu.map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
+      } : l),
+    }));
+  };
+
+  const buyEquipment = (eq) => {
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < eq.cost || loc.equipment.includes(eq.id)) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - eq.cost,
+        equipment: [...l.equipment, eq.id],
+      } : l),
+    }));
+  };
+
+  const buyUpgrade = (up) => {
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < up.cost || loc.upgrades.includes(up.id)) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - up.cost,
+        upgrades: [...l.upgrades, up.id],
+        reputation: l.reputation + (up.effect.reputation || 0),
+      } : l),
+    }));
+  };
+
+  const toggleMarketingChannel = (channelId) => {
+    const loc = getActiveLocation();
+    if (!loc) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        marketing: {
+          ...l.marketing,
+          channels: l.marketing.channels.includes(channelId)
+            ? l.marketing.channels.filter(c => c !== channelId)
+            : [...l.marketing.channels, channelId],
+        },
+      } : l),
+    }));
+  };
+
+  const toggleDeliveryPlatform = (platformId) => {
+    const platform = DELIVERY_PLATFORMS.find(p => p.id === platformId);
+    const loc = getActiveLocation();
+    if (!platform || !loc) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => {
+        if (l.id !== loc.id) return l;
+        const isActive = l.delivery.platforms.includes(platformId);
+        if (isActive) {
+          return { ...l, delivery: { ...l.delivery, platforms: l.delivery.platforms.filter(p => p !== platformId) } };
+        } else if (l.cash >= platform.setup) {
+          return { ...l, cash: l.cash - platform.setup, delivery: { ...l.delivery, platforms: [...l.delivery.platforms, platformId] } };
+        }
+        return l;
+      }),
+    }));
+  };
+
+  const launchVirtualBrand = (brandId) => {
+    const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
+    const loc = getActiveLocation();
+    if (!loc || !brand || loc.virtualBrands.includes(brandId) || loc.cash < brand.setupCost) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - brand.setupCost,
+        virtualBrands: [...l.virtualBrands, brandId],
+      } : l),
+    }));
+  };
+
+  const takeLoan = (loanId) => {
+    const loan = LOANS.find(l => l.id === loanId);
+    if (!loan || !game) return;
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash + loan.amount,
+      loans: [...g.loans, { type: loanId, remaining: loan.term, principal: loan.amount }],
+      equity: g.equity - (loan.equity || 0),
+    }));
+    setLoanModal(false);
+  };
+
+  // ============================================
+  // EXPANSION & FRANCHISE HANDLERS
+  // ============================================
+  
+  const openNewLocation = () => {
+    const type = LOCATION_TYPES.find(t => t.id === newLocationData.type);
+    const mkt = MARKETS.find(m => m.id === newLocationData.market);
+    
+    if (!type || !mkt || !game) return;
+    
+    const totalCost = type.buildoutCost;
+    if (game.corporateCash < totalCost) {
+      alert('Not enough corporate cash for buildout!');
+      return;
+    }
+    
+    const newId = Math.max(...game.locations.map(l => l.id)) + 1;
+    const newLocation = createLocation(
+      newId,
+      newLocationData.name || generateLocationName(newLocationData.market, newLocationData.type),
+      newLocationData.type,
+      newLocationData.market,
+      setup.cuisine,
+      totalCost * 0.3 // Starting operating cash
+    );
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash - totalCost,
+      locations: [...g.locations, newLocation],
+    }));
+    
+    setExpansionModal(false);
+    setNewLocationData({ name: '', type: 'suburban_strip', market: 'same_city' });
+    
+    // AI response
+    setTimeout(async () => {
+      setAiLoading(true);
+      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup);
+      setAiMessage(response);
+      setAiLoading(false);
+    }, 500);
+  };
+
+  const enableFranchising = () => {
+    if (!game || game.locations.length < 3) {
+      alert('Need at least 3 successful locations before franchising');
+      return;
+    }
+    if (game.corporateCash < 50000) {
+      alert('Need $50K for franchise system setup');
+      return;
+    }
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash - 50000,
+      franchiseEnabled: true,
+    }));
+  };
+
+  const sellFranchise = (tier) => {
+    const franchiseTier = FRANCHISE_TIERS.find(t => t.id === tier);
+    if (!franchiseTier || !game || !game.franchiseEnabled) return;
+    
+    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / game.locations.length;
+    const weeklyRoyalty = avgLocationRevenue * franchiseTier.royalty;
+    
+    const newFranchise = {
+      id: Date.now(),
+      tier: tier,
+      name: `Franchisee ${game.franchises.length + 1}`,
+      weeklyRoyalty,
+      weeksActive: 0,
+      performance: 0.8 + Math.random() * 0.4, // 80-120% performance vs company average
+      quality: 70 + Math.floor(Math.random() * 20),
+    };
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash + franchiseTier.fee,
+      franchises: [...g.franchises, newFranchise],
+    }));
+    
+    setFranchiseModal(false);
+  };
+
+  // ============================================
+  // PHASE 4: VENDOR MANAGEMENT
+  // ============================================
+  const negotiateVendorDeal = (vendorId, dealId) => {
+    if (!game) return;
+    const vendor = VENDORS.find(v => v.id === vendorId);
+    const deal = VENDOR_DEALS.find(d => d.id === dealId);
+    if (!vendor || !deal) return;
+    
+    const currentVendor = game.vendors.find(v => v.id === vendorId);
+    const relationship = currentVendor?.relationship || 50;
+    const successChance = 0.5 + (relationship / 200);
+    const success = Math.random() < successChance;
+    
+    if (success) {
+      setGame(g => ({
+        ...g,
+        vendors: g.vendors.map(v => 
+          v.id === vendorId 
+            ? { ...v, deal: dealId, relationship: Math.min(100, v.relationship + 10) }
+            : v
+        ),
+      }));
+      setAiMessage(`Great news! ${vendor.name} agreed to the ${deal.name}. That\'s going to save you money.`);
+    } else {
+      setGame(g => ({
+        ...g,
+        vendors: g.vendors.map(v => 
+          v.id === vendorId 
+            ? { ...v, relationship: Math.max(0, v.relationship - 5) }
+            : v
+        ),
+      }));
+      setAiMessage(`${vendor.name} declined the ${deal.name}. Build more history with them and try again.`);
+    }
+  };
+
+  const addVendor = (vendorId) => {
+    if (!game) return;
+    const vendor = VENDORS.find(v => v.id === vendorId);
+    if (!vendor || game.vendors.find(v => v.id === vendorId)) return;
+    
+    setGame(g => ({
+      ...g,
+      vendors: [...g.vendors, {
+        id: vendorId,
+        name: vendor.name,
+        weeksUsed: 0,
+        deal: null,
+        priceLevel: vendor.priceLevel,
+        relationship: 30,
+      }],
+    }));
+  };
+
+  // ============================================
+  // PHASE 4: COMPETITION SYSTEM
+  // ============================================
+  const checkCompetition = useCallback(() => {
+    if (!game) return;
+    
+    // Randomly spawn new competitor every ~20 weeks
+    if (game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6) {
+      const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
+      setGame(g => ({
+        ...g,
+        competitors: [...g.competitors, newCompetitor],
+      }));
+      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
+    }
+    
+    // Update competitor strengths
+    setGame(g => ({
+      ...g,
+      competitors: g.competitors.map(c => ({
+        ...c,
+        reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
+        weeksOpen: c.weeksOpen + 1,
+      })).filter(c => c.reputation > 15 || Math.random() > 0.1), // Weak competitors might close
+    }));
+  }, [game, setup]);
+
+  // ============================================
+  // PHASE 4: CALENDAR EVENTS
+  // ============================================
+  const checkCalendarEvents = useCallback(() => {
+    if (!game) return { boost: 0, event: null };
+    
+    const weekOfYear = ((game.week - 1) % 52) + 1;
+    const currentEvent = CALENDAR_EVENTS.find(e => e.week === weekOfYear);
+    
+    // Determine season
+    let season = 'fall';
+    for (const [s, data] of Object.entries(SEASONAL_EFFECTS)) {
+      if (data.weeks.includes(weekOfYear)) {
+        season = s;
+        break;
+      }
+    }
+    
+    return {
+      boost: currentEvent?.revenueBoost || 0,
+      event: currentEvent,
+      season,
+      seasonalMod: SEASONAL_EFFECTS[season]?.modifier || 0,
+    };
+  }, [game]);
+
+  // ============================================
+  // PHASE 4: MILESTONES
+  // ============================================
+  const checkMilestones = useCallback(() => {
+    if (!game) return;
+    
+    const newMilestones = [];
+    const loc = getActiveLocation();
+    const totalStaff = game.locations.reduce((sum, l) => sum + l.staff.length, 0);
+    
+    MILESTONES.forEach(m => {
+      if (game.unlockedMilestones.includes(m.id)) return;
+      
+      let achieved = false;
+      switch (m.stat) {
+        case 'weeklyProfit': achieved = loc?.lastWeekProfit > m.threshold; break;
+        case 'weeklyRevenue': achieved = loc?.lastWeekRevenue > m.threshold; break;
+        case 'totalStaff': achieved = totalStaff >= m.threshold; break;
+        case 'reputation': achieved = loc?.reputation >= m.threshold; break;
+        case 'weeks': achieved = game.week >= m.threshold; break;
+        case 'locations': achieved = game.locations.length >= m.threshold; break;
+        case 'franchises': achieved = game.franchises.length >= m.threshold; break;
+        case 'valuation': achieved = game.empireValuation >= m.threshold; break;
+      }
+      
+      if (achieved) newMilestones.push(m);
+    });
+    
+    if (newMilestones.length > 0) {
+      const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
+      setGame(g => ({
+        ...g,
+        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
+        milestoneRewards: g.milestoneRewards + totalReward,
+        corporateCash: g.corporateCash + totalReward,
+      }));
+      
+      const milestoneNames = newMilestones.map(m => m.name).join(', ');
+      setAiMessage(`🎉 Milestone${newMilestones.length > 1 ? 's' : ''} unlocked: ${milestoneNames}! Bonus: ${formatCurrency(totalReward)}`);
+    }
+  }, [game, getActiveLocation]);
+
+  // ============================================
+  // PHASE 4: SELL/CLOSE LOCATION
+  // ============================================
+  const sellLocation = (locationId) => {
+    if (!game || game.locations.length <= 1) {
+      alert('Cannot sell your last location!');
+      return;
+    }
+    
+    const location = game.locations.find(l => l.id === locationId);
+    if (!location) return;
+    
+    // Valuation: 2-3x annual profit + assets
+    const annualProfit = (location.totalProfit / Math.max(1, location.weeksOpen)) * 52;
+    const assetValue = location.equipment.length * 5000 + location.upgrades.length * 15000;
+    const salePrice = Math.max(25000, Math.floor(annualProfit * (2 + Math.random()) + assetValue));
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.filter(l => l.id !== locationId),
+      corporateCash: g.corporateCash + salePrice,
+      stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
+    }));
+    
+    // Switch to another location
+    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    if (remainingLocations.length > 0) {
+      setActiveLocationId(remainingLocations[0].id);
+    }
+    
+    setSellLocationModal(false);
+    setAiMessage(`Sold ${location.name} for ${formatCurrency(salePrice)}. Sometimes knowing when to exit is the smartest move.`);
+  };
+
+  const closeLocation = (locationId) => {
+    if (!game || game.locations.length <= 1) {
+      alert('Cannot close your last location!');
+      return;
+    }
+    
+    const location = game.locations.find(l => l.id === locationId);
+    if (!location) return;
+    
+    // Closing costs: severance, lease break, etc.
+    const closingCost = location.staff.length * 1000 + location.rent * 3;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.filter(l => l.id !== locationId),
+      corporateCash: g.corporateCash - closingCost,
+      stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
+    }));
+    
+    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    if (remainingLocations.length > 0) {
+      setActiveLocationId(remainingLocations[0].id);
+    }
+    
+    setSellLocationModal(false);
+    setAiMessage(`Closed ${location.name}. Closing costs: ${formatCurrency(closingCost)}. Not every location works out - that\'s business.`);
+  };
+
+  // ============================================
+  // PHASE 4: TUTORIAL
+  // ============================================
+  const advanceTutorial = () => {
+    const nextStep = tutorialStep + 1;
+    if (nextStep >= TUTORIAL_STEPS.length) {
+      setShowTutorial(false);
+      setGame(g => ({ ...g, tutorialComplete: true }));
+      setAiMessage('Tutorial complete! You\'ve got the basics. Now the real learning begins. Good luck, chef!');
+    } else {
+      setTutorialStep(nextStep);
+    }
+  };
+
+  const skipTutorial = () => {
+    setShowTutorial(false);
+    setGame(g => g ? { ...g, tutorialComplete: true } : g);
+  };
+
+  // ============================================
+  // PHASE 5: SETTINGS & ENGAGEMENT FUNCTIONS
+  // ============================================
+  
+  // Theme Management
+  const getThemeColors = useCallback(() => {
+    return THEMES[currentTheme]?.colors || THEMES.dark.colors;
+  }, [currentTheme]);
+  
+  const changeTheme = (themeId) => {
+    setCurrentTheme(themeId);
+    if (!themesUsed.includes(themeId)) {
+      setThemesUsed([...themesUsed, themeId]);
+      // Check for theme collector achievement
+      if (themesUsed.length + 1 >= 5) {
+        addNotification('achievement', '🎨 Theme Collector achievement unlocked!');
+      }
+    }
+    try {
+      localStorage.setItem('86d_theme', themeId);
+    } catch (e) {}
+  };
+  
+  // Notification System
+  const addNotification = useCallback((type, message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  }, []);
+  
+  // Auto-Advance System
+  useEffect(() => {
+    if (autoAdvanceRef.current) {
+      clearInterval(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+    
+    const speedOption = SPEED_OPTIONS.find(s => s.id === gameSpeed);
+    if (speedOption?.interval && game && screen === 'game' && !scenario) {
+      autoAdvanceRef.current = setInterval(() => {
+        processWeek();
+      }, speedOption.interval);
+    }
+    
+    return () => {
+      if (autoAdvanceRef.current) {
+        clearInterval(autoAdvanceRef.current);
+      }
+    };
+  }, [gameSpeed, game, screen, scenario, processWeek]);
+  
+  // Tips Rotation
+  useEffect(() => {
+    if (showTips && game) {
+      const tipInterval = setInterval(() => {
+        setCurrentTip(prev => (prev + 1) % GAMEPLAY_TIPS.length);
+      }, 30000); // Change tip every 30 seconds
+      return () => clearInterval(tipInterval);
+    }
+  }, [showTips, game]);
+  
+  // Auto-Save
+  useEffect(() => {
+    if (autoSaveEnabled && game && game.week > 0 && game.week % 4 === 0) {
+      try {
+        const autoSave = {
+          game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
+          week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
+        };
+        localStorage.setItem('86d_autosave', JSON.stringify(autoSave));
+      } catch (e) {}
+    }
+  }, [game?.week, autoSaveEnabled, game, setup]);
+  
+  // Hall of Fame Update
+  const updateHallOfFame = useCallback(() => {
+    if (!game) return;
+    
+    const currentRun = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      cuisine: setup.cuisine,
+      restaurantName: setup.name,
+      difficulty: setup.difficulty || 'normal',
+      weeksSurvived: game.week,
+      peakWeeklyRevenue: game.stats?.peakWeeklyRevenue || 0,
+      maxLocations: Math.max(game.locations?.length || 1, game.stats?.locationsOpened || 1),
+      peakValuation: game.empireValuation || 0,
+      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + l.staff.length, 0) || 0,
+    };
+    
+    try {
+      const existing = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
+      const updated = [...existing, currentRun].slice(-50); // Keep last 50 runs
+      localStorage.setItem('86d_hall_of_fame', JSON.stringify(updated));
+      setHallOfFame(updated);
+    } catch (e) {}
+  }, [game, setup]);
+  
+  // Load Hall of Fame on mount
+  useEffect(() => {
+    try {
+      const hof = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
+      setHallOfFame(hof);
+      const savedTheme = localStorage.getItem('86d_theme');
+      if (savedTheme && THEMES[savedTheme]) setCurrentTheme(savedTheme);
+      const savedPrestige = parseInt(localStorage.getItem('86d_prestige') || '0');
+      setPrestigeLevel(savedPrestige);
+    } catch (e) {}
+  }, []);
+  
+  // Prestige System
+  const calculatePrestigePoints = () => {
+    if (!game) return 0;
+    let points = 0;
+    points += Math.floor(game.week / 52); // 1 point per year survived
+    points += Math.floor((game.empireValuation || 0) / 500000); // 1 point per $500K valuation
+    points += (game.locations?.length || 1) - 1; // 1 point per extra location
+    points += Math.floor((game.franchises?.length || 0) / 2); // 1 point per 2 franchises
+    if (setup.difficulty === 'hard') points *= 1.5;
+    if (setup.difficulty === 'nightmare') points *= 2;
+    return Math.floor(points);
+  };
+  
+  const startNewGamePlus = () => {
+    const points = calculatePrestigePoints();
+    const newPrestige = Math.min(5, prestigeLevel + Math.floor(points / 10));
+    
+    updateHallOfFame();
+    setPrestigeLevel(newPrestige);
+    setTotalRunsCompleted(prev => prev + 1);
+    
+    try {
+      localStorage.setItem('86d_prestige', String(newPrestige));
+    } catch (e) {}
+    
+    // Reset to welcome with prestige bonus message
+    setGame(null);
+    setScreen('welcome');
+    setOnboardingStep(0);
+    addNotification('milestone', `New Game+ started! Prestige Level ${newPrestige}`);
+  };
+  
+  // Get Prestige Bonus for current level
+  const getPrestigeBonus = () => {
+    if (prestigeLevel <= 0) return null;
+    return PRESTIGE_BONUSES[Math.min(prestigeLevel, PRESTIGE_BONUSES.length) - 1];
+  };
+  
+  // Get best record for a category
+  const getBestRecord = (categoryId) => {
+    const category = HALL_OF_FAME_CATEGORIES.find(c => c.id === categoryId);
+    if (!category || hallOfFame.length === 0) return null;
+    
+    const sorted = [...hallOfFame].sort((a, b) => (b[category.stat] || 0) - (a[category.stat] || 0));
+    return sorted[0];
+  };
+  
+  // Get difficulty modifier
+  const getDifficultyMod = () => {
+    return DIFFICULTY_MODES.find(d => d.id === (setup.difficulty || difficulty)) || DIFFICULTY_MODES[1];
+  };
+
+
+
+  const handleScenarioChoice = async (option) => {
+    const success = Math.random() <= option.successChance;
+    const outcome = success ? option.success : option.fail;
+    setScenarioResult({ success, outcome });
+    
+    setGame(g => {
+      let updated = { ...g, scenariosSeen: [...g.scenariosSeen, scenario.id] };
+      
+      // Handle empire-wide effects
+      if (outcome.allLocations) {
+        updated.locations = updated.locations.map(l => {
+          let loc = { ...l };
+          if (outcome.reputation) loc.reputation = Math.min(100, Math.max(0, loc.reputation + outcome.reputation));
+          if (outcome.morale) loc.morale = Math.min(100, Math.max(0, loc.morale + outcome.morale));
+          if (outcome.covers) loc.covers += outcome.covers;
+          if (outcome.foodCostMod) loc.foodCostPct += outcome.foodCostMod;
+          if (outcome.laborCostMod) {
+            loc.staff = loc.staff.map(s => ({ ...s, wage: Math.round(s.wage * (1 + outcome.laborCostMod)) }));
+          }
+          return loc;
+        });
+      }
+      
+      // Handle single location effects
+      if (!outcome.allLocations) {
+        const loc = getActiveLocation();
+        if (loc) {
+          updated.locations = updated.locations.map(l => {
+            if (l.id !== loc.id) return l;
+            let newLoc = { ...l };
+            if (outcome.cash) newLoc.cash += outcome.cash;
+            if (outcome.reputation) newLoc.reputation = Math.min(100, Math.max(0, newLoc.reputation + outcome.reputation));
+            if (outcome.morale) newLoc.morale = Math.min(100, Math.max(0, newLoc.morale + outcome.morale));
+            if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
+            if (outcome.covers) newLoc.covers += outcome.covers;
+            if (outcome.followers) newLoc.marketing.socialFollowers += outcome.followers;
+            return newLoc;
+          });
+        }
+      }
+      
+      // Corporate cash effects
+      if (outcome.cash && outcome.allLocations) {
+        updated.corporateCash += outcome.cash;
+      }
+      
+      // Expansion opportunity
+      if (outcome.expansionOpportunity) {
+        setExpansionModal(true);
+      }
+      
+      // New franchises
+      if (outcome.newFranchises) {
+        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / updated.locations.length;
+        for (let i = 0; i < outcome.newFranchises; i++) {
+          updated.franchises.push({
+            id: Date.now() + i,
+            tier: 'area',
+            name: `Area Developer ${updated.franchises.length + 1}`,
+            weeklyRoyalty: avgRevenue * 0.045,
+            weeksActive: 0,
+            performance: 0.9 + Math.random() * 0.2,
+            quality: 75 + Math.floor(Math.random() * 15),
+          });
+        }
+      }
+      
+      // Equity changes
+      if (outcome.equity) {
+        updated.equity += outcome.equity;
+      }
+      
+      // End game conditions
+      if (outcome.endGame === 'buyout') {
+        setTimeout(() => setScreen('win'), 100);
+      }
+      
+      return updated;
+    });
+    
+    setAiLoading(true);
+    const context = `Player faced "${scenario.title}" and ${success ? 'succeeded' : 'failed'}. Give brief commentary.`;
+    const response = await getAIMentorResponse(context, game, setup);
+    setAiMessage(response);
+    setAiLoading(false);
+  };
+
+  const closeScenario = () => {
+    setScenario(null);
+    setScenarioResult(null);
+  };
+
+  const askAI = async () => {
+    if (!aiChatInput.trim() || !game) return;
+    setAiLoading(true);
+    const response = await getAIMentorResponse(`Player asks: "${aiChatInput}"`, game, setup);
+    setAiMessage(response);
+    setAiChatInput('');
+    setAiLoading(false);
+  };
+
+  const saveGame = (slot) => {
+    const save = { slot, date: new Date().toISOString(), setup, game };
+    setSavedGames(prev => [...prev.filter(s => s.slot !== slot), save]);
+    setSaveModal(false);
+  };
+
+  const loadGame = (save) => {
+    setSetup(save.setup);
+    setGame(save.game);
+    setActiveLocationId(save.game.locations[0].id);
+    setScreen('dashboard');
+    setSaveModal(false);
+  };
+
+  const restart = () => {
+    setScreen('welcome');
+    setOnboardingStep(0);
+    setSetup({ cuisine: null, capital: 75000, name: '', location: 'urban_neighborhood', market: 'same_city', goal: 'survive', experience: 'none' });
+    setGame(null);
+    setScenario(null);
+    setScenarioResult(null);
+    setAiMessage('');
+  };
+
+  // ============================================
+  // RENDER - WELCOME SCREEN
+  // ============================================
+
+  // Simple test return
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={{ padding: 20 }}>
-        <Text style={{ color: '#fff', fontSize: 18, marginBottom: 10 }}>Data Structures Loaded:</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ CUISINES: {CUISINES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ STAFF_TEMPLATES: {STAFF_TEMPLATES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ LOCATION_TYPES: {LOCATION_TYPES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ EQUIPMENT: {EQUIPMENT.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ UPGRADES: {UPGRADES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MARKETING_CHANNELS: {MARKETING_CHANNELS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ DELIVERY_PLATFORMS: {DELIVERY_PLATFORMS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ VIRTUAL_BRANDS: {VIRTUAL_BRANDS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ LOANS: {LOANS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MARKETS: {MARKETS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ FRANCHISE_TIERS: {FRANCHISE_TIERS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ VENDORS: {VENDORS.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ MILESTONES: {MILESTONES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ DIFFICULTY_MODES: {DIFFICULTY_MODES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ THEMES: {Object.keys(THEMES).length} themes</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ INVESTOR_TYPES: {INVESTOR_TYPES.length} items</Text>
-        <Text style={{ color: '#0f0', fontSize: 14 }}>✓ CATERING_TYPES: {CATERING_TYPES.length} items</Text>
-        <TouchableOpacity style={styles.startButton} onPress={() => setScreen('welcome')}>
-          <Text style={styles.startButtonText}>BACK</Text>
+        <Text style={{ color: '#F59E0B', fontSize: 48, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 }}>86'd</Text>
+        <Text style={{ color: '#fff', fontSize: 18, marginBottom: 20, textAlign: 'center' }}>Logic Test - All Hooks Loaded</Text>
+        
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Screen State: {screen}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Setup: {JSON.stringify(setup).slice(0, 50)}...</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Game Speed: {gameSpeed}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Difficulty: {difficulty}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Theme: {currentTheme}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Prestige Level: {prestigeLevel}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Hall of Fame Entries: {hallOfFame.length}</Text>
+        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Notifications: {notifications.length}</Text>
+        
+        <TouchableOpacity 
+          style={{ backgroundColor: '#F59E0B', padding: 15, borderRadius: 8, marginTop: 20 }}
+          onPress={() => setScreen(screen === 'welcome' ? 'setup' : 'welcome')}
+        >
+          <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>
+            Toggle Screen (Current: {screen})
+          </Text>
         </TouchableOpacity>
+        
+        <Text style={{ color: '#737373', fontSize: 12, textAlign: 'center', marginTop: 20 }}>v8.5.0 - 2738 Lines Logic Test</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -1330,11 +2770,4 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0D0D0D' },
-  welcomeContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, minHeight: 600 },
-  logo: { fontSize: 72, fontWeight: 'bold', color: '#F59E0B', marginBottom: 10 },
-  tagline: { fontSize: 18, color: '#A3A3A3', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#737373', fontStyle: 'italic', marginBottom: 40, textAlign: 'center' },
-  startButton: { backgroundColor: '#F59E0B', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 8, marginBottom: 20 },
-  startButtonText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
-  version: { color: '#737373', fontSize: 12 },
 });
