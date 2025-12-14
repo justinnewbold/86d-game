@@ -536,6 +536,123 @@ const PHASE6_ACHIEVEMENTS = [
   { id: 'real_estate_mogul', name: 'Real Estate Mogul', description: 'Own $5M in property', icon: '🏛️', reward: 60000 },
 ];
 
+// ============================================
+// PHASE 7: POLISH & ADVANCED SYSTEMS
+// ============================================
+
+// LABOR SCHEDULING SYSTEM
+const SHIFT_TYPES = [
+  { id: 'morning', name: 'Morning', icon: '🌅', hours: '6AM-2PM', laborMod: 0.9, coverageNeed: 0.6 },
+  { id: 'lunch', name: 'Lunch Rush', icon: '☀️', hours: '11AM-3PM', laborMod: 1.2, coverageNeed: 1.0 },
+  { id: 'dinner', name: 'Dinner', icon: '🌙', hours: '4PM-11PM', laborMod: 1.0, coverageNeed: 1.0 },
+  { id: 'closing', name: 'Closing', icon: '🌃', hours: '9PM-1AM', laborMod: 1.1, coverageNeed: 0.5 },
+  { id: 'weekend', name: 'Weekend', icon: '🎉', hours: 'Sat-Sun', laborMod: 1.15, coverageNeed: 1.3 },
+];
+
+const OVERTIME_RULES = {
+  regularHours: 40,
+  overtimeMultiplier: 1.5,
+  doubleTimeThreshold: 60,
+  doubleTimeMultiplier: 2.0,
+  maxHoursPerWeek: 65,
+  burnoutThreshold: 50,
+};
+
+// INVENTORY & SPOILAGE SYSTEM
+const INVENTORY_CATEGORIES = [
+  { id: 'proteins', name: 'Proteins', icon: '🥩', spoilDays: 3, costPct: 0.35, wasteRisk: 0.15 },
+  { id: 'produce', name: 'Produce', icon: '🥬', spoilDays: 5, costPct: 0.15, wasteRisk: 0.20 },
+  { id: 'dairy', name: 'Dairy', icon: '🧀', spoilDays: 7, costPct: 0.10, wasteRisk: 0.10 },
+  { id: 'dry_goods', name: 'Dry Goods', icon: '🍚', spoilDays: 90, costPct: 0.15, wasteRisk: 0.02 },
+  { id: 'frozen', name: 'Frozen', icon: '🧊', spoilDays: 30, costPct: 0.15, wasteRisk: 0.05 },
+  { id: 'beverages', name: 'Beverages', icon: '🥤', spoilDays: 60, costPct: 0.10, wasteRisk: 0.03 },
+];
+
+const INVENTORY_STRATEGIES = [
+  { id: 'just_in_time', name: 'Just-In-Time', icon: '⚡', wasteMod: 0.5, costMod: 1.1, riskMod: 1.3, description: 'Order frequently, minimal stock. Lower waste, higher costs, stockout risk.' },
+  { id: 'weekly_order', name: 'Weekly Orders', icon: '📅', wasteMod: 1.0, costMod: 1.0, riskMod: 1.0, description: 'Standard weekly ordering. Balanced approach.' },
+  { id: 'bulk_buying', name: 'Bulk Buying', icon: '📦', wasteMod: 1.4, costMod: 0.85, riskMod: 0.7, description: 'Buy in bulk for discounts. More waste, lower costs.' },
+  { id: 'par_levels', name: 'Par Level System', icon: '📊', wasteMod: 0.7, costMod: 1.05, riskMod: 0.8, description: 'Maintain set inventory levels. Professional approach.' },
+];
+
+// CUSTOMER LOYALTY PROGRAM
+const LOYALTY_TIERS = [
+  { id: 'bronze', name: 'Bronze', icon: '🥉', pointsRequired: 0, discount: 0, perks: ['Birthday reward'], color: '#CD7F32' },
+  { id: 'silver', name: 'Silver', icon: '🥈', pointsRequired: 500, discount: 0.05, perks: ['5% off', 'Priority seating'], color: '#C0C0C0' },
+  { id: 'gold', name: 'Gold', icon: '🥇', pointsRequired: 1500, discount: 0.10, perks: ['10% off', 'Free appetizer monthly', 'Early access'], color: '#FFD700' },
+  { id: 'platinum', name: 'Platinum', icon: '💎', pointsRequired: 5000, discount: 0.15, perks: ['15% off', 'Free entree monthly', 'VIP events', 'Reserved parking'], color: '#E5E4E2' },
+];
+
+const LOYALTY_PROGRAM_TYPES = [
+  { id: 'none', name: 'No Program', icon: '❌', cost: 0, retention: 1.0, description: 'No loyalty program' },
+  { id: 'punch_card', name: 'Punch Card', icon: '🎫', cost: 500, retention: 1.1, description: 'Buy 10 get 1 free. Simple but effective.' },
+  { id: 'points_program', name: 'Points Program', icon: '⭐', cost: 2500, retention: 1.2, description: '1 point per dollar. Redeem for rewards.' },
+  { id: 'tiered_program', name: 'Tiered VIP', icon: '👑', cost: 10000, retention: 1.35, description: 'Bronze to Platinum tiers with escalating perks.' },
+  { id: 'subscription', name: 'Subscription Club', icon: '💳', cost: 5000, retention: 1.4, monthlyFee: 25, description: '$25/month for unlimited soft drinks and 20% off.' },
+];
+
+// GOOGLE REVIEWS SYSTEM (The only reviews that matter!)
+const REVIEW_RESPONSE_TYPES = [
+  { id: 'ignore', name: 'Ignore', icon: '🙈', effect: -0.1, time: 0, description: 'Don\'t respond (not recommended)' },
+  { id: 'template', name: 'Template Response', icon: '📝', effect: 0.05, time: 1, description: 'Generic thank you message' },
+  { id: 'personalized', name: 'Personalized', icon: '💬', effect: 0.15, time: 5, description: 'Thoughtful, specific response' },
+  { id: 'offer_resolution', name: 'Offer Resolution', icon: '🤝', effect: 0.25, time: 10, description: 'Invite back, offer to make it right' },
+];
+
+const REVIEW_TEMPLATES = [
+  { stars: 5, texts: ['Amazing food!', 'Best restaurant in town!', 'Will definitely be back!', 'The staff was incredible!', 'Perfect date night spot!'] },
+  { stars: 4, texts: ['Really good, minor wait time.', 'Food was great, service could improve.', 'Solid choice, would recommend.', 'Good value for money.'] },
+  { stars: 3, texts: ['It was okay, nothing special.', 'Average experience.', 'Food was fine but overpriced.', 'Hit or miss depending on the day.'] },
+  { stars: 2, texts: ['Disappointed with the quality.', 'Long wait, mediocre food.', 'Expected more based on reviews.', 'Probably won\'t return.'] },
+  { stars: 1, texts: ['Terrible experience!', 'Food poisoning risk!', 'Worst service ever!', 'Health department should visit!', 'DO NOT EAT HERE!'] },
+];
+
+// GLOBAL LEADERBOARD CATEGORIES
+const LEADERBOARD_CATEGORIES = [
+  { id: 'empire_value', name: 'Empire Value', icon: '💰', stat: 'empireValuation', format: (v) => `$${(v/1000000).toFixed(2)}M` },
+  { id: 'total_revenue', name: 'Total Revenue', icon: '📈', stat: 'totalRevenue', format: (v) => `$${(v/1000000).toFixed(2)}M` },
+  { id: 'weeks_survived', name: 'Weeks Survived', icon: '📅', stat: 'week', format: (v) => `${v} weeks` },
+  { id: 'locations_count', name: 'Most Locations', icon: '🏪', stat: 'locationsCount', format: (v) => `${v} locations` },
+  { id: 'google_rating', name: 'Best Rated', icon: '⭐', stat: 'googleRating', format: (v) => `${v.toFixed(1)} stars` },
+  { id: 'staff_count', name: 'Most Employees', icon: '👥', stat: 'totalStaff', format: (v) => `${v} staff` },
+  { id: 'profit_streak', name: 'Longest Profit Streak', icon: '🔥', stat: 'profitStreak', format: (v) => `${v} weeks` },
+];
+
+// SOUND EFFECTS (visual feedback since we can't play actual audio in React Native Web easily)
+const SOUND_EFFECTS = {
+  cash_register: '💵 Ka-ching!',
+  level_up: '⬆️ Level Up!',
+  achievement: '🏆 Achievement Unlocked!',
+  warning: '⚠️ Warning!',
+  success: '✅ Success!',
+  failure: '❌ Failed!',
+  notification: '🔔 Notification!',
+  week_end: '📅 Week Complete!',
+};
+
+// SOCIAL SHARING TEMPLATES
+const SHARE_TEMPLATES = {
+  achievement: (name, game) => `🏆 Just unlocked "${name}" in 86'd! My restaurant empire is worth ${formatCurrency(game?.empireValuation || 0)}. Can you beat that? #86dGame #RestaurantSim`,
+  milestone: (milestone) => `🎯 Hit a major milestone in 86'd: ${milestone}! This restaurant business simulator is no joke. #86dGame`,
+  weekly_profit: (profit) => `💰 Just made ${formatCurrency(profit)} profit this week in 86'd! The grind is real. #86dGame #RestaurantLife`,
+  empire: (locations, valuation) => `🏛️ Built a ${locations}-location restaurant empire worth ${formatCurrency(valuation)} in 86'd! #86dGame #RestaurantEmpire`,
+  google_rating: (rating) => `⭐ My restaurant has a ${rating.toFixed(1)} star Google rating in 86'd! Customers love us! #86dGame`,
+};
+
+// PHASE 7 ACHIEVEMENTS
+const PHASE7_ACHIEVEMENTS = [
+  { id: 'five_star_google', name: 'Five Star Chef', description: 'Maintain 5.0 Google rating for 4 weeks', icon: '⭐', reward: 25000 },
+  { id: 'review_responder', name: 'Review Responder', description: 'Respond to 50 Google reviews', icon: '💬', reward: 10000 },
+  { id: 'loyalty_program', name: 'Loyalty Builder', description: 'Have 100 loyalty members', icon: '👑', reward: 15000 },
+  { id: 'platinum_member', name: 'VIP Treatment', description: 'Have a platinum loyalty member', icon: '💎', reward: 20000 },
+  { id: 'zero_waste', name: 'Zero Waste Hero', description: 'Keep spoilage under 2% for a month', icon: '♻️', reward: 30000 },
+  { id: 'scheduling_master', name: 'Scheduling Master', description: 'Perfect shift coverage for 4 weeks', icon: '📅', reward: 15000 },
+  { id: 'no_overtime', name: 'Budget Boss', description: 'No overtime for 8 consecutive weeks', icon: '💪', reward: 20000 },
+  { id: 'leaderboard_top10', name: 'Top 10', description: 'Reach top 10 on any leaderboard', icon: '🏅', reward: 50000 },
+  { id: 'social_influencer', name: 'Social Influencer', description: 'Share 10 achievements', icon: '📱', reward: 10000 },
+  { id: 'full_coverage', name: 'Fully Staffed', description: 'Have all shifts covered with no gaps', icon: '✅', reward: 12000 },
+];
+
 // HALL OF FAME CATEGORIES
 const HALL_OF_FAME_CATEGORIES = [
   { id: 'longest_run', name: 'Longest Run', icon: '📅', stat: 'weeksSurvived', format: (v) => `${v} weeks` },
@@ -1364,6 +1481,16 @@ export default function App() {
   const [currentEconomy, setCurrentEconomy] = useState('stable');
   const [economyWeeksRemaining, setEconomyWeeksRemaining] = useState(0);
   
+  // Phase 7: Polish Systems
+  const [schedulingModal, setSchedulingModal] = useState(false);
+  const [inventoryModal, setInventoryModal] = useState(false);
+  const [loyaltyModal, setLoyaltyModal] = useState(false);
+  const [reviewsModal, setReviewsModal] = useState(false);
+  const [leaderboardModal, setLeaderboardModal] = useState(false);
+  const [shareModal, setShareModal] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundFeedback, setSoundFeedback] = useState(null);
+  
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
@@ -1501,6 +1628,39 @@ export default function App() {
       exitStrategy: null,
       exitProgress: 0,
       ipoReady: false,
+      
+      // Phase 7: Labor Scheduling
+      scheduleTemplate: 'standard',
+      overtimeHours: 0,
+      shiftCoverage: { morning: 0, lunch: 0, dinner: 0, closing: 0, weekend: 0 },
+      laborEfficiency: 1.0,
+      
+      // Phase 7: Inventory & Spoilage
+      inventoryStrategy: 'weekly_order',
+      spoilageRate: 0.08, // 8% typical
+      spoilageCost: 0,
+      inventoryLevels: {},
+      lastOrderWeek: 0,
+      
+      // Phase 7: Customer Loyalty
+      loyaltyProgram: 'none',
+      loyaltyMembers: [],
+      totalLoyaltyMembers: 0,
+      loyaltyRedemptions: 0,
+      loyaltyPointsIssued: 0,
+      
+      // Phase 7: Google Reviews
+      googleRating: 4.2 + Math.random() * 0.5, // Start between 4.2-4.7
+      totalReviews: Math.floor(15 + Math.random() * 35),
+      recentReviews: [],
+      reviewsResponded: 0,
+      reviewResponseRate: 0,
+      
+      // Phase 7: Social & Leaderboard
+      shareCount: 0,
+      leaderboardRank: {},
+      cloudSaveEnabled: false,
+      lastCloudSync: null,
     };
     
     setGame(initialGame);
@@ -1757,6 +1917,61 @@ export default function App() {
         updatedLocations[0].reputation = Math.min(100, updatedLocations[0].reputation + mediaBoost);
       }
       
+      // PHASE 7: Inventory Spoilage Calculation
+      const inventoryStrategy = INVENTORY_STRATEGIES.find(s => s.id === g.inventoryStrategy) || INVENTORY_STRATEGIES[1];
+      const baseSpoilage = 0.08; // 8% base
+      const spoilageRate = baseSpoilage * inventoryStrategy.wasteMod;
+      const spoilageCost = totalWeekRevenue * 0.30 * spoilageRate; // 30% is food cost, then spoilage %
+      
+      // PHASE 7: Labor Scheduling Efficiency
+      const totalStaffHours = updatedLocations.reduce((sum, loc) => 
+        sum + loc.staff.reduce((s, staff) => s + 40, 0), 0);
+      const overtimeHours = Math.max(0, totalStaffHours - (updatedLocations.length * 160)); // 160 regular hours per location
+      const overtimeCost = overtimeHours * 25 * 0.5; // $25/hr * 0.5 overtime premium
+      
+      // PHASE 7: Loyalty Program Effects
+      const loyaltyProgram = LOYALTY_PROGRAM_TYPES.find(p => p.id === g.loyaltyProgram) || LOYALTY_PROGRAM_TYPES[0];
+      const loyaltyRetentionBoost = loyaltyProgram.retention - 1; // e.g., 0.2 for 20% boost
+      const newLoyaltyMembers = g.loyaltyProgram !== 'none' ? Math.floor(totalWeekRevenue / 500 * (1 + loyaltyRetentionBoost)) : 0;
+      const loyaltyRevenueBoost = loyaltyRetentionBoost * 0.5; // Half the retention boost goes to revenue
+      
+      // PHASE 7: Google Reviews Generation
+      let newGoogleRating = g.googleRating || 4.3;
+      const newReviews = [];
+      const reviewChance = 0.02; // 2% of customers leave reviews
+      const reviewCount = Math.floor(totalWeekRevenue / 30 * reviewChance);
+      
+      for (let i = 0; i < reviewCount; i++) {
+        // Rating influenced by reputation and food quality
+        const baseRating = 3 + (updatedLocations[0]?.reputation || 50) / 33;
+        const variance = (Math.random() - 0.5) * 2;
+        const stars = Math.max(1, Math.min(5, Math.round(baseRating + variance)));
+        const templates = REVIEW_TEMPLATES.find(t => t.stars === stars)?.texts || ['Good experience.'];
+        newReviews.push({
+          id: Date.now() + i,
+          stars,
+          text: templates[Math.floor(Math.random() * templates.length)],
+          week: g.week + 1,
+          responded: false,
+          customerName: generateName(),
+        });
+      }
+      
+      // Update Google rating (weighted average with existing)
+      if (newReviews.length > 0) {
+        const totalReviews = (g.totalReviews || 0) + newReviews.length;
+        const newAvgStars = newReviews.reduce((sum, r) => sum + r.stars, 0) / newReviews.length;
+        newGoogleRating = ((g.googleRating || 4.3) * (g.totalReviews || 20) + newAvgStars * newReviews.length) / totalReviews;
+        newGoogleRating = Math.round(newGoogleRating * 10) / 10; // Round to 1 decimal
+      }
+      
+      // Google rating affects customer traffic
+      const googleRatingMod = (newGoogleRating - 4.0) * 0.1; // +/- 10% per 1 star from 4.0
+      if (updatedLocations.length > 0) {
+        updatedLocations[0].reputation = Math.min(100, Math.max(0, 
+          updatedLocations[0].reputation + (newGoogleRating >= 4.5 ? 1 : newGoogleRating < 3.5 ? -2 : 0)));
+      }
+      
       // Update achievements
       const newAchievements = [...g.achievements];
       const weekNum = g.week + 1;
@@ -1844,9 +2059,9 @@ export default function App() {
         ...g,
         week: weekNum,
         locations: updatedLocations,
-        corporateCash: newCorporateCash,
+        corporateCash: newCorporateCash - spoilageCost - overtimeCost, // Subtract Phase 7 costs
         totalRevenue: g.totalRevenue + totalWeekRevenue,
-        totalProfit: g.totalProfit + totalWeekProfit,
+        totalProfit: g.totalProfit + totalWeekProfit - spoilageCost - overtimeCost,
         empireValuation,
         achievements: newAchievements,
         profitStreak: totalWeekProfit > 0 ? g.profitStreak + 1 : 0,
@@ -1858,6 +2073,14 @@ export default function App() {
         exitProgress: newExitProgress,
         economicCondition: newEconomicCondition,
         totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
+        // Phase 7 state updates
+        spoilageRate,
+        spoilageCost: (g.spoilageCost || 0) + spoilageCost,
+        overtimeHours: (g.overtimeHours || 0) + overtimeHours,
+        totalLoyaltyMembers: (g.totalLoyaltyMembers || 0) + newLoyaltyMembers,
+        googleRating: newGoogleRating,
+        totalReviews: (g.totalReviews || 20) + newReviews.length,
+        recentReviews: [...newReviews, ...(g.recentReviews || [])].slice(0, 50), // Keep last 50
       };
     });
     
@@ -2748,7 +2971,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v8.5.0 • Phase 6 • Advanced Business</Text>
+          <Text style={styles.versionText}>v9.0.0 • Phase 7 • Full Release</Text>
         </View>
       </SafeAreaView>
     );
@@ -3244,6 +3467,31 @@ export default function App() {
                   <TouchableOpacity style={[styles.quickAction, { backgroundColor: currentEconomy === 'recession' ? colors.accent : currentEconomy === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
                     <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === currentEconomy)?.icon || '📊'}</Text>
                     <Text style={styles.quickActionText}>Economy</Text>
+                  </TouchableOpacity>
+                  {/* Phase 7 Quick Actions */}
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setSchedulingModal(true)}>
+                    <Text style={styles.quickActionIcon}>📅</Text>
+                    <Text style={styles.quickActionText}>Schedule</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: (game?.spoilageRate || 0.08) > 0.10 ? colors.accent : colors.surfaceLight }]} onPress={() => setInventoryModal(true)}>
+                    <Text style={styles.quickActionIcon}>📦</Text>
+                    <Text style={styles.quickActionText}>Inventory</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: game?.loyaltyProgram !== 'none' ? colors.primary : colors.surfaceLight }]} onPress={() => setLoyaltyModal(true)}>
+                    <Text style={styles.quickActionIcon}>👑</Text>
+                    <Text style={styles.quickActionText}>Loyalty</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: (game?.googleRating || 4.3) >= 4.5 ? colors.success : (game?.googleRating || 4.3) < 3.5 ? colors.accent : colors.surfaceLight }]} onPress={() => setReviewsModal(true)}>
+                    <Text style={styles.quickActionIcon}>⭐</Text>
+                    <Text style={styles.quickActionText}>{(game?.googleRating || 4.3).toFixed(1)}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setLeaderboardModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏆</Text>
+                    <Text style={styles.quickActionText}>Ranks</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setShareModal(true)}>
+                    <Text style={styles.quickActionIcon}>📱</Text>
+                    <Text style={styles.quickActionText}>Share</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -4201,7 +4449,7 @@ export default function App() {
                   <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
                 </TouchableOpacity>
                 
-                <Text style={styles.versionText}>86'd v8.5.0 - Phase 6</Text>
+                <Text style={styles.versionText}>86'd v9.0.0 - Phase 6</Text>
               </ScrollView>
             </View>
           </View>
@@ -4938,6 +5186,435 @@ export default function App() {
           </View>
         </Modal>
 
+        {/* PHASE 7: LABOR SCHEDULING MODAL */}
+        <Modal visible={schedulingModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📅 Labor Scheduling</Text>
+                <TouchableOpacity onPress={() => setSchedulingModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionSubtitle}>Shift Coverage</Text>
+                <Text style={styles.helperText}>Ensure adequate staffing for each shift to maximize efficiency</Text>
+                
+                {SHIFT_TYPES.map(shift => {
+                  const loc = game?.locations?.[selectedLocation || 0];
+                  const staffCount = loc?.staff?.length || 0;
+                  const coverage = Math.min(1, staffCount / (shift.coverageNeed * 4));
+                  const coverageColor = coverage >= 1 ? colors.success : coverage >= 0.7 ? colors.warning : colors.accent;
+                  
+                  return (
+                    <View key={shift.id} style={styles.shiftCard}>
+                      <View style={styles.shiftHeader}>
+                        <Text style={styles.shiftIcon}>{shift.icon}</Text>
+                        <View style={styles.shiftInfo}>
+                          <Text style={styles.shiftName}>{shift.name}</Text>
+                          <Text style={styles.shiftHours}>{shift.hours}</Text>
+                        </View>
+                        <View style={styles.coverageBadge}>
+                          <Text style={[styles.coverageText, { color: coverageColor }]}>
+                            {(coverage * 100).toFixed(0)}%
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.coverageBar}>
+                        <View style={[styles.coverageFill, { width: `${coverage * 100}%`, backgroundColor: coverageColor }]} />
+                      </View>
+                      <Text style={styles.shiftDetail}>
+                        Labor cost modifier: {shift.laborMod > 1 ? '+' : ''}{((shift.laborMod - 1) * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  );
+                })}
+                
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Overtime Summary</Text>
+                <View style={styles.overtimeCard}>
+                  <View style={styles.overtimeStat}>
+                    <Text style={styles.overtimeLabel}>Regular Hours</Text>
+                    <Text style={styles.overtimeValue}>{OVERTIME_RULES.regularHours}/week</Text>
+                  </View>
+                  <View style={styles.overtimeStat}>
+                    <Text style={styles.overtimeLabel}>Overtime Rate</Text>
+                    <Text style={[styles.overtimeValue, { color: colors.warning }]}>{OVERTIME_RULES.overtimeMultiplier}x pay</Text>
+                  </View>
+                  <View style={styles.overtimeStat}>
+                    <Text style={styles.overtimeLabel}>Double Time After</Text>
+                    <Text style={[styles.overtimeValue, { color: colors.accent }]}>{OVERTIME_RULES.doubleTimeThreshold} hrs</Text>
+                  </View>
+                  <View style={styles.overtimeStat}>
+                    <Text style={styles.overtimeLabel}>This Week Overtime</Text>
+                    <Text style={styles.overtimeValue}>{game?.overtimeHours || 0} hrs</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 7: INVENTORY MODAL */}
+        <Modal visible={inventoryModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📦 Inventory & Spoilage</Text>
+                <TouchableOpacity onPress={() => setInventoryModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionSubtitle}>Inventory Categories</Text>
+                {INVENTORY_CATEGORIES.map(cat => (
+                  <View key={cat.id} style={styles.inventoryCategory}>
+                    <Text style={styles.inventoryIcon}>{cat.icon}</Text>
+                    <View style={styles.inventoryInfo}>
+                      <Text style={styles.inventoryName}>{cat.name}</Text>
+                      <Text style={styles.inventoryDetail}>Spoils in {cat.spoilDays} days • {(cat.costPct * 100).toFixed(0)}% of food cost</Text>
+                    </View>
+                    <Text style={[styles.wasteRisk, { color: cat.wasteRisk > 0.15 ? colors.accent : cat.wasteRisk > 0.08 ? colors.warning : colors.success }]}>
+                      {(cat.wasteRisk * 100).toFixed(0)}% waste
+                    </Text>
+                  </View>
+                ))}
+                
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Ordering Strategy</Text>
+                {INVENTORY_STRATEGIES.map(strategy => (
+                  <TouchableOpacity
+                    key={strategy.id}
+                    style={[styles.strategyCard, game?.inventoryStrategy === strategy.id && styles.strategyCardActive]}
+                    onPress={() => {
+                      setGame(g => ({ ...g, inventoryStrategy: strategy.id }));
+                      addNotification(`📦 Switched to ${strategy.name} ordering strategy`, 'info');
+                    }}
+                  >
+                    <View style={styles.strategyHeader}>
+                      <Text style={styles.strategyIcon}>{strategy.icon}</Text>
+                      <Text style={styles.strategyName}>{strategy.name}</Text>
+                      {game?.inventoryStrategy === strategy.id && <Text style={styles.strategyActive}>✓</Text>}
+                    </View>
+                    <Text style={styles.strategyDesc}>{strategy.description}</Text>
+                    <View style={styles.strategyEffects}>
+                      <Text style={[styles.strategyEffect, strategy.wasteMod < 1 ? styles.positive : strategy.wasteMod > 1 ? styles.negative : null]}>
+                        Waste: {strategy.wasteMod < 1 ? '' : '+'}{((strategy.wasteMod - 1) * 100).toFixed(0)}%
+                      </Text>
+                      <Text style={[styles.strategyEffect, strategy.costMod < 1 ? styles.positive : strategy.costMod > 1 ? styles.negative : null]}>
+                        Cost: {strategy.costMod < 1 ? '' : '+'}{((strategy.costMod - 1) * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                <View style={styles.spoilageSummary}>
+                  <Text style={styles.sectionSubtitle}>Spoilage Summary</Text>
+                  <View style={styles.spoilageStat}>
+                    <Text style={styles.spoilageLabel}>Current Spoilage Rate</Text>
+                    <Text style={[styles.spoilageValue, { color: (game?.spoilageRate || 0.08) < 0.05 ? colors.success : (game?.spoilageRate || 0.08) > 0.10 ? colors.accent : colors.warning }]}>
+                      {((game?.spoilageRate || 0.08) * 100).toFixed(1)}%
+                    </Text>
+                  </View>
+                  <View style={styles.spoilageStat}>
+                    <Text style={styles.spoilageLabel}>Total Spoilage Cost (Lifetime)</Text>
+                    <Text style={[styles.spoilageValue, { color: colors.accent }]}>{formatCurrency(game?.spoilageCost || 0)}</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 7: LOYALTY PROGRAM MODAL */}
+        <Modal visible={loyaltyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👑 Loyalty Program</Text>
+                <TouchableOpacity onPress={() => setLoyaltyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.loyaltySummary}>
+                  <View style={styles.loyaltyStat}>
+                    <Text style={styles.loyaltyStatValue}>{game?.totalLoyaltyMembers || 0}</Text>
+                    <Text style={styles.loyaltyStatLabel}>Total Members</Text>
+                  </View>
+                  <View style={styles.loyaltyStat}>
+                    <Text style={styles.loyaltyStatValue}>{game?.loyaltyRedemptions || 0}</Text>
+                    <Text style={styles.loyaltyStatLabel}>Redemptions</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Choose Program Type</Text>
+                {LOYALTY_PROGRAM_TYPES.map(program => {
+                  const isActive = game?.loyaltyProgram === program.id;
+                  const canAfford = (game?.corporateCash || 0) >= program.cost;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={program.id}
+                      style={[styles.loyaltyProgramCard, isActive && styles.loyaltyProgramActive]}
+                      onPress={() => {
+                        if (isActive || program.id === 'none') {
+                          setGame(g => ({ ...g, loyaltyProgram: program.id }));
+                          if (program.id === 'none') addNotification('❌ Loyalty program disabled', 'info');
+                        } else if (canAfford) {
+                          setGame(g => ({ 
+                            ...g, 
+                            loyaltyProgram: program.id,
+                            corporateCash: g.corporateCash - program.cost 
+                          }));
+                          addNotification(`👑 Launched ${program.name}! -${formatCurrency(program.cost)}`, 'success');
+                        } else {
+                          addNotification(`Need ${formatCurrency(program.cost - (game?.corporateCash || 0))} more`, 'warning');
+                        }
+                      }}
+                    >
+                      <View style={styles.loyaltyProgramHeader}>
+                        <Text style={styles.loyaltyProgramIcon}>{program.icon}</Text>
+                        <View style={styles.loyaltyProgramInfo}>
+                          <Text style={styles.loyaltyProgramName}>{program.name}</Text>
+                          {program.cost > 0 && <Text style={styles.loyaltyProgramCost}>{formatCurrency(program.cost)} setup</Text>}
+                        </View>
+                        {isActive && <Text style={styles.loyaltyProgramBadge}>ACTIVE</Text>}
+                      </View>
+                      <Text style={styles.loyaltyProgramDesc}>{program.description}</Text>
+                      {program.retention > 1 && (
+                        <Text style={[styles.loyaltyProgramEffect, { color: colors.success }]}>
+                          +{((program.retention - 1) * 100).toFixed(0)}% customer retention
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+                
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Tier Levels</Text>
+                {LOYALTY_TIERS.map(tier => (
+                  <View key={tier.id} style={[styles.tierCard, { borderLeftColor: tier.color }]}>
+                    <Text style={styles.tierIcon}>{tier.icon}</Text>
+                    <View style={styles.tierInfo}>
+                      <Text style={[styles.tierName, { color: tier.color }]}>{tier.name}</Text>
+                      <Text style={styles.tierPoints}>{tier.pointsRequired} points required</Text>
+                      <Text style={styles.tierPerks}>{tier.perks.join(' • ')}</Text>
+                    </View>
+                    {tier.discount > 0 && (
+                      <Text style={[styles.tierDiscount, { color: colors.success }]}>{(tier.discount * 100)}% off</Text>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 7: GOOGLE REVIEWS MODAL */}
+        <Modal visible={reviewsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>⭐ Google Reviews</Text>
+                <TouchableOpacity onPress={() => setReviewsModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.googleRatingSummary}>
+                  <View style={styles.googleRatingMain}>
+                    <Text style={styles.googleRatingNumber}>{(game?.googleRating || 4.3).toFixed(1)}</Text>
+                    <View style={styles.googleStars}>
+                      {[1,2,3,4,5].map(star => (
+                        <Text key={star} style={styles.googleStar}>
+                          {star <= Math.round(game?.googleRating || 4.3) ? '⭐' : '☆'}
+                        </Text>
+                      ))}
+                    </View>
+                    <Text style={styles.googleReviewCount}>{game?.totalReviews || 0} reviews</Text>
+                  </View>
+                  <View style={styles.googleRatingStats}>
+                    <Text style={styles.googleRatingStat}>Response Rate: {((game?.reviewResponseRate || 0) * 100).toFixed(0)}%</Text>
+                    <Text style={styles.googleRatingStat}>Responded: {game?.reviewsResponded || 0}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Recent Reviews</Text>
+                {(game?.recentReviews || []).length === 0 ? (
+                  <Text style={styles.emptyStateText}>No reviews yet. Keep serving great food!</Text>
+                ) : (
+                  (game?.recentReviews || []).slice(0, 10).map(review => (
+                    <View key={review.id} style={styles.reviewCard}>
+                      <View style={styles.reviewHeader}>
+                        <Text style={styles.reviewerName}>{review.customerName}</Text>
+                        <View style={styles.reviewStars}>
+                          {[1,2,3,4,5].map(star => (
+                            <Text key={star} style={[styles.reviewStar, { opacity: star <= review.stars ? 1 : 0.3 }]}>⭐</Text>
+                          ))}
+                        </View>
+                      </View>
+                      <Text style={styles.reviewText}>"{review.text}"</Text>
+                      <View style={styles.reviewActions}>
+                        <Text style={styles.reviewWeek}>Week {review.week}</Text>
+                        {!review.responded ? (
+                          <TouchableOpacity
+                            style={styles.respondButton}
+                            onPress={() => {
+                              setGame(g => ({
+                                ...g,
+                                recentReviews: g.recentReviews.map(r => 
+                                  r.id === review.id ? { ...r, responded: true } : r
+                                ),
+                                reviewsResponded: (g.reviewsResponded || 0) + 1,
+                                reviewResponseRate: ((g.reviewsResponded || 0) + 1) / (g.totalReviews || 1),
+                              }));
+                              addNotification('💬 Response sent! +0.1 reputation', 'success');
+                              if (game?.locations?.[0]) {
+                                setGame(g => ({
+                                  ...g,
+                                  locations: g.locations.map((loc, idx) => 
+                                    idx === 0 ? { ...loc, reputation: Math.min(100, loc.reputation + 0.1) } : loc
+                                  ),
+                                }));
+                              }
+                            }}
+                          >
+                            <Text style={styles.respondButtonText}>Respond</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <Text style={styles.respondedBadge}>✓ Responded</Text>
+                        )}
+                      </View>
+                    </View>
+                  ))
+                )}
+                
+                <View style={styles.reviewTips}>
+                  <Text style={styles.sectionSubtitle}>Review Tips</Text>
+                  <Text style={styles.reviewTip}>• Respond to ALL reviews, positive and negative</Text>
+                  <Text style={styles.reviewTip}>• Personalized responses boost reputation more</Text>
+                  <Text style={styles.reviewTip}>• A 4.5+ rating increases customer traffic by 15%</Text>
+                  <Text style={styles.reviewTip}>• Below 3.5 stars hurts reputation significantly</Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 7: LEADERBOARD MODAL */}
+        <Modal visible={leaderboardModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏆 Leaderboards</Text>
+                <TouchableOpacity onPress={() => setLeaderboardModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionSubtitle}>Your Rankings</Text>
+                {LEADERBOARD_CATEGORIES.map(cat => {
+                  const value = cat.stat === 'locationsCount' ? (game?.locations?.length || 0) :
+                               cat.stat === 'totalStaff' ? (game?.locations?.reduce((sum, l) => sum + l.staff.length, 0) || 0) :
+                               game?.[cat.stat] || 0;
+                  const formattedValue = cat.format(value);
+                  
+                  return (
+                    <View key={cat.id} style={styles.leaderboardCard}>
+                      <Text style={styles.leaderboardIcon}>{cat.icon}</Text>
+                      <View style={styles.leaderboardInfo}>
+                        <Text style={styles.leaderboardName}>{cat.name}</Text>
+                        <Text style={styles.leaderboardValue}>{formattedValue}</Text>
+                      </View>
+                      <View style={styles.leaderboardRank}>
+                        <Text style={styles.leaderboardRankText}>#{Math.floor(Math.random() * 100) + 1}</Text>
+                        <Text style={styles.leaderboardRankLabel}>Global</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                
+                <View style={styles.leaderboardNote}>
+                  <Text style={styles.leaderboardNoteText}>
+                    🌐 Leaderboards update weekly. Keep growing your empire to climb the ranks!
+                  </Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 7: SHARE MODAL */}
+        <Modal visible={shareModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📱 Share Your Success</Text>
+                <TouchableOpacity onPress={() => setShareModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionSubtitle}>Share Templates</Text>
+                
+                <TouchableOpacity style={styles.shareCard} onPress={() => {
+                  addNotification('📱 Shared to clipboard!', 'success');
+                  setGame(g => ({ ...g, shareCount: (g.shareCount || 0) + 1 }));
+                }}>
+                  <Text style={styles.shareIcon}>🏛️</Text>
+                  <View style={styles.shareInfo}>
+                    <Text style={styles.shareName}>Empire Status</Text>
+                    <Text style={styles.sharePreview}>
+                      "Built a {game?.locations?.length || 1}-location restaurant empire worth {formatCurrency(game?.empireValuation || 0)} in 86'd!"
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.shareCard} onPress={() => {
+                  addNotification('📱 Shared to clipboard!', 'success');
+                  setGame(g => ({ ...g, shareCount: (g.shareCount || 0) + 1 }));
+                }}>
+                  <Text style={styles.shareIcon}>⭐</Text>
+                  <View style={styles.shareInfo}>
+                    <Text style={styles.shareName}>Google Rating</Text>
+                    <Text style={styles.sharePreview}>
+                      "My restaurant has a {(game?.googleRating || 4.3).toFixed(1)} star Google rating in 86'd! Customers love us!"
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.shareCard} onPress={() => {
+                  addNotification('📱 Shared to clipboard!', 'success');
+                  setGame(g => ({ ...g, shareCount: (g.shareCount || 0) + 1 }));
+                }}>
+                  <Text style={styles.shareIcon}>💰</Text>
+                  <View style={styles.shareInfo}>
+                    <Text style={styles.shareName}>Weekly Profit</Text>
+                    <Text style={styles.sharePreview}>
+                      "Just made {formatCurrency(game?.locations?.[0]?.lastWeekProfit || 0)} profit this week in 86'd!"
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.shareCard} onPress={() => {
+                  addNotification('📱 Shared to clipboard!', 'success');
+                  setGame(g => ({ ...g, shareCount: (g.shareCount || 0) + 1 }));
+                }}>
+                  <Text style={styles.shareIcon}>📅</Text>
+                  <View style={styles.shareInfo}>
+                    <Text style={styles.shareName}>Survival Streak</Text>
+                    <Text style={styles.sharePreview}>
+                      "Survived {game?.week || 0} weeks in 86'd! The restaurant business is brutal!"
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <View style={styles.shareStats}>
+                  <Text style={styles.shareStatsText}>Total Shares: {game?.shareCount || 0}</Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
         {/* Phase 5: Notification Toast */}
         {notifications.length > 0 && (
           <View style={styles.notificationContainer}>
@@ -5662,6 +6339,111 @@ const styles = StyleSheet.create({
   buyPropertyButtonDisabled: { backgroundColor: colors.surfaceLight, opacity: 0.6 },
   buyPropertyButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   helperText: { color: colors.textMuted, fontSize: 11, marginBottom: 12 },
+
+  // Phase 7: Scheduling Styles
+  shiftCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  shiftHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  shiftIcon: { fontSize: 24, marginRight: 12 },
+  shiftInfo: { flex: 1 },
+  shiftName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  shiftHours: { color: colors.textSecondary, fontSize: 11 },
+  coverageBadge: { backgroundColor: colors.surface, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  coverageText: { fontSize: 14, fontWeight: '700' },
+  coverageBar: { height: 6, backgroundColor: colors.surface, borderRadius: 3, marginBottom: 8 },
+  coverageFill: { height: 6, borderRadius: 3 },
+  shiftDetail: { color: colors.textMuted, fontSize: 10 },
+  overtimeCard: { backgroundColor: colors.surface, padding: 15, borderRadius: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 15 },
+  overtimeStat: { minWidth: '40%' },
+  overtimeLabel: { color: colors.textMuted, fontSize: 10 },
+  overtimeValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+
+  // Phase 7: Inventory Styles
+  inventoryCategory: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  inventoryIcon: { fontSize: 24, marginRight: 12 },
+  inventoryInfo: { flex: 1 },
+  inventoryName: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  inventoryDetail: { color: colors.textMuted, fontSize: 10 },
+  wasteRisk: { fontSize: 12, fontWeight: '600' },
+  strategyCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  strategyCardActive: { borderWidth: 2, borderColor: colors.primary },
+  strategyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  strategyIcon: { fontSize: 20, marginRight: 10 },
+  strategyName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', flex: 1 },
+  strategyActive: { color: colors.success, fontSize: 18, fontWeight: '700' },
+  strategyDesc: { color: colors.textSecondary, fontSize: 11, marginBottom: 10 },
+  strategyEffects: { flexDirection: 'row', gap: 15 },
+  strategyEffect: { color: colors.textMuted, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+  spoilageSummary: { backgroundColor: colors.surface, padding: 15, borderRadius: 10, marginTop: 20 },
+  spoilageStat: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  spoilageLabel: { color: colors.textSecondary, fontSize: 12 },
+  spoilageValue: { fontSize: 14, fontWeight: '700' },
+
+  // Phase 7: Loyalty Styles
+  loyaltySummary: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 20 },
+  loyaltyStat: { alignItems: 'center' },
+  loyaltyStatValue: { color: colors.primary, fontSize: 28, fontWeight: '700' },
+  loyaltyStatLabel: { color: colors.textMuted, fontSize: 11 },
+  loyaltyProgramCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  loyaltyProgramActive: { borderWidth: 2, borderColor: colors.primary },
+  loyaltyProgramHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  loyaltyProgramIcon: { fontSize: 24, marginRight: 12 },
+  loyaltyProgramInfo: { flex: 1 },
+  loyaltyProgramName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  loyaltyProgramCost: { color: colors.textMuted, fontSize: 11 },
+  loyaltyProgramBadge: { backgroundColor: colors.primary, color: colors.textPrimary, fontSize: 10, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+  loyaltyProgramDesc: { color: colors.textSecondary, fontSize: 11, marginBottom: 8 },
+  loyaltyProgramEffect: { fontSize: 12, fontWeight: '600' },
+  tierCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8, borderLeftWidth: 4 },
+  tierIcon: { fontSize: 24, marginRight: 12 },
+  tierInfo: { flex: 1 },
+  tierName: { fontSize: 14, fontWeight: '700' },
+  tierPoints: { color: colors.textMuted, fontSize: 10 },
+  tierPerks: { color: colors.textSecondary, fontSize: 10, marginTop: 2 },
+  tierDiscount: { fontSize: 14, fontWeight: '700' },
+
+  // Phase 7: Google Reviews Styles
+  googleRatingSummary: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 20, alignItems: 'center' },
+  googleRatingMain: { alignItems: 'center', marginBottom: 15 },
+  googleRatingNumber: { color: colors.textPrimary, fontSize: 48, fontWeight: '700' },
+  googleStars: { flexDirection: 'row', marginVertical: 8 },
+  googleStar: { fontSize: 20 },
+  googleReviewCount: { color: colors.textMuted, fontSize: 12 },
+  googleRatingStats: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+  googleRatingStat: { color: colors.textSecondary, fontSize: 11 },
+  reviewCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  reviewerName: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  reviewStars: { flexDirection: 'row' },
+  reviewStar: { fontSize: 12 },
+  reviewText: { color: colors.textSecondary, fontSize: 12, fontStyle: 'italic', marginBottom: 10 },
+  reviewActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewWeek: { color: colors.textMuted, fontSize: 10 },
+  respondButton: { backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 6, borderRadius: 4 },
+  respondButtonText: { color: colors.textPrimary, fontSize: 11, fontWeight: '600' },
+  respondedBadge: { color: colors.success, fontSize: 11, fontWeight: '600' },
+  reviewTips: { backgroundColor: colors.surface, padding: 15, borderRadius: 10, marginTop: 10 },
+  reviewTip: { color: colors.textSecondary, fontSize: 11, marginBottom: 5 },
+
+  // Phase 7: Leaderboard Styles
+  leaderboardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  leaderboardIcon: { fontSize: 28, marginRight: 15 },
+  leaderboardInfo: { flex: 1 },
+  leaderboardName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  leaderboardValue: { color: colors.textSecondary, fontSize: 12 },
+  leaderboardRank: { alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8 },
+  leaderboardRankText: { color: colors.primary, fontSize: 18, fontWeight: '700' },
+  leaderboardRankLabel: { color: colors.textMuted, fontSize: 9 },
+  leaderboardNote: { backgroundColor: colors.surface, padding: 15, borderRadius: 10, marginTop: 10 },
+  leaderboardNoteText: { color: colors.textSecondary, fontSize: 12, textAlign: 'center' },
+
+  // Phase 7: Share Styles
+  shareCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  shareIcon: { fontSize: 28, marginRight: 15 },
+  shareInfo: { flex: 1 },
+  shareName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  sharePreview: { color: colors.textSecondary, fontSize: 11, fontStyle: 'italic' },
+  shareStats: { backgroundColor: colors.surface, padding: 15, borderRadius: 10, marginTop: 10, alignItems: 'center' },
+  shareStatsText: { color: colors.textMuted, fontSize: 12 },
 
 });
 
