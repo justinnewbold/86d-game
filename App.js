@@ -522,6 +522,20 @@ const PHASE5_ACHIEVEMENTS = [
   { id: 'theme_collector', name: 'Theme Collector', description: 'Try all 5 color themes', icon: '🎨', reward: 2500 },
 ];
 
+// PHASE 6 ACHIEVEMENTS
+const PHASE6_ACHIEVEMENTS = [
+  { id: 'investor_funded', name: 'Investor Funded', description: 'Secure your first investor', icon: '🏦', reward: 15000 },
+  { id: 'property_owner', name: 'Property Owner', description: 'Buy your first building', icon: '🏢', reward: 50000 },
+  { id: 'catering_king', name: 'Catering King', description: 'Sign 3 catering contracts', icon: '🍽️', reward: 20000 },
+  { id: 'food_truck_fleet', name: 'Fleet Owner', description: 'Own 3 food trucks', icon: '🚚', reward: 35000 },
+  { id: 'tv_star', name: 'TV Star', description: 'Appear on a cooking show', icon: '📺', reward: 25000 },
+  { id: 'cookbook_author', name: 'Cookbook Author', description: 'Sign a cookbook deal', icon: '📚', reward: 30000 },
+  { id: 'recession_survivor', name: 'Recession Survivor', description: 'Stay profitable through a recession', icon: '📉', reward: 40000 },
+  { id: 'ipo_complete', name: 'Wall Street', description: 'Complete an IPO', icon: '📈', reward: 100000 },
+  { id: 'strategic_exit', name: 'Strategic Exit', description: 'Sell your company successfully', icon: '🎯', reward: 75000 },
+  { id: 'real_estate_mogul', name: 'Real Estate Mogul', description: 'Own $5M in property', icon: '🏛️', reward: 60000 },
+];
+
 // HALL OF FAME CATEGORIES
 const HALL_OF_FAME_CATEGORIES = [
   { id: 'longest_run', name: 'Longest Run', icon: '📅', stat: 'weeksSurvived', format: (v) => `${v} weeks` },
@@ -934,6 +948,69 @@ const EMPIRE_SCENARIOS = [
     ],
     lesson: 'Your brand is only as strong as your weakest franchisee.',
     minFranchises: 1,
+  },
+];
+
+// INVESTOR DEMAND SCENARIOS (triggered when you have investors)
+const INVESTOR_SCENARIOS = [
+  {
+    id: 'investor_growth_demand', type: 'investor', title: '📊 Board Pressure',
+    message: 'Your investors are unhappy with growth pace. They\'re demanding you open 3 locations in the next 6 months or they\'ll vote to replace you as CEO.',
+    options: [
+      { text: 'Commit to aggressive expansion', successChance: 0.6, success: { reputation: 5, investorHappiness: 20 }, fail: { reputation: -10, investorHappiness: -30 } },
+      { text: 'Propose 2 locations, better margins', successChance: 0.7, success: { investorHappiness: 10 }, fail: { investorHappiness: -15 } },
+      { text: 'Push back - quality over quantity', successChance: 0.4, success: { reputation: 10, investorHappiness: -10 }, fail: { ceoPressure: true, investorHappiness: -40 } },
+    ],
+    lesson: 'Outside investors have timelines. Make sure yours match before taking money.',
+    requiresInvestors: true,
+  },
+  {
+    id: 'investor_cost_cutting', type: 'investor', title: '✂️ Cost Cutting Mandate',
+    message: 'The PE firm on your board is demanding 15% cost reduction. They want to cut labor and renegotiate supplier contracts.',
+    options: [
+      { text: 'Implement cuts across the board', successChance: 0.8, success: { costs: -0.15, morale: -20, investorHappiness: 25 }, fail: { reputation: -15, morale: -30 } },
+      { text: 'Find savings without layoffs', successChance: 0.5, success: { costs: -0.08, investorHappiness: 10 }, fail: { investorHappiness: -10 } },
+      { text: 'Refuse - protect the team', successChance: 0.3, success: { morale: 15, reputation: 5 }, fail: { investorHappiness: -35, boardConflict: true } },
+    ],
+    lesson: 'PE firms optimize for returns. Culture often takes a backseat.',
+    requiresInvestors: true,
+    investorType: 'pe',
+  },
+  {
+    id: 'investor_franchise_push', type: 'investor', title: '🏪 Franchise Acceleration',
+    message: 'Your strategic investor wants you to franchise aggressively. They\'re connected to 50 potential franchisees.',
+    options: [
+      { text: 'Accept their franchisee network', successChance: 0.7, success: { newFranchises: 5, cash: 175000, investorHappiness: 20 }, fail: { reputation: -10, qualityIssues: true } },
+      { text: 'Cherry-pick best candidates', successChance: 0.8, success: { newFranchises: 2, cash: 70000, investorHappiness: 5 }, fail: { investorHappiness: -10 } },
+      { text: 'Decline - not ready to scale', successChance: 1.0, success: { investorHappiness: -15 }, fail: {} },
+    ],
+    lesson: 'Connected investors open doors. Make sure you\'re ready to walk through them.',
+    requiresInvestors: true,
+    investorType: 'strategic',
+  },
+  {
+    id: 'investor_tech_upgrade', type: 'investor', title: '💻 Technology Mandate',
+    message: 'Your VC investor insists on a $200K investment in enterprise software - POS, inventory, and analytics platforms.',
+    options: [
+      { text: 'Implement full tech stack', successChance: 0.7, success: { cash: -200000, efficiency: 0.1, investorHappiness: 20 }, fail: { cash: -200000, morale: -15 } },
+      { text: 'Phase it over 18 months', successChance: 0.8, success: { cash: -75000, efficiency: 0.05, investorHappiness: 5 }, fail: { investorHappiness: -10 } },
+      { text: 'Decline - current systems work', successChance: 1.0, success: { investorHappiness: -20 }, fail: {} },
+    ],
+    lesson: 'Tech investments have long payback periods. Make sure the timing is right.',
+    requiresInvestors: true,
+    investorType: 'vc',
+  },
+  {
+    id: 'investor_exit_pressure', type: 'investor', title: '🚪 Exit Timeline',
+    message: 'Your investors are pushing for an exit within 18 months. They want you to start talking to potential buyers.',
+    options: [
+      { text: 'Begin confidential sale process', successChance: 0.6, success: { exitTimeline: 18, investorHappiness: 25 }, fail: { reputation: -10, staffAnxiety: true } },
+      { text: 'Propose IPO path instead', successChance: 0.4, success: { startIPO: true, investorHappiness: 15 }, fail: { investorHappiness: -15 } },
+      { text: 'Push back on timeline', successChance: 0.3, success: { investorHappiness: -10 }, fail: { boardConflict: true, investorHappiness: -30 } },
+    ],
+    lesson: 'Investors invest to exit. Understand their timeline before taking money.',
+    requiresInvestors: true,
+    minValuation: 5000000,
   },
 ];
 
@@ -1493,10 +1570,15 @@ export default function App() {
     // Bar revenue
     const barRevenue = location.upgrades.includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
     
-    const totalRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
+    const baseRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
     
-    // Costs
-    const foodCost = totalRevenue * location.foodCostPct;
+    // Apply economic multiplier (passed from parent via game state)
+    const economicMultiplier = location.economicRevenueMultiplier || 1;
+    const totalRevenue = baseRevenue * economicMultiplier;
+    
+    // Costs (also affected by economic conditions)
+    const economicCostMultiplier = location.economicCostMultiplier || 1;
+    const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
     const laborCost = location.staff.reduce((sum, s) => sum + s.wage * 40, 0);
     const rent = location.rent;
     const utilities = Math.floor(rent * 0.15);
@@ -1553,8 +1635,20 @@ export default function App() {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
     
     setGame(g => {
+      // Get current economic condition and its effects
+      const currentCondition = ECONOMIC_CONDITIONS.find(e => e.id === g.economicCondition) || ECONOMIC_CONDITIONS[1]; // default to stable
+      const economicRevenueMultiplier = currentCondition.revenueMultiplier;
+      const economicCostMultiplier = currentCondition.costMultiplier;
+      
+      // Apply economic effects to all locations before processing
+      const locationsWithEconomics = g.locations.map(loc => ({
+        ...loc,
+        economicRevenueMultiplier,
+        economicCostMultiplier,
+      }));
+      
       // Process all locations
-      const updatedLocations = g.locations.map(loc => processLocationWeek(loc, cuisine));
+      const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine));
       
       // Calculate empire totals
       const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
@@ -1564,11 +1658,40 @@ export default function App() {
       // Process franchise royalties
       const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
       
+      // PHASE 6: Catering Revenue
+      const cateringRevenue = g.cateringEnabled ? g.cateringContracts.reduce((sum, contract) => {
+        const contractData = CATERING_CONTRACTS.find(c => c.id === contract.id);
+        return sum + (contractData?.weeklyRevenue || 0);
+      }, 0) : 0;
+      
+      // PHASE 6: Food Truck Revenue
+      const truckRevenue = g.foodTrucks.reduce((sum, truck) => {
+        const eventRevenue = truck.currentEvent ? (truck.eventRevenue || 800) : 0;
+        return sum + eventRevenue;
+      }, 0);
+      
+      // PHASE 6: Media/Brand Deal Revenue
+      const brandDealRevenue = g.brandDeals.reduce((sum, deal) => {
+        const dealData = BRAND_DEALS.find(d => d.id === deal.id);
+        if (dealData?.type === 'royalty' && deal.active) {
+          return sum + (dealData.weeklyRoyalty || 0);
+        }
+        return sum;
+      }, 0);
+      
+      // PHASE 6: Property appreciation (if owning properties)
+      const propertyAppreciation = g.ownedProperties.reduce((sum, prop) => {
+        return sum + (prop.value * 0.0006); // ~3% annual = 0.06% weekly
+      }, 0);
+      
       // Loan payments from corporate
       const loanPayments = g.loans.reduce((sum, l) => {
         const loan = LOANS.find(lo => lo.id === l.type);
         return sum + (loan?.weeklyPayment || 0);
       }, 0);
+      
+      // PHASE 6: Mortgage payments
+      const mortgagePayments = g.mortgages.reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
       
       // Corporate costs (management, district managers, etc)
       const corporateCosts = g.corporateStaff.reduce((sum, s) => sum + s.wage * 40, 0);
@@ -1577,11 +1700,62 @@ export default function App() {
         return sum + (mkt?.managementCost || 0);
       }, 0);
       
-      // Update corporate cash
-      const newCorporateCash = g.corporateCash + franchiseRoyalties - loanPayments - corporateCosts - marketCosts;
+      // Update corporate cash with all Phase 6 revenue streams
+      const newCorporateCash = g.corporateCash 
+        + franchiseRoyalties 
+        + cateringRevenue 
+        + truckRevenue 
+        + brandDealRevenue
+        + propertyAppreciation
+        - loanPayments 
+        - mortgagePayments
+        - corporateCosts 
+        - marketCosts;
       
       // Calculate empire valuation
       const empireValuation = calculateEmpireValuation({ ...g, locations: updatedLocations }, setup);
+      
+      // PHASE 6: Update property values
+      const updatedProperties = g.ownedProperties.map(prop => ({
+        ...prop,
+        value: prop.value * 1.0006 // ~3% annual appreciation
+      }));
+      
+      // PHASE 6: Exit Strategy Progress
+      let newExitProgress = g.exitProgress;
+      if (g.exitStrategy && g.exitProgress < 100) {
+        const exitOption = EXIT_OPTIONS.find(e => e.id === g.exitStrategy);
+        if (exitOption) {
+          const progressPerWeek = 100 / exitOption.preparationTime;
+          newExitProgress = Math.min(100, g.exitProgress + progressPerWeek);
+        }
+      }
+      
+      // PHASE 6: Economic Cycle Transitions (small chance each week)
+      let newEconomicCondition = g.economicCondition;
+      if (Math.random() < 0.03) { // 3% chance per week to shift
+        const currentIdx = ECONOMIC_CONDITIONS.findIndex(e => e.id === g.economicCondition);
+        const shift = Math.random() < 0.5 ? -1 : 1;
+        const newIdx = Math.max(0, Math.min(ECONOMIC_CONDITIONS.length - 1, currentIdx + shift));
+        if (newIdx !== currentIdx) {
+          newEconomicCondition = ECONOMIC_CONDITIONS[newIdx].id;
+          setTimeout(() => {
+            addNotification(`📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`, 
+              newIdx < currentIdx ? 'warning' : 'info');
+          }, 1000);
+        }
+      }
+      
+      // PHASE 6: Media reputation boost
+      const mediaBoost = g.mediaAppearances.reduce((sum, app) => {
+        const media = MEDIA_OPPORTUNITIES.find(m => m.id === app.id);
+        return sum + (media?.reputationBoost || 0) * 0.1; // Decay over time
+      }, 0);
+      
+      // Apply media boost to primary location reputation
+      if (updatedLocations.length > 0 && mediaBoost > 0) {
+        updatedLocations[0].reputation = Math.min(100, updatedLocations[0].reputation + mediaBoost);
+      }
       
       // Update achievements
       const newAchievements = [...g.achievements];
@@ -1608,7 +1782,10 @@ export default function App() {
       if (empireValuation >= 10000000 && !newAchievements.includes('ten_million')) newAchievements.push('ten_million');
       
       // Check for scenarios
-      const allScenarios = [...SCENARIOS, ...EMPIRE_SCENARIOS];
+      const allScenarios = [...SCENARIOS, ...EMPIRE_SCENARIOS, ...PHASE_6_SCENARIOS, ...INVESTOR_SCENARIOS];
+      const hasInvestors = (g.investors?.length || 0) > 0;
+      const investorTypes = g.investors?.map(inv => inv.type) || [];
+      
       const availableScenarios = allScenarios.filter(s => {
         if (g.scenariosSeen.includes(s.id)) return false;
         if (s.minWeek && weekNum < s.minWeek) return false;
@@ -1618,6 +1795,11 @@ export default function App() {
         if (s.minFranchises && totalFranchises < s.minFranchises) return false;
         if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
         if (s.minValuation && empireValuation < s.minValuation) return false;
+        // Phase 6: Investor requirements
+        if (s.requiresInvestors && !hasInvestors) return false;
+        if (s.investorType && !investorTypes.includes(s.investorType)) return false;
+        // Phase 6: Economic condition requirements
+        if (s.economic && g.economicCondition !== s.economic) return false;
         return true;
       });
       
@@ -1642,6 +1824,18 @@ export default function App() {
         if (goal.target.valuation && empireValuation >= goal.target.valuation) setTimeout(() => setScreen('win'), 100);
       }
       
+      // Phase 6: Exit strategy completion
+      if (newExitProgress >= 100 && g.exitStrategy) {
+        const exitOption = EXIT_OPTIONS.find(e => e.id === g.exitStrategy);
+        if (exitOption) {
+          const finalPayout = empireValuation * exitOption.valuationMultiple * ((g.equity || 100) / 100);
+          setTimeout(() => {
+            addNotification(`🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`, 'achievement');
+            setScreen('win');
+          }, 500);
+        }
+      }
+      
       // Update owner burnout
       const locationsWithoutManagers = updatedLocations.filter(l => !l.manager).length;
       const burnoutChange = locationsWithoutManagers > 1 ? 8 : locationsWithoutManagers === 1 ? 3 : -2;
@@ -1657,6 +1851,13 @@ export default function App() {
         achievements: newAchievements,
         profitStreak: totalWeekProfit > 0 ? g.profitStreak + 1 : 0,
         burnout: Math.min(100, Math.max(0, g.burnout + burnoutChange)),
+        // Phase 6 state updates
+        cateringRevenue: (g.cateringRevenue || 0) + cateringRevenue,
+        truckRevenue: (g.truckRevenue || 0) + truckRevenue,
+        ownedProperties: updatedProperties,
+        exitProgress: newExitProgress,
+        economicCondition: newEconomicCondition,
+        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
       };
     });
     
@@ -2547,7 +2748,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v8.0.0 • Phase 6 • Advanced Business</Text>
+          <Text style={styles.versionText}>v8.5.0 • Phase 6 • Advanced Business</Text>
         </View>
       </SafeAreaView>
     );
@@ -3035,6 +3236,10 @@ export default function App() {
                   <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setExitStrategyModal(true)}>
                     <Text style={styles.quickActionIcon}>🚪</Text>
                     <Text style={styles.quickActionText}>Exit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: (game?.ownedProperties?.length || 0) > 0 ? colors.success : colors.surfaceLight }]} onPress={() => setRealEstateModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏢</Text>
+                    <Text style={styles.quickActionText}>Property</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.quickAction, { backgroundColor: currentEconomy === 'recession' ? colors.accent : currentEconomy === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
                     <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === currentEconomy)?.icon || '📊'}</Text>
@@ -3996,7 +4201,7 @@ export default function App() {
                   <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
                 </TouchableOpacity>
                 
-                <Text style={styles.versionText}>86'd v8.0.0 - Phase 6</Text>
+                <Text style={styles.versionText}>86'd v8.5.0 - Phase 6</Text>
               </ScrollView>
             </View>
           </View>
@@ -4571,6 +4776,163 @@ export default function App() {
                     </View>
                   );
                 })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: REAL ESTATE MODAL */}
+        <Modal visible={realEstateModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏢 Real Estate</Text>
+                <TouchableOpacity onPress={() => setRealEstateModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Current Properties */}
+                <Text style={styles.sectionSubtitle}>Your Properties</Text>
+                {(game?.ownedProperties?.length || 0) === 0 ? (
+                  <Text style={styles.emptyStateText}>You don't own any properties yet. Properties appreciate over time and build equity.</Text>
+                ) : (
+                  game.ownedProperties.map((prop, idx) => (
+                    <View key={idx} style={styles.propertyCard}>
+                      <View style={styles.propertyHeader}>
+                        <Text style={styles.propertyIcon}>🏢</Text>
+                        <View style={styles.propertyInfo}>
+                          <Text style={styles.propertyName}>{prop.name}</Text>
+                          <Text style={styles.propertyLocation}>{prop.location}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.propertyStats}>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Current Value</Text>
+                          <Text style={[styles.propertyStatValue, { color: colors.success }]}>{formatCurrency(prop.value)}</Text>
+                        </View>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Purchase Price</Text>
+                          <Text style={styles.propertyStatValue}>{formatCurrency(prop.purchasePrice)}</Text>
+                        </View>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Equity Built</Text>
+                          <Text style={[styles.propertyStatValue, { color: colors.primary }]}>{formatCurrency(prop.value - (prop.mortgageRemaining || 0))}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+                
+                {/* Lease Options */}
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Lease Options</Text>
+                <Text style={styles.helperText}>Choose how you structure your property agreements</Text>
+                
+                {REAL_ESTATE_OPTIONS.filter(opt => opt.id !== 'own_property' && opt.id !== 'sale_leaseback').map(option => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={styles.leaseOption}
+                    onPress={() => {
+                      addNotification(`📋 Switched to ${option.name} for new locations`, 'info');
+                      setGame(g => ({ ...g, preferredLeaseType: option.id }));
+                    }}
+                  >
+                    <View style={styles.leaseHeader}>
+                      <Text style={styles.leaseIcon}>{option.icon}</Text>
+                      <View style={styles.leaseInfo}>
+                        <Text style={styles.leaseName}>{option.name}</Text>
+                        <Text style={styles.leaseDesc}>{option.description}</Text>
+                      </View>
+                      {game?.preferredLeaseType === option.id && (
+                        <Text style={styles.leaseActive}>✓</Text>
+                      )}
+                    </View>
+                    <View style={styles.leaseDetails}>
+                      <Text style={styles.leaseDetail}>Rent Modifier: {option.baseRentMod > 1 ? '+' : ''}{((option.baseRentMod - 1) * 100).toFixed(0)}%</Text>
+                      {option.additionalCosts > 0 && <Text style={styles.leaseDetail}>+ Additional Costs: {(option.additionalCosts * 100).toFixed(0)}%</Text>}
+                      {option.salesPercentage && <Text style={styles.leaseDetail}>+ {(option.salesPercentage * 100).toFixed(0)}% of Sales</Text>}
+                      <Text style={styles.leaseDetail}>Term: {option.termYears} years</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {/* Buy Property Option */}
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Purchase Property</Text>
+                {(game?.locations?.length || 0) > 0 && (
+                  <View style={styles.buyPropertyCard}>
+                    <Text style={styles.buyPropertyTitle}>Buy Your Current Location</Text>
+                    <Text style={styles.buyPropertyDesc}>Stop paying rent - build equity instead!</Text>
+                    {(() => {
+                      const loc = game?.locations?.[selectedLocation || 0];
+                      const propertyValue = (loc?.rent || 3000) * 12 * 10; // 10x annual rent
+                      const downPayment = propertyValue * 0.25;
+                      const mortgageAmount = propertyValue * 0.75;
+                      const monthlyMortgage = (mortgageAmount * 0.065) / 12 + mortgageAmount / 360; // 30 year mortgage
+                      const weeklyMortgage = monthlyMortgage / 4;
+                      const canAfford = (game?.corporateCash || 0) >= downPayment;
+                      
+                      return (
+                        <>
+                          <View style={styles.buyPropertyStats}>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Property Value</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency(propertyValue)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Down Payment (25%)</Text>
+                              <Text style={[styles.buyPropertyValue, { color: canAfford ? colors.success : colors.accent }]}>{formatCurrency(downPayment)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Weekly Mortgage</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency(weeklyMortgage)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>vs Current Rent</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency((loc?.rent || 3000) / 4)}/week</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.buyPropertyButton, !canAfford && styles.buyPropertyButtonDisabled]}
+                            disabled={!canAfford}
+                            onPress={() => {
+                              setGame(g => ({
+                                ...g,
+                                corporateCash: g.corporateCash - downPayment,
+                                ownedProperties: [...(g.ownedProperties || []), {
+                                  id: Date.now(),
+                                  name: `${loc.name} Building`,
+                                  location: loc.name,
+                                  purchasePrice: propertyValue,
+                                  value: propertyValue,
+                                  mortgageRemaining: mortgageAmount,
+                                  weeklyMortgage: weeklyMortgage,
+                                  locationId: loc.id,
+                                }],
+                                mortgages: [...(g.mortgages || []), {
+                                  id: Date.now(),
+                                  propertyId: loc.id,
+                                  originalAmount: mortgageAmount,
+                                  remaining: mortgageAmount,
+                                  weeklyPayment: weeklyMortgage,
+                                  rate: 0.065,
+                                }],
+                                locations: g.locations.map(l => 
+                                  l.id === loc.id ? { ...l, rent: 0, ownsProperty: true } : l
+                                ),
+                              }));
+                              addNotification(`🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`, 'achievement');
+                              setRealEstateModal(false);
+                            }}
+                          >
+                            <Text style={styles.buyPropertyButtonText}>
+                              {canAfford ? `Purchase for ${formatCurrency(downPayment)} Down` : `Need ${formatCurrency(downPayment - (game?.corporateCash || 0))} More`}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
               </ScrollView>
             </View>
           </View>
@@ -5266,6 +5628,40 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', padding: 20 },
   emptyStateText: { color: colors.textMuted, fontSize: 14, textAlign: 'center' },
   emptyStateHint: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 },
+
+  // Real Estate Modal Styles
+  propertyCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  propertyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  propertyIcon: { fontSize: 28, marginRight: 12 },
+  propertyInfo: { flex: 1 },
+  propertyName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  propertyLocation: { color: colors.textSecondary, fontSize: 12 },
+  propertyStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  propertyStat: { minWidth: '45%' },
+  propertyStatLabel: { color: colors.textMuted, fontSize: 10 },
+  propertyStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  
+  leaseOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  leaseHeader: { flexDirection: 'row', alignItems: 'center' },
+  leaseIcon: { fontSize: 24, marginRight: 12 },
+  leaseInfo: { flex: 1 },
+  leaseName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  leaseDesc: { color: colors.textSecondary, fontSize: 11, marginTop: 2 },
+  leaseActive: { color: colors.success, fontSize: 18, fontWeight: '700' },
+  leaseDetails: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+  leaseDetail: { color: colors.textMuted, fontSize: 11, marginBottom: 3 },
+  
+  buyPropertyCard: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, borderWidth: 1, borderColor: colors.primary },
+  buyPropertyTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  buyPropertyDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 15 },
+  buyPropertyStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
+  buyPropertyStat: { minWidth: '45%' },
+  buyPropertyLabel: { color: colors.textMuted, fontSize: 10 },
+  buyPropertyValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  buyPropertyButton: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center' },
+  buyPropertyButtonDisabled: { backgroundColor: colors.surfaceLight, opacity: 0.6 },
+  buyPropertyButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  helperText: { color: colors.textMuted, fontSize: 11, marginBottom: 12 },
 
 });
 
