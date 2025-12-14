@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   SafeAreaView, StatusBar, Modal, Dimensions, ActivityIndicator, Animated,
 } from 'react-native';
-// Slider removed - using buttons for web compatibility
+// Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
 
@@ -2824,15 +2824,9 @@ export default function App() {
                     {setup.capital >= 300000 && "Ready to scale fast if you execute."}
                   </Text>
                 </View>
-                {/* Web-compatible capital selector */}
-                <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 20 }}>
-                  <TouchableOpacity style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.max(50000, s.capital - 25000) }))}>
-                    <Text style={{ color: colors.text, fontSize: 18 }}>- $25K</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.min(500000, s.capital + 25000) }))}>
-                    <Text style={{ color: colors.text, fontSize: 18 }}>+ $25K</Text>
-                  </TouchableOpacity>
-                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}><TouchableOpacity style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.max(50000, s.capital - 25000) }))}><Text style={{ color: colors.text, fontSize: 16 }}>- $25K</Text></TouchableOpacity><TouchableOpacity style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.min(500000, s.capital + 25000) }))}><Text style={{ color: colors.text, fontSize: 16 }}>+ $25K</Text></TouchableOpacity></View>
+                <View style={styles.sliderLabels}><Text style={styles.sliderLabel}>$50K</Text><Text style={styles.sliderLabel}>$500K</Text></View>
+              </>
             )}
 
             {step.key === 'name' && (
