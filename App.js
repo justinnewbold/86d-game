@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   SafeAreaView, StatusBar, Modal, Dimensions, ActivityIndicator, Animated,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
+// Slider removed - using buttons for web compatibility
 
 const { width } = Dimensions.get('window');
 
@@ -2736,38 +2736,2938 @@ export default function App() {
   // ============================================
   // RENDER - WELCOME SCREEN
   // ============================================
+  if (screen === 'welcome') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeTitle}>86'd</Text>
+          <View style={styles.welcomeDivider} />
+          <Text style={styles.welcomeQuote}>"The restaurant business doesn't care about your dreams."</Text>
+          <Text style={styles.welcomeSubtext}>Build your restaurant empire.{'\n'}Learn from an AI mentor.{'\n'}Scale or get 86'd.</Text>
+          <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
+            <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
+          </TouchableOpacity>
+          <Text style={styles.versionText}>v8.5.0 • Phase 6 • Advanced Business</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-  // Simple test return
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={{ padding: 20 }}>
-        <Text style={{ color: '#F59E0B', fontSize: 48, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 }}>86'd</Text>
-        <Text style={{ color: '#fff', fontSize: 18, marginBottom: 20, textAlign: 'center' }}>Logic Test - All Hooks Loaded</Text>
+  // ============================================
+  // RENDER - ONBOARDING
+  // ============================================
+  if (screen === 'onboarding') {
+    const steps = [
+      { title: 'Choose Your Cuisine', key: 'cuisine' },
+      { title: 'Starting Capital', key: 'capital' },
+      { title: 'Name Your Restaurant', key: 'name' },
+      { title: 'First Location', key: 'location' },
+      { title: 'Set Your Goal', key: 'goal' },
+    ];
+    const step = steps[onboardingStep];
+    const canContinue = step.key === 'cuisine' ? setup.cuisine : step.key === 'name' ? setup.name.length > 0 : true;
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <ScrollView style={styles.onboardingContainer}>
+          <View style={styles.onboardingContent}>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: `${((onboardingStep + 1) / steps.length) * 100}%` }]} />
+            </View>
+            <Text style={styles.stepText}>STEP {onboardingStep + 1} OF {steps.length}</Text>
+            
+            <View style={styles.messageBox}>
+              <Text style={styles.messageText}>
+                {step.key === 'cuisine' && "What type of food will you build your empire on? This affects everything - food costs, average ticket, and complexity."}
+                {step.key === 'capital' && "How much are you starting with? This is your war chest - first location plus corporate reserve."}
+                {step.key === 'name' && "What's your brand? This will be the foundation of your empire."}
+                {step.key === 'location' && "Where will you open your flagship location? This sets the tone for expansion."}
+                {step.key === 'goal' && "How big do you want to build? Single location survival or multi-state empire?"}
+              </Text>
+            </View>
+
+            {step.key === 'cuisine' && (
+              <>
+                <TouchableOpacity style={styles.dropdownButton} onPress={() => setCuisineModal(true)}>
+                  {setup.cuisine ? (
+                    <Text style={styles.dropdownText}>{CUISINES.find(c => c.id === setup.cuisine)?.icon} {CUISINES.find(c => c.id === setup.cuisine)?.name}</Text>
+                  ) : (
+                    <Text style={styles.dropdownPlaceholder}>Select cuisine type...</Text>
+                  )}
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
+                {setup.cuisine && (
+                  <View style={styles.selectedCuisine}>
+                    <Text style={styles.selectedIcon}>{CUISINES.find(c => c.id === setup.cuisine)?.icon}</Text>
+                    <View>
+                      <Text style={styles.selectedName}>{CUISINES.find(c => c.id === setup.cuisine)?.name}</Text>
+                      <Text style={styles.selectedStats}>Food Cost: {formatPct(CUISINES.find(c => c.id === setup.cuisine)?.foodCost)} • Avg Ticket: {formatCurrency(CUISINES.find(c => c.id === setup.cuisine)?.avgTicket)}</Text>
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
+
+            {step.key === 'capital' && (
+              <>
+                <View style={styles.capitalDisplay}>
+                  <Text style={[styles.capitalAmount, { color: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : colors.success }]}>{formatCurrency(setup.capital)}</Text>
+                  <View style={[styles.tierBadge, { backgroundColor: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : setup.capital < 300000 ? colors.success : colors.purple }]}>
+                    <Text style={styles.tierText}>{setup.capital < 75000 ? 'BOOTSTRAP' : setup.capital < 150000 ? 'STANDARD' : setup.capital < 300000 ? 'WELL-FUNDED' : 'EMPIRE READY'}</Text>
+                  </View>
+                  <Text style={styles.tierDesc}>
+                    {setup.capital < 75000 && "Tight. One location, no safety net."}
+                    {setup.capital >= 75000 && setup.capital < 150000 && "Solid start. Room to breathe."}
+                    {setup.capital >= 150000 && setup.capital < 300000 && "Good runway for location #1 + reserve for #2."}
+                    {setup.capital >= 300000 && "Ready to scale fast if you execute."}
+                  </Text>
+                </View>
+                {/* Web-compatible capital selector */}
+                <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 20 }}>
+                  <TouchableOpacity style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.max(50000, s.capital - 25000) }))}>
+                    <Text style={{ color: colors.text, fontSize: 18 }}>- $25K</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.min(500000, s.capital + 25000) }))}>
+                    <Text style={{ color: colors.text, fontSize: 18 }}>+ $25K</Text>
+                  </TouchableOpacity>
+                </View>
+            )}
+
+            {step.key === 'name' && (
+              <TextInput style={styles.textInput} placeholder="e.g., The Golden Fork" placeholderTextColor={colors.textMuted} value={setup.name} onChangeText={(t) => setSetup(s => ({ ...s, name: t }))} />
+            )}
+
+            {step.key === 'location' && (
+              <View style={styles.goalOptions}>
+                {LOCATION_TYPES.slice(0, 6).map(loc => (
+                  <TouchableOpacity key={loc.id} style={[styles.goalButton, setup.location === loc.id && styles.goalButtonActive]} onPress={() => setSetup(s => ({ ...s, location: loc.id }))}>
+                    <Text style={{ fontSize: 24 }}>{loc.icon}</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[styles.goalText, setup.location === loc.id && styles.goalTextActive]}>{loc.name}</Text>
+                      <Text style={styles.goalDesc}>Rent: {loc.rentMod > 1 ? '+' : ''}{Math.round((loc.rentMod - 1) * 100)}% • Traffic: {loc.trafficMod > 1 ? '+' : ''}{Math.round((loc.trafficMod - 1) * 100)}% • Buildout: {formatCurrency(loc.buildoutCost)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {step.key === 'goal' && (
+              <View style={styles.goalOptions}>
+                {GOALS.map(g => (
+                  <TouchableOpacity key={g.id} style={[styles.goalButton, setup.goal === g.id && styles.goalButtonActive]} onPress={() => setSetup(s => ({ ...s, goal: g.id }))}>
+                    <Text style={[styles.goalText, setup.goal === g.id && styles.goalTextActive]}>{g.name}</Text>
+                    <Text style={styles.goalDesc}>{g.desc} • {g.difficulty}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]} onPress={() => onboardingStep < steps.length - 1 ? setOnboardingStep(s => s + 1) : initGame()} disabled={!canContinue}>
+              <Text style={[styles.continueButtonText, !canContinue && styles.continueButtonTextDisabled]}>{onboardingStep < steps.length - 1 ? 'CONTINUE' : 'OPEN YOUR DOORS'}</Text>
+            </TouchableOpacity>
+            
+            {onboardingStep > 0 && (
+              <TouchableOpacity style={styles.backButton} onPress={() => setOnboardingStep(s => s - 1)}>
+                <Text style={styles.backButtonText}>← Back</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Cuisine Modal */}
+        <Modal visible={cuisineModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Cuisine</Text>
+                <TouchableOpacity onPress={() => setCuisineModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <TextInput style={styles.searchInput} placeholder="Search cuisines..." placeholderTextColor={colors.textMuted} value={cuisineSearch} onChangeText={setCuisineSearch} />
+              <ScrollView style={styles.cuisineList}>
+                {CUISINES.filter(c => c.name.toLowerCase().includes(cuisineSearch.toLowerCase())).map(c => (
+                  <TouchableOpacity key={c.id} style={[styles.cuisineOption, setup.cuisine === c.id && styles.cuisineOptionSelected]} onPress={() => { setSetup(s => ({ ...s, cuisine: c.id })); setCuisineModal(false); }}>
+                    <Text style={styles.cuisineIcon}>{c.icon}</Text>
+                    <View style={styles.cuisineInfo}>
+                      <Text style={[styles.cuisineName, setup.cuisine === c.id && styles.cuisineNameSelected]}>{c.name}</Text>
+                      <Text style={styles.cuisineStats}>Food: {formatPct(c.foodCost)} • Ticket: {formatCurrency(c.avgTicket)} • {c.difficulty}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    );
+  }
+
+  // ============================================
+  // RENDER - SCENARIO
+  // ============================================
+  if (scenario) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <ScrollView style={styles.scenarioContainer}>
+          <View style={styles.scenarioContent}>
+            <View style={[styles.scenarioTypeBadge, { backgroundColor: scenario.type === 'crisis' ? colors.accent : scenario.type === 'opportunity' ? colors.success : colors.info }]}>
+              <Text style={styles.scenarioTypeText}>{scenario.type.toUpperCase()}</Text>
+            </View>
+            <Text style={styles.scenarioTitle}>{scenario.title}</Text>
+            <Text style={styles.scenarioSubtitle}>Week {game?.week} • {game?.locations?.length > 1 ? 'Empire-wide' : getActiveLocation()?.name}</Text>
+            <View style={styles.scenarioMessageBox}>
+              <Text style={styles.scenarioMessage}>{scenario.message}</Text>
+            </View>
+            
+            {!scenarioResult ? (
+              scenario.options.map((opt, i) => (
+                <TouchableOpacity key={i} style={styles.scenarioOption} onPress={() => handleScenarioChoice(opt)}>
+                  <Text style={styles.scenarioOptionText}>{opt.text}</Text>
+                  <Text style={styles.scenarioChance}>{Math.round(opt.successChance * 100)}%</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <>
+                <View style={styles.scenarioResult}>
+                  <Text style={[styles.scenarioResultText, { color: scenarioResult.success ? colors.success : colors.accent }]}>
+                    {scenarioResult.success ? '✓ SUCCESS' : '✗ FAILED'}
+                  </Text>
+                </View>
+                <View style={styles.aiCommentBox}>
+                  <Text style={styles.aiCommentLabel}>👨‍🍳 Chef Marcus</Text>
+                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiCommentText}>{aiMessage}</Text>}
+                </View>
+                <View style={styles.lessonBox}>
+                  <Text style={styles.lessonLabel}>💡 LESSON</Text>
+                  <Text style={styles.lessonText}>{scenario.lesson}</Text>
+                </View>
+                <TouchableOpacity style={styles.continueButton} onPress={closeScenario}>
+                  <Text style={styles.continueButtonText}>CONTINUE</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ============================================
+  // RENDER - GAME OVER / WIN
+  // ============================================
+  if (screen === 'gameover' || screen === 'win') {
+    const isWin = screen === 'win';
+    const totalUnits = (game?.locations?.length || 0) + (game?.franchises?.length || 0);
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.endContainer}>
+          <Text style={{ fontSize: 64 }}>{isWin ? '🏆' : '💀'}</Text>
+          <Text style={[styles.endTitle, { color: isWin ? colors.success : colors.accent }]}>{isWin ? 'EMPIRE BUILT!' : '86\'d'}</Text>
+          <Text style={styles.endSubtitle}>{isWin ? 'You achieved your goal' : 'Your empire has collapsed'}</Text>
+          <View style={[styles.endDivider, { backgroundColor: isWin ? colors.success : colors.accent }]} />
+          <View style={styles.endStats}>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Weeks</Text><Text style={styles.endStatValue}>{game?.week}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Locations Owned</Text><Text style={styles.endStatValue}>{game?.locations?.length || 0}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Franchises</Text><Text style={styles.endStatValue}>{game?.franchises?.length || 0}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Units</Text><Text style={styles.endStatValue}>{totalUnits}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Empire Valuation</Text><Text style={[styles.endStatValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Revenue</Text><Text style={styles.endStatValue}>{formatCurrency(game?.totalRevenue || 0)}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Achievements</Text><Text style={styles.endStatValue}>{game?.achievements?.length || 0}/{Object.keys(ACHIEVEMENTS).length}</Text></View>
+          </View>
+          <TouchableOpacity style={styles.restartButton} onPress={restart}>
+            <Text style={styles.restartButtonText}>{isWin ? 'PLAY AGAIN' : 'TRY AGAIN'}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ============================================
+  // RENDER - MAIN DASHBOARD
+  // ============================================
+  if (screen === 'dashboard' && game) {
+    const loc = getActiveLocation();
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    const totalCash = game.locations.reduce((sum, l) => sum + l.cash, 0) + game.corporateCash;
+    const totalUnits = game.locations.length + game.franchises.length;
+    const isMultiLocation = game.locations.length > 1;
+    
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
         
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Screen State: {screen}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Setup: {JSON.stringify(setup).slice(0, 50)}...</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Game Speed: {gameSpeed}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Difficulty: {difficulty}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Theme: {currentTheme}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Prestige Level: {prestigeLevel}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Hall of Fame Entries: {hallOfFame.length}</Text>
-        <Text style={{ color: '#0f0', fontSize: 14, marginBottom: 5 }}>✓ Notifications: {notifications.length}</Text>
-        
-        <TouchableOpacity 
-          style={{ backgroundColor: '#F59E0B', padding: 15, borderRadius: 8, marginTop: 20 }}
-          onPress={() => setScreen(screen === 'welcome' ? 'setup' : 'welcome')}
-        >
-          <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>
-            Toggle Screen (Current: {screen})
-          </Text>
+        {/* Empire Header */}
+        <View style={styles.empireHeader}>
+          <View style={styles.empireHeaderLeft}>
+            <Text style={styles.empireName}>{setup.name}</Text>
+            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}</Text>
+          </View>
+          <View style={styles.empireHeaderRight}>
+            <Text style={styles.empireValuation}>{formatCurrency(game.empireValuation)}</Text>
+            <Text style={styles.empireValuationLabel}>Empire Value</Text>
+          </View>
+        </View>
+
+        {/* Location Selector (if multiple) */}
+        {isMultiLocation && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.locationSelector}>
+            <TouchableOpacity 
+              style={[styles.locationTab, !activeLocationId && styles.locationTabActive]} 
+              onPress={() => setEmpireModal(true)}
+            >
+              <Text style={styles.locationTabIcon}>🏛️</Text>
+              <Text style={[styles.locationTabText, !activeLocationId && styles.locationTabTextActive]}>Empire</Text>
+            </TouchableOpacity>
+            {game.locations.map(l => (
+              <TouchableOpacity 
+                key={l.id} 
+                style={[styles.locationTab, activeLocationId === l.id && styles.locationTabActive]}
+                onPress={() => setActiveLocationId(l.id)}
+              >
+                <Text style={styles.locationTabIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon || '🏪'}</Text>
+                <View>
+                  <Text style={[styles.locationTabText, activeLocationId === l.id && styles.locationTabTextActive]} numberOfLines={1}>{l.name}</Text>
+                  <Text style={styles.locationTabCash}>{formatCurrency(l.cash)}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.addLocationTab} onPress={() => setExpansionModal(true)}>
+              <Text style={styles.addLocationIcon}>+</Text>
+              <Text style={styles.addLocationText}>New</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+
+        {/* AI Message Bar */}
+        <TouchableOpacity style={styles.aiBar} onPress={() => setAiChatModal(true)}>
+          <Text style={styles.aiBarIcon}>👨‍🍳</Text>
+          {aiLoading ? (
+            <ActivityIndicator color={colors.primary} style={{ marginLeft: 10 }} />
+          ) : (
+            <Text style={styles.aiBarText} numberOfLines={2}>{aiMessage || 'Tap to chat with Chef Marcus...'}</Text>
+          )}
         </TouchableOpacity>
-        
-        <Text style={{ color: '#737373', fontSize: 12, textAlign: 'center', marginTop: 20 }}>v8.5.0 - 2738 Lines Logic Test</Text>
-      </ScrollView>
-    </SafeAreaView>
-  );
+
+        {/* Warning Banners */}
+        {loc && loc.cash < 5000 && (
+          <View style={[styles.warningBanner, { backgroundColor: colors.accent }]}>
+            <Text style={styles.warningText}>⚠️ LOW CASH at {loc.name} - {formatCurrency(loc.cash)}</Text>
+          </View>
+        )}
+        {game.burnout > 70 && (
+          <View style={[styles.warningBanner, { backgroundColor: colors.warning }]}>
+            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {game.locations.filter(l => !l.manager).length} locations without managers</Text>
+          </View>
+        )}
+
+        <ScrollView style={styles.dashboardScroll}>
+          {/* Quick Stats */}
+          {/* Phase 5: Tips Banner */}
+          {showTips && game && (
+            <View style={styles.tipBanner}>
+              <Text style={styles.tipText}>{GAMEPLAY_TIPS[currentTip % GAMEPLAY_TIPS.length]?.tip || ''}</Text>
+            </View>
+          )}
+          
+          {loc && (
+            <View style={styles.quickStats}>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Location Cash</Text>
+                <Text style={[styles.statValue, { color: loc.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(loc.cash)}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Last Week</Text>
+                <Text style={[styles.statValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Covers</Text>
+                <Text style={styles.statValue}>{loc.lastWeekCovers}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Reputation</Text>
+                <Text style={[styles.statValue, { color: loc.reputation > 70 ? colors.success : loc.reputation > 40 ? colors.warning : colors.accent }]}>{loc.reputation}%</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Corporate Stats (if multi-location) */}
+          {isMultiLocation && (
+            <View style={styles.corporateStats}>
+              <Text style={styles.sectionTitle}>Empire Overview</Text>
+              <View style={styles.corporateRow}>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Corporate Cash</Text>
+                  <Text style={styles.corporateStatValue}>{formatCurrency(game.corporateCash)}</Text>
+                </View>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Franchise Royalties</Text>
+                  <Text style={styles.corporateStatValue}>{formatCurrency(game.franchises.reduce((s, f) => s + f.weeklyRoyalty, 0))}/wk</Text>
+                </View>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Total Staff</Text>
+                  <Text style={styles.corporateStatValue}>{game.locations.reduce((s, l) => s + l.staff.length, 0)}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Mini Chart */}
+          {loc && loc.weeklyHistory.length > 1 && (
+            <View style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>Revenue Trend (12 weeks)</Text>
+              <MiniChart data={loc.weeklyHistory.map(w => w.revenue)} color={colors.info} height={50} />
+              <Text style={styles.chartTitle}>Profit Trend</Text>
+              <MiniChart data={loc.weeklyHistory.map(w => w.profit)} color={colors.success} height={50} />
+            </View>
+          )}
+
+          {/* Tab Navigation */}
+          <View style={styles.tabBar}>
+            {['overview', 'staff', 'ops', 'finance', 'empire'].map(tab => (
+              <TouchableOpacity key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Tab Content */}
+          <View style={styles.tabContent}>
+            
+            {/* OVERVIEW TAB */}
+            {activeTab === 'overview' && loc && (
+              <>
+                {/* Health Meters */}
+                <View style={styles.healthMeters}>
+                  <View style={styles.meterContainer}>
+                    <Text style={styles.meterLabel}>Owner Burnout</Text>
+                    <View style={styles.meterBar}>
+                      <View style={[styles.meterFill, { width: `${game.burnout}%`, backgroundColor: game.burnout > 70 ? colors.accent : game.burnout > 40 ? colors.warning : colors.success }]} />
+                    </View>
+                    <Text style={styles.meterValue}>{game.burnout}%</Text>
+                  </View>
+                  <View style={styles.meterContainer}>
+                    <Text style={styles.meterLabel}>Team Morale</Text>
+                    <View style={styles.meterBar}>
+                      <View style={[styles.meterFill, { width: `${loc.morale}%`, backgroundColor: loc.morale > 70 ? colors.success : loc.morale > 40 ? colors.warning : colors.accent }]} />
+                    </View>
+                    <Text style={styles.meterValue}>{loc.morale}%</Text>
+                  </View>
+                </View>
+
+                {/* Manager Status */}
+                <View style={styles.managerCard}>
+                  <Text style={styles.managerLabel}>Location Manager</Text>
+                  {loc.manager ? (
+                    <View style={styles.managerInfo}>
+                      <Text style={styles.managerIcon}>{loc.manager.icon}</Text>
+                      <View>
+                        <Text style={styles.managerName}>{loc.manager.name}</Text>
+                        <Text style={styles.managerRole}>{loc.manager.role} • Skill {loc.manager.skill}/10</Text>
+                      </View>
+                      <View style={[styles.managerBadge, { backgroundColor: colors.success }]}>
+                        <Text style={styles.managerBadgeText}>Active</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.noManager}>
+                      <Text style={styles.noManagerText}>No manager assigned - YOU are running this location</Text>
+                      <Text style={styles.noManagerHint}>Hire a GM and promote them to reduce burnout</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Quick Actions */}
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                <View style={styles.quickActions}>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setStaffModal(true)}>
+                    <Text style={styles.quickActionIcon}>👥</Text>
+                    <Text style={styles.quickActionText}>Staff</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setMarketingModal(true)}>
+                    <Text style={styles.quickActionIcon}>📣</Text>
+                    <Text style={styles.quickActionText}>Marketing</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setDeliveryModal(true)}>
+                    <Text style={styles.quickActionIcon}>🛵</Text>
+                    <Text style={styles.quickActionText}>Delivery</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setLoanModal(true)}>
+                    <Text style={styles.quickActionIcon}>💰</Text>
+                    <Text style={styles.quickActionText}>Finance</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setAnalyticsModal(true)}>
+                    <Text style={styles.quickActionIcon}>📊</Text>
+                    <Text style={styles.quickActionText}>Analytics</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setSaveModal(true)}>
+                    <Text style={styles.quickActionIcon}>💾</Text>
+                    <Text style={styles.quickActionText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setVendorModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚛</Text>
+                    <Text style={styles.quickActionText}>Vendors</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setCompetitorModal(true)}>
+                    <Text style={styles.quickActionIcon}>👀</Text>
+                    <Text style={styles.quickActionText}>Competition</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setEventsModal(true)}>
+                    <Text style={styles.quickActionIcon}>📅</Text>
+                    <Text style={styles.quickActionText}>Events</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setMilestonesModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏆</Text>
+                    <Text style={styles.quickActionText}>Milestones</Text>
+                  </TouchableOpacity>
+                  {/* Phase 6 Quick Actions */}
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setInvestorModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏦</Text>
+                    <Text style={styles.quickActionText}>Investors</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setCateringModal(true)}>
+                    <Text style={styles.quickActionIcon}>🍽️</Text>
+                    <Text style={styles.quickActionText}>Catering</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setFoodTruckModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚚</Text>
+                    <Text style={styles.quickActionText}>Trucks</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setMediaModal(true)}>
+                    <Text style={styles.quickActionIcon}>📺</Text>
+                    <Text style={styles.quickActionText}>Media</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: colors.surfaceLight }]} onPress={() => setExitStrategyModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚪</Text>
+                    <Text style={styles.quickActionText}>Exit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: (game?.ownedProperties?.length || 0) > 0 ? colors.success : colors.surfaceLight }]} onPress={() => setRealEstateModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏢</Text>
+                    <Text style={styles.quickActionText}>Property</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: currentEconomy === 'recession' ? colors.accent : currentEconomy === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
+                    <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === currentEconomy)?.icon || '📊'}</Text>
+                    <Text style={styles.quickActionText}>Economy</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Active Systems Badges */}
+                <Text style={styles.sectionTitle}>Active Systems</Text>
+                <View style={styles.badgeContainer}>
+                  {loc.marketing.channels.map(c => (
+                    <View key={c} style={styles.badge}><Text style={styles.badgeText}>{MARKETING_CHANNELS.find(m => m.id === c)?.icon} {MARKETING_CHANNELS.find(m => m.id === c)?.name}</Text></View>
+                  ))}
+                  {loc.delivery.platforms.map(p => (
+                    <View key={p} style={[styles.badge, { backgroundColor: colors.info }]}><Text style={styles.badgeText}>{DELIVERY_PLATFORMS.find(d => d.id === p)?.icon} {DELIVERY_PLATFORMS.find(d => d.id === p)?.name}</Text></View>
+                  ))}
+                  {loc.virtualBrands.map(v => (
+                    <View key={v} style={[styles.badge, { backgroundColor: colors.purple }]}><Text style={styles.badgeText}>{VIRTUAL_BRANDS.find(vb => vb.id === v)?.icon} {VIRTUAL_BRANDS.find(vb => vb.id === v)?.name}</Text></View>
+                  ))}
+                  {loc.equipment.map(e => (
+                    <View key={e} style={[styles.badge, { backgroundColor: colors.surfaceLight }]}><Text style={styles.badgeText}>{EQUIPMENT.find(eq => eq.id === e)?.icon} {EQUIPMENT.find(eq => eq.id === e)?.name}</Text></View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* STAFF TAB */}
+            {activeTab === 'staff' && loc && (
+              <>
+                <View style={styles.staffHeader}>
+                  <Text style={styles.sectionTitle}>Staff ({loc.staff.length})</Text>
+                  <TouchableOpacity style={styles.hireButton} onPress={() => setStaffModal(true)}>
+                    <Text style={styles.hireButtonText}>+ HIRE</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {loc.staff.length === 0 ? (
+                  <Text style={styles.emptyText}>No staff hired yet. Running solo!</Text>
+                ) : (
+                  loc.staff.map(s => (
+                    <View key={s.id} style={styles.staffCard}>
+                      <Text style={styles.staffIcon}>{s.icon}</Text>
+                      <View style={styles.staffInfo}>
+                        <Text style={styles.staffName}>{s.name}</Text>
+                        <Text style={styles.staffRole}>{s.role} • ${s.wage}/hr • Skill {s.skill}/10</Text>
+                        <View style={styles.staffMoraleBar}>
+                          <View style={[styles.staffMoraleFill, { width: `${s.morale}%`, backgroundColor: s.morale > 60 ? colors.success : colors.warning }]} />
+                        </View>
+                      </View>
+                      <View style={styles.staffActions}>
+                        {s.canManage && !loc.manager && (
+                          <TouchableOpacity style={styles.promoteBtn} onPress={() => promoteToManager(s.id)}>
+                            <Text style={styles.promoteBtnText}>⬆️</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity style={styles.trainBtn} onPress={() => { setSelectedStaff(s); setTrainingModal(true); }}>
+                          <Text style={styles.trainBtnText}>📚</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.fireBtn} onPress={() => fireStaff(s.id)}>
+                          <Text style={styles.fireBtnText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </>
+            )}
+
+            {/* OPS TAB */}
+            {activeTab === 'ops' && loc && (
+              <>
+                {/* Menu */}
+                <View style={styles.menuHeader}>
+                  <Text style={styles.sectionTitle}>Menu ({loc.menu.length} items)</Text>
+                  <TouchableOpacity style={styles.addMenuBtn} onPress={addMenuItem}>
+                    <Text style={styles.addMenuBtnText}>+ ADD ITEM</Text>
+                  </TouchableOpacity>
+                </View>
+                {loc.menu.map(item => (
+                  <TouchableOpacity key={item.id} style={[styles.menuItem, item.is86d && styles.menuItem86d]} onPress={() => toggle86(item.id)}>
+                    <View>
+                      <Text style={[styles.menuItemName, item.is86d && styles.menuItemName86d]}>{item.name}</Text>
+                      <Text style={styles.menuItemPrice}>{formatCurrency(item.price)} • Cost: {formatCurrency(item.cost)}</Text>
+                    </View>
+                    <Text style={styles.menuStatus}>{item.is86d ? '86\'d' : item.popular ? '⭐' : ''}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Equipment */}
+                <Text style={styles.sectionTitle}>Equipment</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {EQUIPMENT.map(eq => {
+                    const owned = loc.equipment.includes(eq.id);
+                    return (
+                      <TouchableOpacity key={eq.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyEquipment(eq)} disabled={owned}>
+                        <Text style={styles.equipmentIcon}>{eq.icon}</Text>
+                        <Text style={styles.equipmentName}>{eq.name}</Text>
+                        <Text style={styles.equipmentCost}>{owned ? 'OWNED' : formatCurrency(eq.cost)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Upgrades */}
+                <Text style={styles.sectionTitle}>Upgrades</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {UPGRADES.map(up => {
+                    const owned = loc.upgrades.includes(up.id);
+                    return (
+                      <TouchableOpacity key={up.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyUpgrade(up)} disabled={owned}>
+                        <Text style={styles.equipmentIcon}>{up.icon}</Text>
+                        <Text style={styles.equipmentName}>{up.name}</Text>
+                        <Text style={styles.equipmentCost}>{owned ? 'DONE' : formatCurrency(up.cost)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Virtual Brands */}
+                <Text style={styles.sectionTitle}>Virtual Brands (Ghost Kitchens)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {VIRTUAL_BRANDS.map(vb => {
+                    const active = loc.virtualBrands.includes(vb.id);
+                    return (
+                      <TouchableOpacity key={vb.id} style={[styles.equipmentCard, active && styles.equipmentOwned]} onPress={() => !active && launchVirtualBrand(vb.id)} disabled={active}>
+                        <Text style={styles.equipmentIcon}>{vb.icon}</Text>
+                        <Text style={styles.equipmentName}>{vb.name}</Text>
+                        <Text style={styles.equipmentCost}>{active ? 'ACTIVE' : formatCurrency(vb.setupCost)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
+
+            {/* FINANCE TAB */}
+            {activeTab === 'finance' && loc && (
+              <>
+                {/* P&L Summary */}
+                <Text style={styles.sectionTitle}>Last Week P&L</Text>
+                <View style={styles.plCard}>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
+                  <View style={styles.plDivider} />
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency(loc.marketing.channels.reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
+                  <View style={styles.plDivider} />
+                  <View style={styles.plRow}><Text style={[styles.plLabel, { fontWeight: 'bold' }]}>Net Profit</Text><Text style={[styles.plValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent, fontWeight: 'bold' }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text></View>
+                </View>
+
+                {/* Loans */}
+                <View style={styles.loanHeader}>
+                  <Text style={styles.sectionTitle}>Active Loans</Text>
+                  <TouchableOpacity style={styles.loanBtn} onPress={() => setLoanModal(true)}>
+                    <Text style={styles.loanBtnText}>+ NEW LOAN</Text>
+                  </TouchableOpacity>
+                </View>
+                {game.loans.length === 0 ? (
+                  <Text style={styles.emptyText}>No active loans - debt free!</Text>
+                ) : (
+                  game.loans.map((loan, i) => {
+                    const loanData = LOANS.find(l => l.id === loan.type);
+                    return (
+                      <View key={i} style={styles.loanCard}>
+                        <Text style={styles.loanName}>{loanData?.name}</Text>
+                        <Text style={styles.loanDetails}>{loan.remaining} weeks left • {formatCurrency(loanData?.weeklyPayment || 0)}/week</Text>
+                      </View>
+                    );
+                  })
+                )}
+
+                {/* Equity */}
+                <View style={styles.equityCard}>
+                  <Text style={styles.equityLabel}>Your Equity</Text>
+                  <Text style={[styles.equityValue, { color: game.equity >= 80 ? colors.success : game.equity >= 50 ? colors.warning : colors.accent }]}>{game.equity}%</Text>
+                </View>
+              </>
+            )}
+
+            {/* EMPIRE TAB */}
+            {activeTab === 'empire' && (
+              <>
+                {/* Empire Stats */}
+                <View style={styles.empireStatsCard}>
+                  <View style={styles.empireStat}>
+                    <Text style={styles.empireStatValue}>{game.locations.length}</Text>
+                    <Text style={styles.empireStatLabel}>Owned</Text>
+                  </View>
+                  <View style={styles.empireStat}>
+                    <Text style={styles.empireStatValue}>{game.franchises.length}</Text>
+                    <Text style={styles.empireStatLabel}>Franchises</Text>
+                  </View>
+                  <View style={styles.empireStat}>
+                    <Text style={[styles.empireStatValue, { color: colors.success }]}>{formatCurrency(game.empireValuation)}</Text>
+                    <Text style={styles.empireStatLabel}>Valuation</Text>
+                  </View>
+                </View>
+
+                {/* Expansion */}
+                <Text style={styles.sectionTitle}>Expansion</Text>
+                <TouchableOpacity style={styles.expansionButton} onPress={() => setExpansionModal(true)}>
+                  <Text style={styles.expansionButtonIcon}>🏪</Text>
+                  <View>
+                    <Text style={styles.expansionButtonTitle}>Open New Location</Text>
+                    <Text style={styles.expansionButtonDesc}>Expand your owned footprint</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Franchising */}
+                <Text style={styles.sectionTitle}>Franchising</Text>
+                {!game.franchiseEnabled ? (
+                  <TouchableOpacity 
+                    style={[styles.expansionButton, game.locations.length < 3 && styles.expansionButtonDisabled]} 
+                    onPress={enableFranchising}
+                    disabled={game.locations.length < 3}
+                  >
+                    <Text style={styles.expansionButtonIcon}>🌐</Text>
+                    <View>
+                      <Text style={styles.expansionButtonTitle}>Enable Franchising</Text>
+                      <Text style={styles.expansionButtonDesc}>
+                        {game.locations.length < 3 
+                          ? `Need 3 locations first (have ${game.locations.length})` 
+                          : '$50K setup • Let others expand your brand'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <View style={styles.franchiseEnabled}>
+                      <Text style={styles.franchiseEnabledText}>✓ Franchising Active</Text>
+                      <Text style={styles.franchiseRate}>{formatPct(game.royaltyRate)} royalty rate</Text>
+                    </View>
+                    <TouchableOpacity style={styles.expansionButton} onPress={() => setFranchiseModal(true)}>
+                      <Text style={styles.expansionButtonIcon}>🤝</Text>
+                      <View>
+                        <Text style={styles.expansionButtonTitle}>Sell Franchise</Text>
+                        <Text style={styles.expansionButtonDesc}>Find franchisees to grow your brand</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Active Franchises */}
+                {game.franchises.length > 0 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises.length})</Text>
+                    {game.franchises.map(f => (
+                      <View key={f.id} style={styles.franchiseCard}>
+                        <View>
+                          <Text style={styles.franchiseName}>{f.name}</Text>
+                          <Text style={styles.franchiseTier}>{FRANCHISE_TIERS.find(t => t.id === f.tier)?.name}</Text>
+                        </View>
+                        <View style={styles.franchiseStats}>
+                          <Text style={styles.franchiseRoyalty}>{formatCurrency(f.weeklyRoyalty)}/wk</Text>
+                          <Text style={styles.franchiseQuality}>Quality: {f.quality}%</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {/* Exit Strategy */}
+                {game.locations.length > 1 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Exit Strategy</Text>
+                    <TouchableOpacity style={styles.expansionButton} onPress={() => setSellLocationModal(true)}>
+                      <Text style={styles.expansionButtonIcon}>💼</Text>
+                      <View>
+                        <Text style={styles.expansionButtonTitle}>Sell or Close Location</Text>
+                        <Text style={styles.expansionButtonDesc}>Exit underperforming locations strategically</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* All Locations List */}
+                <Text style={styles.sectionTitle}>All Locations</Text>
+                {game.locations.map(l => (
+                  <TouchableOpacity key={l.id} style={styles.locationCard} onPress={() => setActiveLocationId(l.id)}>
+                    <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
+                    <View style={styles.locationCardInfo}>
+                      <Text style={styles.locationCardName}>{l.name}</Text>
+                      <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
+                    </View>
+                    <View>
+                      <Text style={[styles.locationCardCash, { color: l.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(l.cash)}</Text>
+                      <Text style={[styles.locationCardProfit, { color: l.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{l.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(l.lastWeekProfit)}/wk</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Bottom Action Bar */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.nextWeekButton} onPress={processWeek}>
+            <Text style={styles.nextWeekButtonText}>▶ NEXT WEEK</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ============================================ */}
+        {/* MODALS */}
+        {/* ============================================ */}
+
+        {/* Staff Hire Modal */}
+        <Modal visible={staffModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hire Staff</Text>
+                <TouchableOpacity onPress={() => setStaffModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {STAFF_TEMPLATES.filter(t => !t.canManageMultiple).map(t => (
+                  <TouchableOpacity key={t.role} style={styles.hireOption} onPress={() => hireStaff(t)}>
+                    <Text style={styles.hireIcon}>{t.icon}</Text>
+                    <View style={styles.hireInfo}>
+                      <Text style={styles.hireName}>{t.role}</Text>
+                      <Text style={styles.hireWage}>${t.wage}/hr • {t.department}</Text>
+                    </View>
+                    <Text style={styles.hireCost}>{formatCurrency(t.wage * 40)}/wk</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Training Modal */}
+        <Modal visible={trainingModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Training: {selectedStaff?.name}</Text>
+                <TouchableOpacity onPress={() => { setTrainingModal(false); setSelectedStaff(null); }}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {TRAINING_PROGRAMS.map(p => {
+                  const completed = selectedStaff?.training?.includes(p.id);
+                  return (
+                    <TouchableOpacity key={p.id} style={[styles.trainingOption, completed && styles.trainingCompleted]} onPress={() => !completed && startTraining(p)} disabled={completed}>
+                      <Text style={styles.trainingIcon}>{p.icon}</Text>
+                      <View style={styles.trainingInfo}>
+                        <Text style={styles.trainingName}>{p.name}</Text>
+                        <Text style={styles.trainingDesc}>+{p.skillBoost} skill • +{p.morale} morale • {p.weeks}wk</Text>
+                      </View>
+                      <Text style={styles.trainingCost}>{completed ? '✓' : formatCurrency(p.cost)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Marketing Modal */}
+        <Modal visible={marketingModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Marketing Channels</Text>
+                <TouchableOpacity onPress={() => setMarketingModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {MARKETING_CHANNELS.map(c => {
+                  const active = loc?.marketing.channels.includes(c.id);
+                  return (
+                    <TouchableOpacity key={c.id} style={[styles.channelOption, active && styles.channelActive]} onPress={() => toggleMarketingChannel(c.id)}>
+                      <Text style={styles.channelIcon}>{c.icon}</Text>
+                      <View style={styles.channelInfo}>
+                        <Text style={[styles.channelName, active && styles.channelNameActive]}>{c.name}</Text>
+                        <Text style={styles.channelEffect}>+{Math.round(c.effect.reach * 100)}% reach</Text>
+                      </View>
+                      <Text style={styles.channelCost}>{c.costPerWeek > 0 ? `${formatCurrency(c.costPerWeek)}/wk` : 'FREE'}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Delivery Modal */}
+        <Modal visible={deliveryModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Delivery Platforms</Text>
+                <TouchableOpacity onPress={() => setDeliveryModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {DELIVERY_PLATFORMS.map(p => {
+                  const active = loc?.delivery.platforms.includes(p.id);
+                  return (
+                    <TouchableOpacity key={p.id} style={[styles.deliveryOption, active && styles.deliveryActive]} onPress={() => toggleDeliveryPlatform(p.id)}>
+                      <Text style={styles.deliveryIcon}>{p.icon}</Text>
+                      <View style={styles.deliveryInfo}>
+                        <Text style={[styles.deliveryName, active && styles.deliveryNameActive]}>{p.name}</Text>
+                        <Text style={styles.deliveryCommission}>{formatPct(p.commission)} commission • +{Math.round(p.reach * 100)}% reach</Text>
+                      </View>
+                      <Text style={styles.deliveryCost}>{active ? '✓ ACTIVE' : p.setup > 0 ? formatCurrency(p.setup) : 'FREE'}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Loan Modal */}
+        <Modal visible={loanModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Financing Options</Text>
+                <TouchableOpacity onPress={() => setLoanModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Loans add to CORPORATE cash</Text>
+              <ScrollView>
+                {LOANS.map(l => (
+                  <TouchableOpacity key={l.id} style={styles.loanOption} onPress={() => takeLoan(l.id)}>
+                    <View style={styles.loanOptionInfo}>
+                      <Text style={styles.loanOptionName}>{l.name}</Text>
+                      <Text style={styles.loanOptionDetails}>{formatCurrency(l.amount)} @ {formatPct(l.rate)} • {l.term} weeks</Text>
+                      {l.equity && <Text style={styles.loanEquity}>⚠️ -{l.equity * 100}% equity</Text>}
+                    </View>
+                    <Text style={styles.loanPayment}>{formatCurrency(l.weeklyPayment)}/wk</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Analytics Modal */}
+        <Modal visible={analyticsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Analytics - {loc?.name}</Text>
+                <TouchableOpacity onPress={() => setAnalyticsModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {loc && (
+                  <>
+                    <Text style={styles.analyticsSection}>Lifetime Stats</Text>
+                    <View style={styles.analyticsGrid}>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.weeksOpen}</Text><Text style={styles.analyticsLabel}>Weeks Open</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.totalRevenue)}</Text><Text style={styles.analyticsLabel}>Total Revenue</Text></View>
+                      <View style={styles.analyticsStat}><Text style={[styles.analyticsValue, { color: loc.totalProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(loc.totalProfit)}</Text><Text style={styles.analyticsLabel}>Total Profit</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(calculateLocationValuation(loc, setup.cuisine))}</Text><Text style={styles.analyticsLabel}>Location Value</Text></View>
+                    </View>
+                    <Text style={styles.analyticsSection}>Key Ratios</Text>
+                    <View style={styles.analyticsGrid}>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatPct(loc.foodCostPct)}</Text><Text style={styles.analyticsLabel}>Food Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.staff.length > 0 ? formatPct(loc.staff.reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.lastWeekRevenue > 0 ? formatPct(loc.lastWeekProfit / loc.lastWeekRevenue) : '0%'}</Text><Text style={styles.analyticsLabel}>Profit Margin</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.lastWeekRevenue / Math.max(1, loc.lastWeekCovers))}</Text><Text style={styles.analyticsLabel}>Avg Check</Text></View>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Expansion Modal */}
+        <Modal visible={expansionModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Open New Location</Text>
+                <TouchableOpacity onPress={() => setExpansionModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.inputLabel}>Location Name</Text>
+                <TextInput 
+                  style={styles.textInput} 
+                  placeholder="e.g., Downtown Plaza" 
+                  placeholderTextColor={colors.textMuted} 
+                  value={newLocationData.name} 
+                  onChangeText={t => setNewLocationData(d => ({ ...d, name: t }))} 
+                />
+
+                <Text style={styles.inputLabel}>Location Type</Text>
+                {LOCATION_TYPES.map(t => (
+                  <TouchableOpacity 
+                    key={t.id} 
+                    style={[styles.locationTypeOption, newLocationData.type === t.id && styles.locationTypeSelected]}
+                    onPress={() => setNewLocationData(d => ({ ...d, type: t.id }))}
+                  >
+                    <Text style={styles.locationTypeIcon}>{t.icon}</Text>
+                    <View style={styles.locationTypeInfo}>
+                      <Text style={[styles.locationTypeName, newLocationData.type === t.id && styles.locationTypeNameSelected]}>{t.name}</Text>
+                      <Text style={styles.locationTypeDetails}>Rent: {t.rentMod > 1 ? '+' : ''}{Math.round((t.rentMod - 1) * 100)}% • Traffic: {t.trafficMod > 1 ? '+' : ''}{Math.round((t.trafficMod - 1) * 100)}%</Text>
+                    </View>
+                    <Text style={styles.locationTypeCost}>{formatCurrency(t.buildoutCost)}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                <Text style={styles.inputLabel}>Market</Text>
+                {MARKETS.map(m => (
+                  <TouchableOpacity 
+                    key={m.id} 
+                    style={[styles.marketOption, newLocationData.market === m.id && styles.marketSelected]}
+                    onPress={() => setNewLocationData(d => ({ ...d, market: m.id }))}
+                  >
+                    <Text style={styles.marketIcon}>{m.icon}</Text>
+                    <View style={styles.marketInfo}>
+                      <Text style={[styles.marketName, newLocationData.market === m.id && styles.marketNameSelected]}>{m.name}</Text>
+                      <Text style={styles.marketDetails}>Brand bonus: +{Math.round(m.brandBonus * 100)}% • Management: {m.managementCost > 0 ? `${formatCurrency(m.managementCost)}/wk` : 'None'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.expansionSummary}>
+                  <Text style={styles.expansionSummaryTitle}>Total Investment</Text>
+                  <Text style={styles.expansionSummaryValue}>{formatCurrency(LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0)}</Text>
+                  <Text style={styles.expansionSummaryNote}>Corporate Cash: {formatCurrency(game.corporateCash)}</Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.expandButton, game.corporateCash < (LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0) && styles.expandButtonDisabled]}
+                  onPress={openNewLocation}
+                  disabled={game.corporateCash < (LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0)}
+                >
+                  <Text style={styles.expandButtonText}>OPEN LOCATION</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Franchise Modal */}
+        <Modal visible={franchiseModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Sell Franchise</Text>
+                <TouchableOpacity onPress={() => setFranchiseModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.franchiseIntro}>Choose a franchise tier to offer:</Text>
+                {FRANCHISE_TIERS.map(tier => (
+                  <TouchableOpacity key={tier.id} style={styles.franchiseTierOption} onPress={() => sellFranchise(tier.id)}>
+                    <View style={styles.franchiseTierInfo}>
+                      <Text style={styles.franchiseTierName}>{tier.name}</Text>
+                      <Text style={styles.franchiseTierDetails}>Min {tier.minLocations} locations • {tier.training} weeks training</Text>
+                      <Text style={styles.franchiseTierRates}>Royalty: {formatPct(tier.royalty)} + Marketing: {formatPct(tier.marketingFee)}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.franchiseTierFee}>{formatCurrency(tier.fee)}</Text>
+                      <Text style={styles.franchiseTierFeeLabel}>One-time fee</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* AI Chat Modal */}
+        <Modal visible={aiChatModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👨‍🍳 Chat with Chef Marcus</Text>
+                <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <View style={styles.aiChatContainer}>
+                <View style={styles.aiResponse}>
+                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiResponseText}>{aiMessage || 'Ask me anything about running your empire...'}</Text>}
+                </View>
+                <View style={styles.aiInputRow}>
+                  <TextInput style={styles.aiInput} placeholder="Ask about staff, expansion, finances..." placeholderTextColor={colors.textMuted} value={aiChatInput} onChangeText={setAiChatInput} />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={askAI}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Save/Load Modal */}
+        <Modal visible={saveModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Save / Load Game</Text>
+                <TouchableOpacity onPress={() => setSaveModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {[1, 2, 3].map(slot => {
+                  const save = savedGames.find(s => s.slot === slot);
+                  return (
+                    <View key={slot} style={styles.saveSlot}>
+                      <Text style={styles.saveSlotTitle}>Slot {slot}</Text>
+                      {save ? (
+                        <>
+                          <Text style={styles.saveSlotInfo}>{save.setup.name} • Week {save.game.week} • {save.game.locations.length} locations</Text>
+                          <View style={styles.saveSlotButtons}>
+                            <TouchableOpacity style={styles.loadBtn} onPress={() => loadGame(save)}><Text style={styles.loadBtnText}>LOAD</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.overwriteBtn} onPress={() => saveGame(slot)}><Text style={styles.overwriteBtnText}>OVERWRITE</Text></TouchableOpacity>
+                          </View>
+                        </>
+                      ) : (
+                        <TouchableOpacity style={styles.saveBtn} onPress={() => saveGame(slot)}><Text style={styles.saveBtnText}>SAVE HERE</Text></TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Vendor Modal */}
+        <Modal visible={vendorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚛 Vendor Management</Text>
+                <TouchableOpacity onPress={() => setVendorModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.sectionTitle}>Your Vendors</Text>
+                {game?.vendors?.map(v => {
+                  const vendorData = VENDORS.find(vd => vd.id === v.id);
+                  const activeDeal = VENDOR_DEALS.find(d => d.id === v.deal);
+                  return (
+                    <View key={v.id} style={styles.vendorCard}>
+                      <View style={styles.vendorHeader}>
+                        <Text style={styles.vendorIcon}>{vendorData?.icon}</Text>
+                        <View style={styles.vendorInfo}>
+                          <Text style={styles.vendorName}>{v.name}</Text>
+                          <Text style={styles.vendorType}>{vendorData?.type} • {v.weeksUsed} weeks</Text>
+                        </View>
+                        <View>
+                          <Text style={styles.vendorRelationship}>Rel: {v.relationship}%</Text>
+                          {activeDeal && <Text style={styles.vendorDeal}>✓ {activeDeal.name}</Text>}
+                        </View>
+                      </View>
+                      {!activeDeal && (
+                        <View style={styles.dealOptions}>
+                          <Text style={styles.dealLabel}>Negotiate Deal:</Text>
+                          {VENDOR_DEALS.map(deal => (
+                            <TouchableOpacity 
+                              key={deal.id} 
+                              style={styles.dealOption}
+                              onPress={() => negotiateVendorDeal(v.id, deal.id)}
+                            >
+                              <Text style={styles.dealName}>{deal.name}</Text>
+                              <Text style={styles.dealDesc}>{deal.description}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+
+                <Text style={styles.sectionTitle}>Available Vendors</Text>
+                {VENDORS.filter(v => !game?.vendors?.find(gv => gv.id === v.id)).map(vendor => (
+                  <TouchableOpacity key={vendor.id} style={styles.addVendorCard} onPress={() => addVendor(vendor.id)}>
+                    <Text style={styles.vendorIcon}>{vendor.icon}</Text>
+                    <View style={styles.vendorInfo}>
+                      <Text style={styles.vendorName}>{vendor.name}</Text>
+                      <Text style={styles.vendorType}>{vendor.type} • Min order: {formatCurrency(vendor.minOrder)}</Text>
+                      <Text style={styles.vendorStats}>Quality: {Math.round(vendor.quality * 100)}% • Reliability: {Math.round(vendor.reliability * 100)}%</Text>
+                    </View>
+                    <Text style={styles.addVendorBtn}>+ Add</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Competition Modal */}
+        <Modal visible={competitorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👀 Competition</Text>
+                <TouchableOpacity onPress={() => setCompetitorModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.competitionIntro}>Know your competition. Watch their moves. Learn from them.</Text>
+                {game?.competitors?.map(c => {
+                  const typeData = COMPETITOR_TYPES.find(t => t.id === c.type);
+                  return (
+                    <View key={c.id} style={styles.competitorCard}>
+                      <Text style={styles.competitorIcon}>{c.icon}</Text>
+                      <View style={styles.competitorInfo}>
+                        <Text style={styles.competitorName}>{c.name}</Text>
+                        <Text style={styles.competitorType}>{typeData?.name} • {c.weeksOpen} weeks old</Text>
+                        <View style={styles.competitorStats}>
+                          <Text style={styles.competitorStat}>Rep: {c.reputation}%</Text>
+                          <Text style={styles.competitorStat}>Price: {'$'.repeat(c.priceLevel)}</Text>
+                          {c.aggressive && <Text style={[styles.competitorStat, { color: colors.accent }]}>⚡ Aggressive</Text>}
+                        </View>
+                      </View>
+                      <View style={styles.threatLevel}>
+                        <Text style={styles.threatLabel}>Threat</Text>
+                        <Text style={[styles.threatValue, { color: c.threat > 0.2 ? colors.accent : colors.warning }]}>{Math.round(c.threat * 100)}%</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {(!game?.competitors || game.competitors.length === 0) && (
+                  <Text style={styles.noCompetitors}>No direct competitors yet. Enjoy it while it lasts!</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Events Calendar Modal */}
+        <Modal visible={eventsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📅 Events Calendar</Text>
+                <TouchableOpacity onPress={() => setEventsModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.calendarIntro}>Plan ahead for these key dates that affect restaurant traffic.</Text>
+                <Text style={styles.currentWeekLabel}>Current: Week {game?.week} of Year {Math.floor((game?.week || 0) / 52) + 1}</Text>
+                
+                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                {CALENDAR_EVENTS.filter(e => e.week > ((game?.week - 1) % 52) + 1).slice(0, 6).map(event => (
+                  <View key={event.id} style={styles.eventCard}>
+                    <Text style={styles.eventIcon}>{event.icon}</Text>
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventName}>{event.name}</Text>
+                      <Text style={styles.eventWeek}>Week {event.week}</Text>
+                      <Text style={styles.eventTip}>💡 {event.tip}</Text>
+                    </View>
+                    <View style={styles.eventBoost}>
+                      <Text style={[styles.eventBoostValue, { color: event.revenueBoost >= 0 ? colors.success : colors.accent }]}>
+                        {event.revenueBoost >= 0 ? '+' : ''}{Math.round(event.revenueBoost * 100)}%
+                      </Text>
+                      <Text style={styles.eventBoostLabel}>Revenue</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Milestones Modal */}
+        <Modal visible={milestonesModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏆 Milestones</Text>
+                <TouchableOpacity onPress={() => setMilestonesModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <View style={styles.milestoneSummary}>
+                  <Text style={styles.milestoneCount}>{game?.unlockedMilestones?.length || 0}/{MILESTONES.length}</Text>
+                  <Text style={styles.milestoneLabel}>Milestones Unlocked</Text>
+                  <Text style={styles.milestoneRewards}>Total Rewards: {formatCurrency(game?.milestoneRewards || 0)}</Text>
+                </View>
+                
+                {MILESTONES.map(m => {
+                  const unlocked = game?.unlockedMilestones?.includes(m.id);
+                  return (
+                    <View key={m.id} style={[styles.milestoneCard, unlocked && styles.milestoneUnlocked]}>
+                      <Text style={styles.milestoneIcon}>{unlocked ? m.icon : '🔒'}</Text>
+                      <View style={styles.milestoneInfo}>
+                        <Text style={[styles.milestoneName, unlocked && styles.milestoneNameUnlocked]}>{m.name}</Text>
+                        <Text style={styles.milestoneDesc}>{m.description}</Text>
+                      </View>
+                      <Text style={[styles.milestoneReward, unlocked && styles.milestoneRewardUnlocked]}>
+                        {unlocked ? '✓' : formatCurrency(m.reward)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Sell/Close Location Modal */}
+        <Modal visible={sellLocationModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>💼 Exit Strategy</Text>
+                <TouchableOpacity onPress={() => setSellLocationModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {game?.locations?.length > 1 ? (
+                  <>
+                    <Text style={styles.exitIntro}>Sometimes the best move is knowing when to exit. Select a location:</Text>
+                    {game.locations.map(l => {
+                      const annualProfit = (l.totalProfit / Math.max(1, l.weeksOpen)) * 52;
+                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + l.equipment.length * 5000));
+                      const closingCost = l.staff.length * 1000 + l.rent * 3;
+                      return (
+                        <View key={l.id} style={styles.exitLocationCard}>
+                          <View style={styles.exitLocationHeader}>
+                            <Text style={styles.exitLocationName}>{l.name}</Text>
+                            <Text style={styles.exitLocationWeeks}>{l.weeksOpen} weeks</Text>
+                          </View>
+                          <View style={styles.exitLocationStats}>
+                            <Text style={styles.exitStat}>Cash: {formatCurrency(l.cash)}</Text>
+                            <Text style={styles.exitStat}>Staff: {l.staff.length}</Text>
+                            <Text style={styles.exitStat}>Rep: {l.reputation}%</Text>
+                          </View>
+                          <View style={styles.exitActions}>
+                            <TouchableOpacity 
+                              style={styles.sellButton}
+                              onPress={() => sellLocation(l.id)}
+                            >
+                              <Text style={styles.sellButtonText}>SELL</Text>
+                              <Text style={styles.sellButtonValue}>~{formatCurrency(estimatedValue)}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                              style={styles.closeButton}
+                              onPress={() => closeLocation(l.id)}
+                            >
+                              <Text style={styles.closeButtonText}>CLOSE</Text>
+                              <Text style={styles.closeButtonValue}>-{formatCurrency(closingCost)}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <Text style={styles.exitWarning}>You only have one location. Can't exit your last restaurant!</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Tutorial Overlay */}
+        {showTutorial && !game?.tutorialComplete && game && (
+          <View style={styles.tutorialOverlay}>
+            <View style={styles.tutorialCard}>
+              <Text style={styles.tutorialTitle}>{TUTORIAL_STEPS[tutorialStep]?.title}</Text>
+              <Text style={styles.tutorialMessage}>{TUTORIAL_STEPS[tutorialStep]?.message}</Text>
+              <View style={styles.tutorialProgress}>
+                {TUTORIAL_STEPS.map((_, i) => (
+                  <View key={i} style={[styles.tutorialDot, i <= tutorialStep && styles.tutorialDotActive]} />
+                ))}
+              </View>
+              <View style={styles.tutorialActions}>
+                <TouchableOpacity style={styles.tutorialSkip} onPress={skipTutorial}>
+                  <Text style={styles.tutorialSkipText}>Skip Tutorial</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.tutorialNext} onPress={advanceTutorial}>
+                  <Text style={styles.tutorialNextText}>
+                    {tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Start Playing' : 'Next →'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+
+
+        {/* Phase 5: Settings Modal */}
+        <Modal visible={settingsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>⚙️ Settings</Text>
+                <TouchableOpacity onPress={() => setSettingsModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.settingsSection}>🎨 Theme</Text>
+                <View style={styles.themeGrid}>
+                  {Object.values(THEMES).map(theme => (
+                    <TouchableOpacity
+                      key={theme.id}
+                      style={[styles.themeOption, currentTheme === theme.id && styles.themeSelected]}
+                      onPress={() => changeTheme(theme.id)}
+                    >
+                      <Text style={styles.themeIcon}>{theme.icon}</Text>
+                      <Text style={[styles.themeName, currentTheme === theme.id && styles.themeNameSelected]}>{theme.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={styles.settingsSection}>⏩ Game Speed</Text>
+                <View style={styles.speedGrid}>
+                  {SPEED_OPTIONS.map(speed => (
+                    <TouchableOpacity
+                      key={speed.id}
+                      style={[styles.speedOption, gameSpeed === speed.id && styles.speedSelected]}
+                      onPress={() => setGameSpeed(speed.id)}
+                    >
+                      <Text style={styles.speedIcon}>{speed.icon}</Text>
+                      <Text style={styles.speedName}>{speed.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={styles.settingsSection}>🎮 Preferences</Text>
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setSoundEnabled(!soundEnabled)}
+                >
+                  <Text style={styles.toggleLabel}>🔊 Sound Effects</Text>
+                  <View style={[styles.toggle, soundEnabled && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, soundEnabled && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                >
+                  <Text style={styles.toggleLabel}>💾 Auto-Save (every 4 weeks)</Text>
+                  <View style={[styles.toggle, autoSaveEnabled && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, autoSaveEnabled && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setShowTips(!showTips)}
+                >
+                  <Text style={styles.toggleLabel}>💡 Show Gameplay Tips</Text>
+                  <View style={[styles.toggle, showTips && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, showTips && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <Text style={styles.settingsSection}>📊 Stats</Text>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Prestige Level</Text>
+                  <Text style={styles.statsValue}>{'⭐'.repeat(prestigeLevel) || 'None'}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Total Runs</Text>
+                  <Text style={styles.statsValue}>{hallOfFame.length}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Themes Unlocked</Text>
+                  <Text style={styles.statsValue}>{themesUsed.length}/5</Text>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.hofButton}
+                  onPress={() => { setSettingsModal(false); setHallOfFameModal(true); }}
+                >
+                  <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.versionText}>86'd v8.5.0 - Phase 6</Text>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Hall of Fame Modal */}
+        <Modal visible={hallOfFameModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏆 Hall of Fame</Text>
+                <TouchableOpacity onPress={() => setHallOfFameModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {HALL_OF_FAME_CATEGORIES.map(category => {
+                  const best = getBestRecord(category.id);
+                  return (
+                    <View key={category.id} style={styles.hofCategory}>
+                      <View style={styles.hofCategoryHeader}>
+                        <Text style={styles.hofCategoryIcon}>{category.icon}</Text>
+                        <Text style={styles.hofCategoryName}>{category.name}</Text>
+                      </View>
+                      {best ? (
+                        <View style={styles.hofRecord}>
+                          <Text style={styles.hofRecordValue}>{category.format(best[category.stat] || 0)}</Text>
+                          <Text style={styles.hofRecordDetails}>
+                            {best.restaurantName || 'Unknown'} • {best.difficulty || 'Normal'} • Week {best.weeksSurvived}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.hofNoRecord}>No records yet - start playing!</Text>
+                      )}
+                    </View>
+                  );
+                })}
+                
+                <Text style={styles.settingsSection}>📜 Recent Runs ({hallOfFame.length})</Text>
+                {hallOfFame.slice(-5).reverse().map((run, i) => (
+                  <View key={run.id || i} style={styles.recentRun}>
+                    <Text style={styles.recentRunName}>{run.restaurantName || 'Unknown'}</Text>
+                    <Text style={styles.recentRunDetails}>
+                      {run.weeksSurvived} weeks • {formatCurrency(run.peakValuation || 0)} peak • {run.difficulty || 'normal'}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Difficulty Selection Modal */}
+        <Modal visible={difficultyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🎮 Select Difficulty</Text>
+                <TouchableOpacity onPress={() => setDifficultyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {DIFFICULTY_MODES.map(mode => (
+                  <TouchableOpacity
+                    key={mode.id}
+                    style={[styles.difficultyOption, setup.difficulty === mode.id && styles.difficultySelected]}
+                    onPress={() => {
+                      setSetup(s => ({ ...s, difficulty: mode.id }));
+                      setDifficulty(mode.id);
+                      setDifficultyModal(false);
+                    }}
+                  >
+                    <View style={styles.difficultyHeader}>
+                      <Text style={styles.difficultyIcon}>{mode.icon}</Text>
+                      <View style={styles.difficultyInfo}>
+                        <Text style={styles.difficultyName}>{mode.name}</Text>
+                        <Text style={styles.difficultyDesc}>{mode.description}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.difficultyMods}>
+                      <Text style={styles.difficultyMod}>Revenue: {mode.revenueMultiplier > 1 ? '+' : ''}{((mode.revenueMultiplier - 1) * 100).toFixed(0)}%</Text>
+                      <Text style={styles.difficultyMod}>Costs: {mode.costMultiplier > 1 ? '+' : ''}{((mode.costMultiplier - 1) * 100).toFixed(0)}%</Text>
+                      <Text style={styles.difficultyMod}>Crises: {(mode.negativeScenarioChance * 100).toFixed(0)}%</Text>
+                      {mode.startingBonus !== 0 && (
+                        <Text style={[styles.difficultyMod, mode.startingBonus > 0 ? styles.difficultyBonus : styles.difficultyPenalty]}>
+                          Capital: {mode.startingBonus > 0 ? '+' : ''}{formatCurrency(mode.startingBonus)}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ============================================ */}
+        {/* PHASE 6: INVESTOR MODAL */}
+        {/* ============================================ */}
+        <Modal visible={investorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏦 Investor Relations</Text>
+                <TouchableOpacity onPress={() => setInvestorModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.investorSummary}>
+                  <Text style={styles.sectionSubtitle}>Ownership Structure</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Equity:</Text>
+                    <Text style={styles.statValue}>{game?.equity || 100}%</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Investors:</Text>
+                    <Text style={styles.statValue}>{game?.investors?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Board Members:</Text>
+                    <Text style={styles.statValue}>{game?.boardMembers || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Current Valuation:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text>
+                  </View>
+                </View>
+                
+                {game?.investors?.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionSubtitle}>Current Investors</Text>
+                    {game.investors.map((inv, idx) => (
+                      <View key={idx} style={styles.investorCard}>
+                        <Text style={styles.investorIcon}>{INVESTOR_TYPES.find(t => t.id === inv.type)?.icon || '👤'}</Text>
+                        <View style={styles.investorInfo}>
+                          <Text style={styles.investorName}>{inv.name}</Text>
+                          <Text style={styles.investorDetails}>{inv.equity}% equity • {inv.boardSeat ? 'Board seat' : 'No board seat'}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                
+                <Text style={styles.sectionSubtitle}>Available Investors</Text>
+                {INVESTOR_TYPES.filter(inv => 
+                  (game?.empireValuation || 0) >= inv.minValuation && 
+                  (game?.empireValuation || 0) <= inv.maxValuation
+                ).map(inv => (
+                  <TouchableOpacity
+                    key={inv.id}
+                    style={styles.investorOption}
+                    onPress={() => {
+                      const investAmount = Math.floor((inv.investment[0] + inv.investment[1]) / 2);
+                      const equityAsk = Math.floor((inv.equityRange[0] + inv.equityRange[1]) / 2);
+                      if ((game?.equity || 100) >= equityAsk) {
+                        setGame(g => ({
+                          ...g,
+                          corporateCash: (g.corporateCash || 0) + investAmount,
+                          equity: g.equity - equityAsk,
+                          investors: [...(g.investors || []), { 
+                            type: inv.id, 
+                            name: inv.name, 
+                            equity: equityAsk, 
+                            invested: investAmount,
+                            boardSeat: inv.boardSeat,
+                            joinedWeek: g.week 
+                          }],
+                          boardMembers: (g.boardMembers || 0) + (inv.boardSeat ? 1 : 0),
+                        }));
+                        addNotification(`${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`, 'success');
+                        setInvestorModal(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.investorOptionIcon}>{inv.icon}</Text>
+                    <View style={styles.investorOptionInfo}>
+                      <Text style={styles.investorOptionName}>{inv.name}</Text>
+                      <Text style={styles.investorOptionTerms}>{inv.terms}</Text>
+                      <View style={styles.investorOptionStats}>
+                        <Text style={styles.investorStat}>💰 {formatCurrency(inv.investment[0])}-{formatCurrency(inv.investment[1])}</Text>
+                        <Text style={styles.investorStat}>📊 {inv.equityRange[0]}-{inv.equityRange[1]}% equity</Text>
+                        {inv.boardSeat && <Text style={styles.investorStat}>🪑 Board seat</Text>}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {INVESTOR_TYPES.filter(inv => 
+                  (game?.empireValuation || 0) >= inv.minValuation && 
+                  (game?.empireValuation || 0) <= inv.maxValuation
+                ).length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>No investors interested at current valuation</Text>
+                    <Text style={styles.emptyStateHint}>Build to ${formatCurrency(250000)} valuation to attract angels</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: CATERING MODAL */}
+        <Modal visible={cateringModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🍽️ Catering & Events</Text>
+                <TouchableOpacity onPress={() => setCateringModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.cateringSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Catering Revenue:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.cateringRevenue || 0)}/week</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Active Contracts:</Text>
+                    <Text style={styles.statValue}>{game?.cateringContracts?.length || 0}</Text>
+                  </View>
+                </View>
+                
+                {!game?.cateringEnabled && (
+                  <TouchableOpacity
+                    style={styles.enableButton}
+                    onPress={() => {
+                      if ((game?.corporateCash || 0) >= 10000) {
+                        setGame(g => ({ ...g, cateringEnabled: true, corporateCash: g.corporateCash - 10000 }));
+                        addNotification('🍽️ Catering division launched! $10K invested.', 'success');
+                      }
+                    }}
+                  >
+                    <Text style={styles.enableButtonText}>🚀 Launch Catering Division ($10K)</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {game?.cateringEnabled && (
+                  <>
+                    <Text style={styles.sectionSubtitle}>Available Contracts</Text>
+                    {CATERING_CONTRACTS.filter(c => !game?.cateringContracts?.find(cc => cc.id === c.id)).map(contract => (
+                      <TouchableOpacity
+                        key={contract.id}
+                        style={styles.contractCard}
+                        onPress={() => {
+                          setGame(g => ({
+                            ...g,
+                            cateringContracts: [...(g.cateringContracts || []), { ...contract, startWeek: g.week, weeksRemaining: contract.term }],
+                          }));
+                          addNotification(`📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`, 'success');
+                        }}
+                      >
+                        <Text style={styles.contractIcon}>{contract.icon}</Text>
+                        <View style={styles.contractInfo}>
+                          <Text style={styles.contractName}>{contract.name}</Text>
+                          <Text style={styles.contractDetails}>{formatCurrency(contract.weeklyRevenue)}/week • {contract.term} weeks • {(contract.margin * 100).toFixed(0)}% margin</Text>
+                          <Text style={styles.contractRequirement}>⚠️ {contract.requirement}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                    
+                    <Text style={styles.sectionSubtitle}>Catering Services</Text>
+                    {CATERING_TYPES.map(service => (
+                      <View key={service.id} style={styles.serviceCard}>
+                        <Text style={styles.serviceIcon}>{service.icon}</Text>
+                        <View style={styles.serviceInfo}>
+                          <Text style={styles.serviceName}>{service.name}</Text>
+                          <Text style={styles.serviceDetails}>Avg Order: {formatCurrency(service.avgOrder)} • {(service.margin * 100).toFixed(0)}% margin</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: FOOD TRUCK MODAL */}
+        <Modal visible={foodTruckModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚚 Food Truck Fleet</Text>
+                <TouchableOpacity onPress={() => setFoodTruckModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.truckSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Fleet Size:</Text>
+                    <Text style={styles.statValue}>{game?.foodTrucks?.length || 0} trucks</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Weekly Revenue:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.truckRevenue || 0)}</Text>
+                  </View>
+                </View>
+                
+                {game?.foodTrucks?.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionSubtitle}>Your Fleet</Text>
+                    {game.foodTrucks.map((truck, idx) => (
+                      <View key={idx} style={styles.truckCard}>
+                        <Text style={styles.truckIcon}>{FOOD_TRUCKS.find(t => t.id === truck.type)?.icon || '🚚'}</Text>
+                        <View style={styles.truckInfo}>
+                          <Text style={styles.truckName}>{truck.name}</Text>
+                          <Text style={styles.truckDetails}>Weekly Revenue: {formatCurrency(truck.weeklyRevenue || 0)}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                
+                <Text style={styles.sectionSubtitle}>Purchase Truck</Text>
+                {FOOD_TRUCKS.map(truck => (
+                  <TouchableOpacity
+                    key={truck.id}
+                    style={styles.truckOption}
+                    onPress={() => {
+                      if ((game?.corporateCash || 0) >= truck.cost) {
+                        setGame(g => ({
+                          ...g,
+                          corporateCash: g.corporateCash - truck.cost,
+                          foodTrucks: [...(g.foodTrucks || []), { 
+                            type: truck.id, 
+                            name: `${setup.name} Truck #${(g.foodTrucks?.length || 0) + 1}`,
+                            weeklyRevenue: 0,
+                            events: [],
+                          }],
+                        }));
+                        addNotification(`🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`, 'success');
+                      } else {
+                        addNotification(`Need ${formatCurrency(truck.cost)} to purchase`, 'warning');
+                      }
+                    }}
+                  >
+                    <Text style={styles.truckOptionIcon}>{truck.icon}</Text>
+                    <View style={styles.truckOptionInfo}>
+                      <Text style={styles.truckOptionName}>{truck.name}</Text>
+                      <Text style={styles.truckOptionDetails}>
+                        Cost: {formatCurrency(truck.cost)} • Capacity: {truck.capacity}/day • Maintenance: {formatCurrency(truck.maintenance)}/week
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {game?.foodTrucks?.length > 0 && (
+                  <>
+                    <Text style={styles.sectionSubtitle}>Book Events</Text>
+                    {TRUCK_EVENTS.map(event => (
+                      <TouchableOpacity
+                        key={event.id}
+                        style={styles.eventOption}
+                        onPress={() => {
+                          addNotification(`🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`, 'success');
+                        }}
+                      >
+                        <Text style={styles.eventIcon}>{event.icon}</Text>
+                        <View style={styles.eventInfo}>
+                          <Text style={styles.eventName}>{event.name}</Text>
+                          <Text style={styles.eventDetails}>Fee: {formatCurrency(event.fee)} • Avg Revenue: {formatCurrency(event.avgRevenue)}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: MEDIA MODAL */}
+        <Modal visible={mediaModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📺 Media & Celebrity</Text>
+                <TouchableOpacity onPress={() => setMediaModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.mediaSummary}>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Public Profile:</Text>
+                    <Text style={styles.statValue}>{game?.publicProfile || 0}/100</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Media Appearances:</Text>
+                    <Text style={styles.statValue}>{game?.mediaAppearances?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Brand Deals:</Text>
+                    <Text style={styles.statValue}>{game?.brandDeals?.length || 0}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Media Opportunities</Text>
+                {MEDIA_OPPORTUNITIES.filter(m => !m.minReputation || (getActiveLocation()?.reputation || 0) >= m.minReputation).map(media => (
+                  <TouchableOpacity
+                    key={media.id}
+                    style={styles.mediaOption}
+                    onPress={() => {
+                      setGame(g => ({
+                        ...g,
+                        publicProfile: Math.min(100, (g.publicProfile || 0) + media.reputationBoost),
+                        mediaAppearances: [...(g.mediaAppearances || []), { ...media, week: g.week }],
+                      }));
+                      addNotification(`${media.icon} ${media.name}! +${media.reputationBoost} profile`, 'success');
+                    }}
+                  >
+                    <Text style={styles.mediaIcon}>{media.icon}</Text>
+                    <View style={styles.mediaInfo}>
+                      <Text style={styles.mediaName}>{media.name}</Text>
+                      <Text style={styles.mediaDetails}>+{media.reputationBoost} profile • +{(media.reachBoost * 100).toFixed(0)}% reach</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                <Text style={styles.sectionSubtitle}>Brand Deals</Text>
+                {BRAND_DEALS.filter(d => (getActiveLocation()?.reputation || 0) >= d.minReputation).map(deal => (
+                  <TouchableOpacity
+                    key={deal.id}
+                    style={styles.dealOption}
+                    onPress={() => {
+                      setGame(g => ({
+                        ...g,
+                        corporateCash: g.corporateCash + (deal.advance || deal.fee || 0),
+                        brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week }],
+                      }));
+                      addNotification(`📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`, 'success');
+                      setMediaModal(false);
+                    }}
+                  >
+                    <Text style={styles.dealIcon}>{deal.icon}</Text>
+                    <View style={styles.dealInfo}>
+                      <Text style={styles.dealName}>{deal.name}</Text>
+                      <Text style={styles.dealDetails}>
+                        {deal.advance ? `Advance: ${formatCurrency(deal.advance)}` : deal.fee ? `Fee: ${formatCurrency(deal.fee)}` : ''}
+                        {deal.royalty ? ` • ${(deal.royalty * 100).toFixed(0)}% royalty` : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: EXIT STRATEGY MODAL */}
+        <Modal visible={exitStrategyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚪 Exit Strategies</Text>
+                <TouchableOpacity onPress={() => setExitStrategyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.exitSummary}>
+                  <Text style={styles.sectionSubtitle}>Your Empire</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Valuation:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Locations:</Text>
+                    <Text style={styles.statValue}>{game?.locations?.length || 0}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Equity:</Text>
+                    <Text style={styles.statValue}>{game?.equity || 100}%</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Your Payout:</Text>
+                    <Text style={[styles.statValue, { color: colors.primary }]}>{formatCurrency((game?.empireValuation || 0) * ((game?.equity || 100) / 100))}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.sectionSubtitle}>Exit Options</Text>
+                {EXIT_OPTIONS.map(exit => {
+                  const eligible = (game?.empireValuation || 0) >= exit.minValuation && 
+                                   (game?.locations?.length || 0) >= exit.minLocations;
+                  return (
+                    <TouchableOpacity
+                      key={exit.id}
+                      style={[styles.exitOption, !eligible && styles.exitOptionLocked]}
+                      disabled={!eligible}
+                      onPress={() => {
+                        if (exit.id === 'family_succession') {
+                          // End game with family succession
+                          addNotification('🏆 Congratulations! You passed your empire to the next generation!', 'achievement');
+                          setGame(g => ({ ...g, exitStrategy: exit.id, exitProgress: 100 }));
+                        } else {
+                          setGame(g => ({ 
+                            ...g, 
+                            exitStrategy: exit.id, 
+                            exitProgress: 0,
+                            corporateCash: g.corporateCash - exit.cost 
+                          }));
+                          addNotification(`📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`, 'info');
+                        }
+                        setExitStrategyModal(false);
+                      }}
+                    >
+                      <Text style={styles.exitIcon}>{exit.icon}</Text>
+                      <View style={styles.exitInfo}>
+                        <Text style={styles.exitName}>{exit.name}</Text>
+                        <Text style={styles.exitDesc}>{exit.description}</Text>
+                        <View style={styles.exitRequirements}>
+                          <Text style={[styles.exitReq, (game?.empireValuation || 0) >= exit.minValuation ? styles.exitReqMet : styles.exitReqUnmet]}>
+                            💰 {formatCurrency(exit.minValuation)}+ valuation
+                          </Text>
+                          <Text style={[styles.exitReq, (game?.locations?.length || 0) >= exit.minLocations ? styles.exitReqMet : styles.exitReqUnmet]}>
+                            🏪 {exit.minLocations}+ locations
+                          </Text>
+                          <Text style={styles.exitReq}>⏱️ {exit.preparationTime} weeks</Text>
+                          <Text style={styles.exitReq}>💵 {formatCurrency(exit.cost)} cost</Text>
+                          <Text style={[styles.exitReq, { color: colors.success }]}>
+                            📈 {exit.valuationMultiple}x valuation multiple
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: ECONOMY MODAL */}
+        <Modal visible={economyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📊 Economic Conditions</Text>
+                <TouchableOpacity onPress={() => setEconomyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {ECONOMIC_CONDITIONS.map(condition => {
+                  const isActive = currentEconomy === condition.id;
+                  return (
+                    <View key={condition.id} style={[styles.economyCard, isActive && styles.economyCardActive]}>
+                      <View style={styles.economyHeader}>
+                        <Text style={styles.economyIcon}>{condition.icon}</Text>
+                        <View style={styles.economyInfo}>
+                          <Text style={styles.economyName}>{condition.name}</Text>
+                          {isActive && <Text style={styles.economyActive}>CURRENT</Text>}
+                        </View>
+                      </View>
+                      <Text style={styles.economyDesc}>{condition.description}</Text>
+                      <View style={styles.economyEffects}>
+                        <Text style={[styles.economyEffect, condition.revenueMultiplier > 1 ? styles.positive : condition.revenueMultiplier < 1 ? styles.negative : null]}>
+                          Revenue: {condition.revenueMultiplier > 1 ? '+' : ''}{((condition.revenueMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={[styles.economyEffect, condition.costMultiplier < 1 ? styles.positive : condition.costMultiplier > 1 ? styles.negative : null]}>
+                          Costs: {condition.costMultiplier > 1 ? '+' : ''}{((condition.costMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={[styles.economyEffect, condition.tipMultiplier > 1 ? styles.positive : condition.tipMultiplier < 1 ? styles.negative : null]}>
+                          Tips: {condition.tipMultiplier > 1 ? '+' : ''}{((condition.tipMultiplier - 1) * 100).toFixed(0)}%
+                        </Text>
+                        <Text style={styles.economyEffect}>Labor Market: {condition.laborMarket}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PHASE 6: REAL ESTATE MODAL */}
+        <Modal visible={realEstateModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏢 Real Estate</Text>
+                <TouchableOpacity onPress={() => setRealEstateModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Current Properties */}
+                <Text style={styles.sectionSubtitle}>Your Properties</Text>
+                {(game?.ownedProperties?.length || 0) === 0 ? (
+                  <Text style={styles.emptyStateText}>You don't own any properties yet. Properties appreciate over time and build equity.</Text>
+                ) : (
+                  game.ownedProperties.map((prop, idx) => (
+                    <View key={idx} style={styles.propertyCard}>
+                      <View style={styles.propertyHeader}>
+                        <Text style={styles.propertyIcon}>🏢</Text>
+                        <View style={styles.propertyInfo}>
+                          <Text style={styles.propertyName}>{prop.name}</Text>
+                          <Text style={styles.propertyLocation}>{prop.location}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.propertyStats}>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Current Value</Text>
+                          <Text style={[styles.propertyStatValue, { color: colors.success }]}>{formatCurrency(prop.value)}</Text>
+                        </View>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Purchase Price</Text>
+                          <Text style={styles.propertyStatValue}>{formatCurrency(prop.purchasePrice)}</Text>
+                        </View>
+                        <View style={styles.propertyStat}>
+                          <Text style={styles.propertyStatLabel}>Equity Built</Text>
+                          <Text style={[styles.propertyStatValue, { color: colors.primary }]}>{formatCurrency(prop.value - (prop.mortgageRemaining || 0))}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+                
+                {/* Lease Options */}
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Lease Options</Text>
+                <Text style={styles.helperText}>Choose how you structure your property agreements</Text>
+                
+                {REAL_ESTATE_OPTIONS.filter(opt => opt.id !== 'own_property' && opt.id !== 'sale_leaseback').map(option => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={styles.leaseOption}
+                    onPress={() => {
+                      addNotification(`📋 Switched to ${option.name} for new locations`, 'info');
+                      setGame(g => ({ ...g, preferredLeaseType: option.id }));
+                    }}
+                  >
+                    <View style={styles.leaseHeader}>
+                      <Text style={styles.leaseIcon}>{option.icon}</Text>
+                      <View style={styles.leaseInfo}>
+                        <Text style={styles.leaseName}>{option.name}</Text>
+                        <Text style={styles.leaseDesc}>{option.description}</Text>
+                      </View>
+                      {game?.preferredLeaseType === option.id && (
+                        <Text style={styles.leaseActive}>✓</Text>
+                      )}
+                    </View>
+                    <View style={styles.leaseDetails}>
+                      <Text style={styles.leaseDetail}>Rent Modifier: {option.baseRentMod > 1 ? '+' : ''}{((option.baseRentMod - 1) * 100).toFixed(0)}%</Text>
+                      {option.additionalCosts > 0 && <Text style={styles.leaseDetail}>+ Additional Costs: {(option.additionalCosts * 100).toFixed(0)}%</Text>}
+                      {option.salesPercentage && <Text style={styles.leaseDetail}>+ {(option.salesPercentage * 100).toFixed(0)}% of Sales</Text>}
+                      <Text style={styles.leaseDetail}>Term: {option.termYears} years</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {/* Buy Property Option */}
+                <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Purchase Property</Text>
+                {(game?.locations?.length || 0) > 0 && (
+                  <View style={styles.buyPropertyCard}>
+                    <Text style={styles.buyPropertyTitle}>Buy Your Current Location</Text>
+                    <Text style={styles.buyPropertyDesc}>Stop paying rent - build equity instead!</Text>
+                    {(() => {
+                      const loc = game?.locations?.[selectedLocation || 0];
+                      const propertyValue = (loc?.rent || 3000) * 12 * 10; // 10x annual rent
+                      const downPayment = propertyValue * 0.25;
+                      const mortgageAmount = propertyValue * 0.75;
+                      const monthlyMortgage = (mortgageAmount * 0.065) / 12 + mortgageAmount / 360; // 30 year mortgage
+                      const weeklyMortgage = monthlyMortgage / 4;
+                      const canAfford = (game?.corporateCash || 0) >= downPayment;
+                      
+                      return (
+                        <>
+                          <View style={styles.buyPropertyStats}>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Property Value</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency(propertyValue)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Down Payment (25%)</Text>
+                              <Text style={[styles.buyPropertyValue, { color: canAfford ? colors.success : colors.accent }]}>{formatCurrency(downPayment)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>Weekly Mortgage</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency(weeklyMortgage)}</Text>
+                            </View>
+                            <View style={styles.buyPropertyStat}>
+                              <Text style={styles.buyPropertyLabel}>vs Current Rent</Text>
+                              <Text style={styles.buyPropertyValue}>{formatCurrency((loc?.rent || 3000) / 4)}/week</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.buyPropertyButton, !canAfford && styles.buyPropertyButtonDisabled]}
+                            disabled={!canAfford}
+                            onPress={() => {
+                              setGame(g => ({
+                                ...g,
+                                corporateCash: g.corporateCash - downPayment,
+                                ownedProperties: [...(g.ownedProperties || []), {
+                                  id: Date.now(),
+                                  name: `${loc.name} Building`,
+                                  location: loc.name,
+                                  purchasePrice: propertyValue,
+                                  value: propertyValue,
+                                  mortgageRemaining: mortgageAmount,
+                                  weeklyMortgage: weeklyMortgage,
+                                  locationId: loc.id,
+                                }],
+                                mortgages: [...(g.mortgages || []), {
+                                  id: Date.now(),
+                                  propertyId: loc.id,
+                                  originalAmount: mortgageAmount,
+                                  remaining: mortgageAmount,
+                                  weeklyPayment: weeklyMortgage,
+                                  rate: 0.065,
+                                }],
+                                locations: g.locations.map(l => 
+                                  l.id === loc.id ? { ...l, rent: 0, ownsProperty: true } : l
+                                ),
+                              }));
+                              addNotification(`🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`, 'achievement');
+                              setRealEstateModal(false);
+                            }}
+                          >
+                            <Text style={styles.buyPropertyButtonText}>
+                              {canAfford ? `Purchase for ${formatCurrency(downPayment)} Down` : `Need ${formatCurrency(downPayment - (game?.corporateCash || 0))} More`}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Notification Toast */}
+        {notifications.length > 0 && (
+          <View style={styles.notificationContainer}>
+            {notifications.map(n => (
+              <Animated.View 
+                key={n.id} 
+                style={[
+                  styles.notification,
+                  n.type === 'success' && styles.notificationSuccess,
+                  n.type === 'warning' && styles.notificationWarning,
+                  n.type === 'error' && styles.notificationError,
+                  n.type === 'achievement' && styles.notificationAchievement,
+                  n.type === 'milestone' && styles.notificationMilestone,
+                ]}
+              >
+                <Text style={styles.notificationText}>{n.message}</Text>
+              </Animated.View>
+            ))}
+          </View>
+        )}
+
+
+      </SafeAreaView>
+    );
+  }
+
+  return null;
 }
 
+// ============================================
+// STYLES
+// ============================================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D0D0D' },
+  container: { flex: 1, backgroundColor: colors.background },
+  
+  // Welcome
+  welcomeContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  welcomeTitle: { fontSize: 72, fontWeight: '900', color: colors.primary, letterSpacing: -3 },
+  welcomeDivider: { width: 60, height: 4, backgroundColor: colors.primary, marginVertical: 20 },
+  welcomeQuote: { fontSize: 16, color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginBottom: 20 },
+  welcomeSubtext: { fontSize: 14, color: colors.textMuted, textAlign: 'center', marginBottom: 30, lineHeight: 22 },
+  startButton: { backgroundColor: colors.primary, paddingHorizontal: 40, paddingVertical: 16, borderRadius: 8 },
+  startButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+  versionText: { color: colors.textMuted, fontSize: 12, marginTop: 30 },
+
+  // Onboarding
+  onboardingContainer: { flex: 1 },
+  onboardingContent: { padding: 20 },
+  progressBarContainer: { height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, marginBottom: 20 },
+  progressBar: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },
+  stepText: { color: colors.textMuted, fontSize: 12, marginBottom: 10, letterSpacing: 1 },
+  messageBox: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 20, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  messageText: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  dropdownButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  dropdownText: { color: colors.textPrimary, fontSize: 16 },
+  dropdownPlaceholder: { color: colors.textMuted, fontSize: 16 },
+  dropdownArrow: { color: colors.textMuted },
+  selectedCuisine: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  selectedIcon: { fontSize: 40, marginRight: 15 },
+  selectedName: { color: colors.textPrimary, fontSize: 18, fontWeight: '600' },
+  selectedStats: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
+  capitalDisplay: { alignItems: 'center', marginBottom: 10 },
+  capitalAmount: { fontSize: 48, fontWeight: '700' },
+  tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginTop: 8 },
+  tierText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+  tierDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 8, textAlign: 'center' },
+  slider: { width: '100%', height: 40 },
+  sliderLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  sliderLabel: { color: colors.textMuted, fontSize: 12 },
+  textInput: { backgroundColor: colors.surface, color: colors.textPrimary, padding: 16, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: colors.border },
+  goalOptions: { gap: 10 },
+  goalButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.border, flexDirection: 'row', alignItems: 'center' },
+  goalButtonActive: { borderColor: colors.primary, backgroundColor: colors.surfaceLight },
+  goalText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  goalTextActive: { color: colors.primary },
+  goalDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  continueButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 30 },
+  continueButtonDisabled: { backgroundColor: colors.surfaceLight },
+  continueButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+  continueButtonTextDisabled: { color: colors.textMuted },
+  backButton: { alignItems: 'center', marginTop: 15 },
+  backButtonText: { color: colors.textSecondary, fontSize: 14 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', padding: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  modalTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginBottom: 15 },
+  modalClose: { color: colors.textMuted, fontSize: 24 },
+  searchInput: { backgroundColor: colors.surfaceLight, color: colors.textPrimary, padding: 12, borderRadius: 8, marginBottom: 15 },
+  cuisineList: { maxHeight: 400 },
+  cuisineOption: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 8 },
+  cuisineOptionSelected: { backgroundColor: colors.surfaceLight },
+  cuisineIcon: { fontSize: 28, marginRight: 12 },
+  cuisineInfo: { flex: 1 },
+  cuisineName: { color: colors.textPrimary, fontSize: 16, fontWeight: '500' },
+  cuisineNameSelected: { color: colors.primary },
+  cuisineStats: { color: colors.textMuted, fontSize: 12 },
+
+  // Scenario
+  scenarioContainer: { flex: 1 },
+  scenarioContent: { padding: 20 },
+  scenarioTypeBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 15 },
+  scenarioTypeText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+  scenarioTitle: { color: colors.textPrimary, fontSize: 28, fontWeight: '700', marginBottom: 5 },
+  scenarioSubtitle: { color: colors.textMuted, fontSize: 14, marginBottom: 20 },
+  scenarioMessageBox: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 25 },
+  scenarioMessage: { color: colors.textSecondary, fontSize: 16, lineHeight: 24 },
+  scenarioOption: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scenarioOptionText: { color: colors.textPrimary, fontSize: 15, flex: 1, marginRight: 10 },
+  scenarioChance: { color: colors.textMuted, fontSize: 13 },
+  scenarioResult: { alignItems: 'center', marginVertical: 20 },
+  scenarioResultText: { fontSize: 24, fontWeight: '700' },
+  aiCommentBox: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, marginBottom: 15 },
+  aiCommentLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  aiCommentText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
+  lessonBox: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 25, borderLeftWidth: 3, borderLeftColor: colors.warning },
+  lessonLabel: { color: colors.warning, fontSize: 11, fontWeight: '700', marginBottom: 8 },
+  lessonText: { color: colors.textSecondary, fontSize: 14, fontStyle: 'italic' },
+
+  // End Screen
+  endContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  endTitle: { fontSize: 36, fontWeight: '900', marginTop: 20 },
+  endSubtitle: { color: colors.textSecondary, fontSize: 16, marginTop: 10 },
+  endDivider: { width: 60, height: 4, marginVertical: 25 },
+  endStats: { width: '100%', maxWidth: 300 },
+  endStatRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  endStatLabel: { color: colors.textSecondary, fontSize: 14 },
+  endStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  restartButton: { backgroundColor: colors.primary, paddingHorizontal: 40, paddingVertical: 16, borderRadius: 8, marginTop: 30 },
+  restartButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // Empire Header
+  empireHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  empireHeaderLeft: {},
+  empireName: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  empireStats: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  empireHeaderRight: { alignItems: 'flex-end' },
+  empireValuation: { color: colors.success, fontSize: 20, fontWeight: '700' },
+  empireValuationLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Location Selector
+  locationSelector: { backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  locationTab: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginRight: 8 },
+  locationTabActive: { backgroundColor: colors.primary },
+  locationTabIcon: { fontSize: 16, marginRight: 6 },
+  locationTabText: { color: colors.textSecondary, fontSize: 12, fontWeight: '500', maxWidth: 80 },
+  locationTabTextActive: { color: colors.background },
+  locationTabCash: { color: colors.textMuted, fontSize: 10 },
+  addLocationTab: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.border, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted },
+  addLocationIcon: { color: colors.textMuted, fontSize: 18 },
+  addLocationText: { color: colors.textMuted, fontSize: 10 },
+
+  // AI Bar
+  aiBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, marginHorizontal: 10, marginTop: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  aiBarIcon: { fontSize: 20 },
+  aiBarText: { color: colors.textSecondary, fontSize: 13, flex: 1, marginLeft: 10 },
+
+  // Warning Banner
+  warningBanner: { padding: 10, marginHorizontal: 10, marginTop: 10, borderRadius: 6 },
+  warningText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+
+  // Dashboard
+  dashboardScroll: { flex: 1 },
+  quickStats: { flexDirection: 'row', padding: 10, gap: 8 },
+  statCard: { flex: 1, backgroundColor: colors.surface, padding: 12, borderRadius: 8, alignItems: 'center' },
+  statLabel: { color: colors.textMuted, fontSize: 10 },
+  statValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginTop: 4 },
+
+  // Corporate Stats
+  corporateStats: { backgroundColor: colors.surface, margin: 10, padding: 15, borderRadius: 8 },
+  corporateRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  corporateStat: { alignItems: 'center' },
+  corporateStatLabel: { color: colors.textMuted, fontSize: 10 },
+  corporateStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 2 },
+
+  // Charts
+  chartContainer: { backgroundColor: colors.surface, margin: 10, padding: 15, borderRadius: 8 },
+  chartTitle: { color: colors.textMuted, fontSize: 11, marginBottom: 5, marginTop: 10 },
+
+  // Tabs
+  tabBar: { flexDirection: 'row', backgroundColor: colors.surface, marginHorizontal: 10, borderRadius: 8, padding: 4 },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
+  tabTextActive: { color: colors.background },
+  tabContent: { padding: 10 },
+  sectionTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+
+  // Health Meters
+  healthMeters: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  meterContainer: { flex: 1, backgroundColor: colors.surface, padding: 12, borderRadius: 8 },
+  meterLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 6 },
+  meterBar: { height: 6, backgroundColor: colors.surfaceLight, borderRadius: 3 },
+  meterFill: { height: 6, borderRadius: 3 },
+  meterValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 6 },
+
+  // Manager Card
+  managerCard: { backgroundColor: colors.surface, padding: 15, borderRadius: 8, marginBottom: 10 },
+  managerLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 10 },
+  managerInfo: { flexDirection: 'row', alignItems: 'center' },
+  managerIcon: { fontSize: 28, marginRight: 12 },
+  managerName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  managerRole: { color: colors.textMuted, fontSize: 12 },
+  managerBadge: { marginLeft: 'auto', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  managerBadgeText: { color: colors.textPrimary, fontSize: 10, fontWeight: '600' },
+  noManager: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 6 },
+  noManagerText: { color: colors.warning, fontSize: 13 },
+  noManagerHint: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+
+  // Quick Actions
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickAction: { width: (width - 60) / 3, backgroundColor: colors.surface, padding: 15, borderRadius: 8, alignItems: 'center' },
+  quickActionIcon: { fontSize: 24, marginBottom: 6 },
+  quickActionText: { color: colors.textSecondary, fontSize: 11 },
+
+  // Badges
+  badgeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  badge: { backgroundColor: colors.success, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  badgeText: { color: colors.textPrimary, fontSize: 10 },
+
+  // Staff
+  staffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  hireButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  hireButtonText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  emptyText: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+  staffCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  staffIcon: { fontSize: 24, marginRight: 10 },
+  staffInfo: { flex: 1 },
+  staffName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  staffRole: { color: colors.textMuted, fontSize: 11 },
+  staffMoraleBar: { height: 3, backgroundColor: colors.surfaceLight, borderRadius: 2, marginTop: 6, width: 80 },
+  staffMoraleFill: { height: 3, borderRadius: 2 },
+  staffActions: { flexDirection: 'row', gap: 8 },
+  promoteBtn: { backgroundColor: colors.success, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  promoteBtnText: { fontSize: 12 },
+  trainBtn: { backgroundColor: colors.info, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  trainBtnText: { fontSize: 12 },
+  fireBtn: { backgroundColor: colors.accent, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  fireBtnText: { color: colors.textPrimary, fontSize: 14 },
+
+  // Menu
+  menuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  addMenuBtn: { backgroundColor: colors.info, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  addMenuBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 6 },
+  menuItem86d: { opacity: 0.5 },
+  menuItemName: { color: colors.textPrimary, fontSize: 14 },
+  menuItemName86d: { textDecorationLine: 'line-through' },
+  menuItemPrice: { color: colors.textMuted, fontSize: 11 },
+  menuStatus: { color: colors.warning, fontSize: 12 },
+
+  // Equipment
+  equipmentScroll: { marginBottom: 10 },
+  equipmentCard: { width: 100, backgroundColor: colors.surface, padding: 12, borderRadius: 8, alignItems: 'center', marginRight: 8 },
+  equipmentOwned: { backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.success },
+  equipmentIcon: { fontSize: 28, marginBottom: 6 },
+  equipmentName: { color: colors.textPrimary, fontSize: 11, textAlign: 'center' },
+  equipmentCost: { color: colors.textMuted, fontSize: 10, marginTop: 4 },
+
+  // P&L
+  plCard: { backgroundColor: colors.surface, padding: 15, borderRadius: 8 },
+  plRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  plLabel: { color: colors.textSecondary, fontSize: 13 },
+  plValue: { color: colors.textPrimary, fontSize: 13 },
+  plDivider: { height: 1, backgroundColor: colors.border, marginVertical: 8 },
+
+  // Loans
+  loanHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  loanBtn: { backgroundColor: colors.warning, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  loanBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  loanCard: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  loanName: { color: colors.textPrimary, fontSize: 14 },
+  loanDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  equityCard: { backgroundColor: colors.surface, padding: 20, borderRadius: 8, alignItems: 'center', marginTop: 15 },
+  equityLabel: { color: colors.textMuted, fontSize: 12 },
+  equityValue: { fontSize: 36, fontWeight: '700', marginTop: 6 },
+
+  // Empire Tab
+  empireStatsCard: { flexDirection: 'row', backgroundColor: colors.surface, padding: 20, borderRadius: 8, justifyContent: 'space-around' },
+  empireStat: { alignItems: 'center' },
+  empireStatValue: { color: colors.textPrimary, fontSize: 24, fontWeight: '700' },
+  empireStatLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  expansionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 15, borderRadius: 8, marginBottom: 10 },
+  expansionButtonDisabled: { opacity: 0.5 },
+  expansionButtonIcon: { fontSize: 32, marginRight: 15 },
+  expansionButtonTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  expansionButtonDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  franchiseEnabled: { backgroundColor: colors.success, padding: 12, borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  franchiseEnabledText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  franchiseRate: { color: colors.textPrimary, fontSize: 12 },
+  franchiseCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  franchiseName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  franchiseTier: { color: colors.textMuted, fontSize: 11 },
+  franchiseStats: { alignItems: 'flex-end' },
+  franchiseRoyalty: { color: colors.success, fontSize: 14, fontWeight: '600' },
+  franchiseQuality: { color: colors.textMuted, fontSize: 11 },
+  locationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  locationCardIcon: { fontSize: 24, marginRight: 12 },
+  locationCardInfo: { flex: 1 },
+  locationCardName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  locationCardDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  locationCardCash: { fontSize: 14, fontWeight: '600' },
+  locationCardProfit: { fontSize: 11, marginTop: 2 },
+
+  // Modal Hire
+  hireOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  hireIcon: { fontSize: 24, marginRight: 12 },
+  hireInfo: { flex: 1 },
+  hireName: { color: colors.textPrimary, fontSize: 14 },
+  hireWage: { color: colors.textMuted, fontSize: 11 },
+  hireCost: { color: colors.warning, fontSize: 12, fontWeight: '600' },
+
+  // Modal Training
+  trainingOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  trainingCompleted: { opacity: 0.5 },
+  trainingIcon: { fontSize: 24, marginRight: 12 },
+  trainingInfo: { flex: 1 },
+  trainingName: { color: colors.textPrimary, fontSize: 14 },
+  trainingDesc: { color: colors.textMuted, fontSize: 11 },
+  trainingCost: { color: colors.success, fontSize: 14, fontWeight: '600' },
+
+  // Modal Marketing/Delivery
+  channelOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  channelActive: { backgroundColor: colors.success, borderColor: colors.success },
+  channelIcon: { fontSize: 24, marginRight: 12 },
+  channelInfo: { flex: 1 },
+  channelName: { color: colors.textPrimary, fontSize: 14 },
+  channelNameActive: { color: colors.textPrimary, fontWeight: '600' },
+  channelEffect: { color: colors.textMuted, fontSize: 11 },
+  channelCost: { color: colors.textSecondary, fontSize: 12 },
+  deliveryOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  deliveryActive: { backgroundColor: colors.info },
+  deliveryIcon: { fontSize: 24, marginRight: 12 },
+  deliveryInfo: { flex: 1 },
+  deliveryName: { color: colors.textPrimary, fontSize: 14 },
+  deliveryNameActive: { fontWeight: '600' },
+  deliveryCommission: { color: colors.textMuted, fontSize: 11 },
+  deliveryCost: { color: colors.textSecondary, fontSize: 12 },
+
+  // Modal Loan
+  loanOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  loanOptionInfo: { flex: 1 },
+  loanOptionName: { color: colors.textPrimary, fontSize: 14 },
+  loanOptionDetails: { color: colors.textMuted, fontSize: 11 },
+  loanEquity: { color: colors.accent, fontSize: 11, marginTop: 2 },
+  loanPayment: { color: colors.warning, fontSize: 14, fontWeight: '600' },
+
+  // Modal Analytics
+  analyticsSection: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+  analyticsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  analyticsStat: { width: '47%', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, alignItems: 'center' },
+  analyticsValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  analyticsLabel: { color: colors.textMuted, fontSize: 10, marginTop: 4 },
+
+  // Modal Expansion
+  inputLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 15, marginBottom: 8 },
+  locationTypeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  locationTypeSelected: { backgroundColor: colors.primary },
+  locationTypeIcon: { fontSize: 24, marginRight: 12 },
+  locationTypeInfo: { flex: 1 },
+  locationTypeName: { color: colors.textPrimary, fontSize: 14 },
+  locationTypeNameSelected: { fontWeight: '600' },
+  locationTypeDetails: { color: colors.textMuted, fontSize: 11 },
+  locationTypeCost: { color: colors.warning, fontSize: 12, fontWeight: '600' },
+  marketOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  marketSelected: { backgroundColor: colors.info },
+  marketIcon: { fontSize: 20, marginRight: 12 },
+  marketInfo: { flex: 1 },
+  marketName: { color: colors.textPrimary, fontSize: 14 },
+  marketNameSelected: { fontWeight: '600' },
+  marketDetails: { color: colors.textMuted, fontSize: 11 },
+  expansionSummary: { backgroundColor: colors.surface, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 20, marginBottom: 15 },
+  expansionSummaryTitle: { color: colors.textMuted, fontSize: 12 },
+  expansionSummaryValue: { color: colors.primary, fontSize: 28, fontWeight: '700', marginTop: 6 },
+  expansionSummaryNote: { color: colors.textMuted, fontSize: 11, marginTop: 6 },
+  expandButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  expandButtonDisabled: { backgroundColor: colors.surfaceLight },
+  expandButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // Modal Franchise
+  franchiseIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 15 },
+  franchiseTierOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 10 },
+  franchiseTierInfo: { flex: 1 },
+  franchiseTierName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  franchiseTierDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  franchiseTierRates: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  franchiseTierFee: { color: colors.success, fontSize: 20, fontWeight: '700' },
+  franchiseTierFeeLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Modal AI Chat
+  aiChatContainer: { flex: 1 },
+  aiResponse: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, minHeight: 150, marginBottom: 15 },
+  aiResponseText: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  aiInputRow: { flexDirection: 'row', gap: 10 },
+  aiInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
+  aiSendBtn: { backgroundColor: colors.primary, width: 48, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  aiSendBtnText: { color: colors.background, fontSize: 20, fontWeight: '700' },
+
+  // Modal Save
+  saveSlot: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 10 },
+  saveSlotTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  saveSlotInfo: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  saveSlotButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  loadBtn: { flex: 1, backgroundColor: colors.info, padding: 10, borderRadius: 6, alignItems: 'center' },
+  loadBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  overwriteBtn: { flex: 1, backgroundColor: colors.warning, padding: 10, borderRadius: 6, alignItems: 'center' },
+  overwriteBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  saveBtn: { backgroundColor: colors.success, padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 10 },
+  saveBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+
+  // Bottom Bar
+  bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
+  nextWeekButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  nextWeekButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // ============================================
+  // PHASE 4 STYLES
+  // ============================================
+  
+  // Vendor Modal
+  vendorCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 12 },
+  vendorHeader: { flexDirection: 'row', alignItems: 'center' },
+  vendorIcon: { fontSize: 28, marginRight: 12 },
+  vendorInfo: { flex: 1 },
+  vendorName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  vendorType: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  vendorStats: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  vendorRelationship: { color: colors.info, fontSize: 12, fontWeight: '600' },
+  vendorDeal: { color: colors.success, fontSize: 10, marginTop: 2 },
+  dealOptions: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
+  dealLabel: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
+  dealOption: { backgroundColor: colors.surface, padding: 10, borderRadius: 6, marginBottom: 6 },
+  dealName: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  dealDesc: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  addVendorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+  addVendorBtn: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+
+  // Competition Modal
+  competitionIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 16 },
+  competitorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 14, borderRadius: 8, marginBottom: 10 },
+  competitorIcon: { fontSize: 32, marginRight: 12 },
+  competitorInfo: { flex: 1 },
+  competitorName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  competitorType: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  competitorStats: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  competitorStat: { color: colors.textSecondary, fontSize: 11 },
+  threatLevel: { alignItems: 'center' },
+  threatLabel: { color: colors.textMuted, fontSize: 10 },
+  threatValue: { fontSize: 18, fontWeight: '700' },
+  noCompetitors: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+
+  // Events Calendar Modal
+  calendarIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 12 },
+  currentWeekLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 16 },
+  eventCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 14, borderRadius: 8, marginBottom: 10 },
+  eventIcon: { fontSize: 28, marginRight: 12 },
+  eventInfo: { flex: 1 },
+  eventName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  eventWeek: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  eventTip: { color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' },
+  eventBoost: { alignItems: 'center' },
+  eventBoostValue: { fontSize: 18, fontWeight: '700' },
+  eventBoostLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Milestones Modal
+  milestoneSummary: { backgroundColor: colors.surfaceLight, padding: 20, borderRadius: 8, alignItems: 'center', marginBottom: 20 },
+  milestoneCount: { color: colors.primary, fontSize: 36, fontWeight: '700' },
+  milestoneLabel: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
+  milestoneRewards: { color: colors.success, fontSize: 12, marginTop: 8 },
+  milestoneCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 8, marginBottom: 8, opacity: 0.6 },
+  milestoneUnlocked: { backgroundColor: colors.surfaceLight, opacity: 1, borderLeftWidth: 3, borderLeftColor: colors.success },
+  milestoneIcon: { fontSize: 24, marginRight: 12 },
+  milestoneInfo: { flex: 1 },
+  milestoneName: { color: colors.textMuted, fontSize: 14 },
+  milestoneNameUnlocked: { color: colors.textPrimary, fontWeight: '600' },
+  milestoneDesc: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  milestoneReward: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  milestoneRewardUnlocked: { color: colors.success },
+
+  // Exit Strategy Modal
+  exitIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 16 },
+  exitLocationCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 12 },
+  exitLocationHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  exitLocationName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  exitLocationWeeks: { color: colors.textMuted, fontSize: 12 },
+  exitLocationStats: { flexDirection: 'row', gap: 15, marginBottom: 12 },
+  exitStat: { color: colors.textSecondary, fontSize: 12 },
+  exitActions: { flexDirection: 'row', gap: 10 },
+  sellButton: { flex: 1, backgroundColor: colors.success, padding: 12, borderRadius: 6, alignItems: 'center' },
+  sellButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  sellButtonValue: { color: colors.background, fontSize: 11, marginTop: 2 },
+  closeButton: { flex: 1, backgroundColor: colors.accent, padding: 12, borderRadius: 6, alignItems: 'center' },
+  closeButtonText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  closeButtonValue: { color: colors.textPrimary, fontSize: 11, marginTop: 2 },
+  exitWarning: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+
+  // Tutorial Overlay
+  tutorialOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 1000 },
+  tutorialCard: { backgroundColor: colors.surface, padding: 25, borderRadius: 12, maxWidth: 360, width: '100%', borderWidth: 2, borderColor: colors.primary },
+  tutorialTitle: { color: colors.primary, fontSize: 22, fontWeight: '700', marginBottom: 15, textAlign: 'center' },
+  tutorialMessage: { color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 20, textAlign: 'center' },
+  tutorialProgress: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 20 },
+  tutorialDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.surfaceLight },
+  tutorialDotActive: { backgroundColor: colors.primary },
+  tutorialActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  tutorialSkip: { padding: 12 },
+  tutorialSkipText: { color: colors.textMuted, fontSize: 14 },
+  tutorialNext: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 6 },
+  tutorialNextText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+
+
+  // Phase 5: Settings Styles
+  settingsSection: { color: colors.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 10 },
+  themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  themeOption: { width: '48%', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  themeSelected: { borderColor: colors.primary, backgroundColor: colors.surface },
+  themeIcon: { fontSize: 28, marginBottom: 6 },
+  themeName: { color: colors.textSecondary, fontSize: 12, textAlign: 'center' },
+  themeNameSelected: { color: colors.primary, fontWeight: '600' },
+  speedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  speedOption: { flex: 1, minWidth: 60, backgroundColor: colors.surfaceLight, padding: 10, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  speedSelected: { borderColor: colors.success, backgroundColor: colors.surface },
+  speedIcon: { fontSize: 18 },
+  speedName: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  toggleLabel: { color: colors.textPrimary, fontSize: 14 },
+  toggle: { width: 50, height: 28, backgroundColor: colors.surfaceLight, borderRadius: 14, padding: 2 },
+  toggleActive: { backgroundColor: colors.success },
+  toggleKnob: { width: 24, height: 24, backgroundColor: colors.textMuted, borderRadius: 12 },
+  toggleKnobActive: { backgroundColor: colors.textPrimary, marginLeft: 'auto' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
+  statsLabel: { color: colors.textSecondary, fontSize: 13 },
+  statsValue: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  hofButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 20 },
+  hofButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  versionText: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 20 },
+
+  // Phase 5: Hall of Fame Styles
+  hofCategory: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  hofCategoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  hofCategoryIcon: { fontSize: 24, marginRight: 10 },
+  hofCategoryName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  hofRecord: { paddingLeft: 34 },
+  hofRecordValue: { color: colors.primary, fontSize: 24, fontWeight: '700' },
+  hofRecordDetails: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  hofNoRecord: { color: colors.textMuted, fontSize: 13, fontStyle: 'italic', paddingLeft: 34 },
+  recentRun: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  recentRunName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  recentRunDetails: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+
+  // Phase 5: Difficulty Styles
+  difficultyOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12, borderWidth: 2, borderColor: 'transparent' },
+  difficultySelected: { borderColor: colors.primary, backgroundColor: colors.surface },
+  difficultyHeader: { flexDirection: 'row', alignItems: 'center' },
+  difficultyIcon: { fontSize: 32, marginRight: 12 },
+  difficultyInfo: { flex: 1 },
+  difficultyName: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  difficultyDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  difficultyMods: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
+  difficultyMod: { color: colors.textSecondary, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  difficultyBonus: { color: colors.success, backgroundColor: 'rgba(16, 185, 129, 0.15)' },
+  difficultyPenalty: { color: colors.accent, backgroundColor: 'rgba(220, 38, 38, 0.15)' },
+
+  // Phase 5: Notification Styles
+  notificationContainer: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 1000 },
+  notification: { backgroundColor: colors.info, padding: 12, borderRadius: 8, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  notificationSuccess: { backgroundColor: colors.success },
+  notificationWarning: { backgroundColor: colors.warning },
+  notificationError: { backgroundColor: colors.accent },
+  notificationAchievement: { backgroundColor: colors.purple },
+  notificationMilestone: { backgroundColor: colors.primary },
+  notificationText: { color: colors.textPrimary, fontSize: 13, fontWeight: '500', textAlign: 'center' },
+
+  // Phase 5: Speed Control Bar
+  speedControlBar: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: 10 },
+  speedControlBtn: { width: 40, height: 32, backgroundColor: colors.surfaceLight, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  speedControlActive: { backgroundColor: colors.success },
+  speedControlText: { fontSize: 14 },
+
+  // Phase 5: Tips Banner
+  tipBanner: { backgroundColor: colors.surfaceLight, padding: 12, marginHorizontal: 15, marginBottom: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.info },
+  tipText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+
+  // Phase 5: Settings Button (header)
+  settingsBtn: { padding: 8 },
+  settingsBtnText: { fontSize: 22 },
+
+  // Phase 5: Prestige Badge
+  prestigeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.purple, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 10 },
+  prestigeBadgeText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+
+  // ============================================
+  // PHASE 6: ADVANCED BUSINESS STYLES
+  // ============================================
+  
+  // Investor Modal Styles
+  investorSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  investorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  investorIcon: { fontSize: 28, marginRight: 12 },
+  investorInfo: { flex: 1 },
+  investorName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  investorDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  investorOption: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  investorOptionIcon: { fontSize: 32, marginRight: 12 },
+  investorOptionInfo: { flex: 1 },
+  investorOptionName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  investorOptionTerms: { color: colors.textSecondary, fontSize: 12, marginBottom: 8, lineHeight: 18 },
+  investorOptionStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  investorStat: { color: colors.textMuted, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+
+  // Catering Modal Styles
+  cateringSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  enableButton: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
+  enableButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  contractCard: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  contractIcon: { fontSize: 28, marginRight: 12 },
+  contractInfo: { flex: 1 },
+  contractName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  contractDetails: { color: colors.success, fontSize: 12, marginTop: 4 },
+  contractRequirement: { color: colors.warning, fontSize: 11, marginTop: 4 },
+  serviceCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  serviceIcon: { fontSize: 24, marginRight: 12 },
+  serviceInfo: { flex: 1 },
+  serviceName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  serviceDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Food Truck Modal Styles
+  truckSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  truckCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  truckIcon: { fontSize: 28, marginRight: 12 },
+  truckInfo: { flex: 1 },
+  truckName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  truckDetails: { color: colors.textSecondary, fontSize: 12 },
+  truckOption: { flexDirection: 'row', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 10 },
+  truckOptionIcon: { fontSize: 32, marginRight: 12 },
+  truckOptionInfo: { flex: 1 },
+  truckOptionName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  truckOptionDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
+  eventOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  eventIcon: { fontSize: 24, marginRight: 12 },
+  eventInfo: { flex: 1 },
+  eventName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  eventDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Media Modal Styles
+  mediaSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  mediaOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  mediaIcon: { fontSize: 24, marginRight: 12 },
+  mediaInfo: { flex: 1 },
+  mediaName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  mediaDetails: { color: colors.success, fontSize: 11 },
+  dealOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  dealIcon: { fontSize: 24, marginRight: 12 },
+  dealInfo: { flex: 1 },
+  dealName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  dealDetails: { color: colors.textSecondary, fontSize: 11 },
+
+  // Exit Strategy Modal Styles
+  exitSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
+  exitOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12, flexDirection: 'row' },
+  exitOptionLocked: { opacity: 0.5 },
+  exitIcon: { fontSize: 32, marginRight: 12 },
+  exitInfo: { flex: 1 },
+  exitName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  exitDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 8 },
+  exitRequirements: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  exitReq: { color: colors.textMuted, fontSize: 10, backgroundColor: colors.surface, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  exitReqMet: { color: colors.success },
+  exitReqUnmet: { color: colors.accent },
+
+  // Economy Modal Styles
+  economyCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  economyCardActive: { borderWidth: 2, borderColor: colors.primary },
+  economyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  economyIcon: { fontSize: 28, marginRight: 12 },
+  economyInfo: { flex: 1 },
+  economyName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  economyActive: { color: colors.primary, fontSize: 10, fontWeight: '700', backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  economyDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 10 },
+  economyEffects: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  economyEffect: { color: colors.textMuted, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+  positive: { color: colors.success },
+  negative: { color: colors.accent },
+
+  // Empty State
+  emptyState: { alignItems: 'center', padding: 20 },
+  emptyStateText: { color: colors.textMuted, fontSize: 14, textAlign: 'center' },
+  emptyStateHint: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 },
+
+  // Real Estate Modal Styles
+  propertyCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  propertyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  propertyIcon: { fontSize: 28, marginRight: 12 },
+  propertyInfo: { flex: 1 },
+  propertyName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  propertyLocation: { color: colors.textSecondary, fontSize: 12 },
+  propertyStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  propertyStat: { minWidth: '45%' },
+  propertyStatLabel: { color: colors.textMuted, fontSize: 10 },
+  propertyStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  
+  leaseOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  leaseHeader: { flexDirection: 'row', alignItems: 'center' },
+  leaseIcon: { fontSize: 24, marginRight: 12 },
+  leaseInfo: { flex: 1 },
+  leaseName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  leaseDesc: { color: colors.textSecondary, fontSize: 11, marginTop: 2 },
+  leaseActive: { color: colors.success, fontSize: 18, fontWeight: '700' },
+  leaseDetails: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+  leaseDetail: { color: colors.textMuted, fontSize: 11, marginBottom: 3 },
+  
+  buyPropertyCard: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, borderWidth: 1, borderColor: colors.primary },
+  buyPropertyTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  buyPropertyDesc: { color: colors.textSecondary, fontSize: 12, marginBottom: 15 },
+  buyPropertyStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
+  buyPropertyStat: { minWidth: '45%' },
+  buyPropertyLabel: { color: colors.textMuted, fontSize: 10 },
+  buyPropertyValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  buyPropertyButton: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center' },
+  buyPropertyButtonDisabled: { backgroundColor: colors.surfaceLight, opacity: 0.6 },
+  buyPropertyButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  helperText: { color: colors.textMuted, fontSize: 11, marginBottom: 12 },
+
 });
+
