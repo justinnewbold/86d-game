@@ -400,6 +400,140 @@ const MILESTONES = [
 ];
 
 // ============================================
+// PHASE 5: ENGAGEMENT & POLISH SYSTEMS
+// ============================================
+
+// DIFFICULTY MODES
+const DIFFICULTY_MODES = [
+  { 
+    id: 'easy', name: 'Easy', icon: '😊', description: 'Learning the ropes',
+    revenueMultiplier: 1.3, costMultiplier: 0.8, scenarioChance: 0.15, negativeScenarioChance: 0.3,
+    startingBonus: 25000, staffLoyaltyBonus: 10, reputationDecayRate: 0.5,
+  },
+  { 
+    id: 'normal', name: 'Normal', icon: '😐', description: 'The real deal',
+    revenueMultiplier: 1.0, costMultiplier: 1.0, scenarioChance: 0.25, negativeScenarioChance: 0.5,
+    startingBonus: 0, staffLoyaltyBonus: 0, reputationDecayRate: 1.0,
+  },
+  { 
+    id: 'hard', name: 'Hard', icon: '😤', description: 'For experienced operators',
+    revenueMultiplier: 0.85, costMultiplier: 1.15, scenarioChance: 0.35, negativeScenarioChance: 0.65,
+    startingBonus: -10000, staffLoyaltyBonus: -5, reputationDecayRate: 1.5,
+  },
+  { 
+    id: 'nightmare', name: 'Nightmare', icon: '💀', description: 'Pure chaos - good luck',
+    revenueMultiplier: 0.7, costMultiplier: 1.3, scenarioChance: 0.5, negativeScenarioChance: 0.8,
+    startingBonus: -20000, staffLoyaltyBonus: -10, reputationDecayRate: 2.0, noLoans: true,
+  },
+];
+
+// GAME SPEED OPTIONS
+const SPEED_OPTIONS = [
+  { id: 'pause', name: 'Paused', icon: '⏸️', interval: null },
+  { id: '1x', name: '1x', icon: '▶️', interval: 3000 },
+  { id: '2x', name: '2x', icon: '⏩', interval: 1500 },
+  { id: '4x', name: '4x', icon: '⏭️', interval: 750 },
+  { id: '10x', name: '10x', icon: '🚀', interval: 300 },
+];
+
+// THEME SYSTEM
+const THEMES = {
+  dark: {
+    id: 'dark', name: 'Dark (Default)', icon: '🌙',
+    colors: {
+      background: '#0D0D0D', surface: '#1A1A1A', surfaceLight: '#252525',
+      primary: '#F59E0B', accent: '#DC2626', success: '#10B981', warning: '#F97316',
+      info: '#3B82F6', purple: '#8B5CF6', pink: '#EC4899', cyan: '#06B6D4',
+      textPrimary: '#FFFFFF', textSecondary: '#A3A3A3', textMuted: '#737373', border: '#333333',
+    }
+  },
+  midnight: {
+    id: 'midnight', name: 'Midnight Blue', icon: '🌃',
+    colors: {
+      background: '#0a192f', surface: '#112240', surfaceLight: '#1d3557',
+      primary: '#64ffda', accent: '#f72585', success: '#00b894', warning: '#ff7675',
+      info: '#74b9ff', purple: '#a29bfe', pink: '#fd79a8', cyan: '#00cec9',
+      textPrimary: '#ccd6f6', textSecondary: '#8892b0', textMuted: '#495670', border: '#233554',
+    }
+  },
+  retro: {
+    id: 'retro', name: 'Retro Arcade', icon: '🕹️',
+    colors: {
+      background: '#1a1a2e', surface: '#16213e', surfaceLight: '#0f3460',
+      primary: '#e94560', accent: '#ff6b6b', success: '#00ff41', warning: '#ffd93d',
+      info: '#00fff5', purple: '#9b59b6', pink: '#ff00ff', cyan: '#00ffff',
+      textPrimary: '#ffffff', textSecondary: '#94a3b8', textMuted: '#64748b', border: '#334155',
+    }
+  },
+  coffee: {
+    id: 'coffee', name: 'Coffee House', icon: '☕',
+    colors: {
+      background: '#1c1610', surface: '#2c221a', surfaceLight: '#3d2e23',
+      primary: '#c49a6c', accent: '#8b4513', success: '#228b22', warning: '#d2691e',
+      info: '#4682b4', purple: '#9370db', pink: '#bc8f8f', cyan: '#5f9ea0',
+      textPrimary: '#f5deb3', textSecondary: '#d2b48c', textMuted: '#a0896c', border: '#4a3728',
+    }
+  },
+  neon: {
+    id: 'neon', name: 'Neon Nights', icon: '💜',
+    colors: {
+      background: '#0d0221', surface: '#190535', surfaceLight: '#2b0a4d',
+      primary: '#ff00ff', accent: '#00ffff', success: '#39ff14', warning: '#ff6600',
+      info: '#00bfff', purple: '#bf00ff', pink: '#ff1493', cyan: '#00ffff',
+      textPrimary: '#ffffff', textSecondary: '#e0b0ff', textMuted: '#9d4edd', border: '#4c1d95',
+    }
+  },
+};
+
+// GAMEPLAY TIPS
+const GAMEPLAY_TIPS = [
+  { id: 1, tip: "💡 Keep 4-6 weeks of expenses in cash reserves for emergencies." },
+  { id: 2, tip: "💡 A line cook at $18/hr costs you ~$27/hr after all expenses." },
+  { id: 3, tip: "💡 Social media marketing has the best ROI for new restaurants." },
+  { id: 4, tip: "💡 Prime cost (food + labor) should stay under 65% of revenue." },
+  { id: 5, tip: "💡 Train staff to reduce turnover - it's cheaper than hiring new." },
+  { id: 6, tip: "💡 Delivery apps take 15-30% - factor that into your pricing." },
+  { id: 7, tip: "💡 Don't expand until your first location is consistently profitable." },
+  { id: 8, tip: "💡 Negotiate with vendors quarterly - prices change." },
+  { id: 9, tip: "💡 A great manager can run a location for you - invest in them." },
+  { id: 10, tip: "💡 Ghost kitchens have low overhead but zero walk-in traffic." },
+  { id: 11, tip: "💡 The restaurant that survives isn't the best - it's the most adaptable." },
+  { id: 12, tip: "💡 Equipment failures always happen at the worst time. Maintain proactively." },
+];
+
+// PRESTIGE SYSTEM (New Game+)
+const PRESTIGE_BONUSES = [
+  { level: 1, name: 'Experienced Owner', bonus: 'Start with +$10K and +5% reputation', cashBonus: 10000, repBonus: 5 },
+  { level: 2, name: 'Seasoned Pro', bonus: 'Start with +$25K and industry contacts', cashBonus: 25000, repBonus: 8, vendorDiscount: 0.05 },
+  { level: 3, name: 'Industry Veteran', bonus: 'Start with +$50K and loyal staff', cashBonus: 50000, repBonus: 10, startingStaff: 3 },
+  { level: 4, name: 'Restaurant Legend', bonus: 'Start with +$100K and fame', cashBonus: 100000, repBonus: 15, startingStaff: 5 },
+  { level: 5, name: 'Culinary Titan', bonus: 'Start with +$250K empire', cashBonus: 250000, repBonus: 20, startingStaff: 8 },
+];
+
+// PHASE 5 ACHIEVEMENTS
+const PHASE5_ACHIEVEMENTS = [
+  { id: 'nightmare_survivor', name: 'Nightmare Survivor', description: 'Survive 52 weeks on Nightmare', icon: '💀', reward: 50000 },
+  { id: 'speedrunner', name: 'Speedrunner', description: 'Reach $1M valuation in under 52 weeks', icon: '⚡', reward: 25000 },
+  { id: 'staff_loyalty', name: 'Staff Loyalty', description: 'Keep same employee for 52+ weeks', icon: '💪', reward: 10000 },
+  { id: 'perfect_week', name: 'Perfect Week', description: 'All metrics positive for a week', icon: '✨', reward: 5000 },
+  { id: 'comeback_kid', name: 'Comeback Kid', description: 'Recover from negative cash to $100K+', icon: '🔥', reward: 20000 },
+  { id: 'no_loans', name: 'Bootstrap King', description: 'Reach $500K valuation without loans', icon: '💎', reward: 30000 },
+  { id: 'franchise_empire', name: 'Franchise Empire', description: 'Have 10 active franchises', icon: '🌐', reward: 75000 },
+  { id: 'theme_collector', name: 'Theme Collector', description: 'Try all 5 color themes', icon: '🎨', reward: 2500 },
+];
+
+// HALL OF FAME CATEGORIES
+const HALL_OF_FAME_CATEGORIES = [
+  { id: 'longest_run', name: 'Longest Run', icon: '📅', stat: 'weeksSurvived', format: (v) => `${v} weeks` },
+  { id: 'highest_revenue', name: 'Highest Revenue', icon: '💰', stat: 'peakWeeklyRevenue', format: (v) => `$${v.toLocaleString()}` },
+  { id: 'biggest_empire', name: 'Biggest Empire', icon: '🏛️', stat: 'maxLocations', format: (v) => `${v} locations` },
+  { id: 'highest_valuation', name: 'Highest Valuation', icon: '🏆', stat: 'peakValuation', format: (v) => `$${(v/1000000).toFixed(2)}M` },
+  { id: 'most_staff', name: 'Most Staff', icon: '👥', stat: 'maxStaff', format: (v) => `${v} employees` },
+];
+
+
+
+// ============================================
 // EMPIRE SCENARIOS (Multi-location specific)
 // ============================================
 const EMPIRE_SCENARIOS = [
@@ -773,6 +907,7 @@ export default function App() {
     market: 'same_city',
     goal: 'survive',
     experience: 'none',
+    difficulty: 'normal',
   });
   
   // Game State
@@ -815,6 +950,25 @@ export default function App() {
   const [sellLocationModal, setSellLocationModal] = useState(false);
   const [milestonesModal, setMilestonesModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
+  
+  // Phase 5: Settings & Engagement states
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [hallOfFameModal, setHallOfFameModal] = useState(false);
+  const [statsModal, setStatsModal] = useState(false);
+  const [difficultyModal, setDifficultyModal] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('dark');
+  const [difficulty, setDifficulty] = useState('normal');
+  const [gameSpeed, setGameSpeed] = useState('pause');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [showTips, setShowTips] = useState(true);
+  const [currentTip, setCurrentTip] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [hallOfFame, setHallOfFame] = useState([]);
+  const [prestigeLevel, setPrestigeLevel] = useState(0);
+  const [totalRunsCompleted, setTotalRunsCompleted] = useState(0);
+  const [themesUsed, setThemesUsed] = useState(['dark']);
+  const autoAdvanceRef = useRef(null);
   
   // Save State
   const [savedGames, setSavedGames] = useState([]);
@@ -1731,6 +1885,173 @@ export default function App() {
     setGame(g => g ? { ...g, tutorialComplete: true } : g);
   };
 
+  // ============================================
+  // PHASE 5: SETTINGS & ENGAGEMENT FUNCTIONS
+  // ============================================
+  
+  // Theme Management
+  const getThemeColors = useCallback(() => {
+    return THEMES[currentTheme]?.colors || THEMES.dark.colors;
+  }, [currentTheme]);
+  
+  const changeTheme = (themeId) => {
+    setCurrentTheme(themeId);
+    if (!themesUsed.includes(themeId)) {
+      setThemesUsed([...themesUsed, themeId]);
+      // Check for theme collector achievement
+      if (themesUsed.length + 1 >= 5) {
+        addNotification('achievement', '🎨 Theme Collector achievement unlocked!');
+      }
+    }
+    try {
+      localStorage.setItem('86d_theme', themeId);
+    } catch (e) {}
+  };
+  
+  // Notification System
+  const addNotification = useCallback((type, message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  }, []);
+  
+  // Auto-Advance System
+  useEffect(() => {
+    if (autoAdvanceRef.current) {
+      clearInterval(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+    
+    const speedOption = SPEED_OPTIONS.find(s => s.id === gameSpeed);
+    if (speedOption?.interval && game && screen === 'game' && !scenario) {
+      autoAdvanceRef.current = setInterval(() => {
+        processWeek();
+      }, speedOption.interval);
+    }
+    
+    return () => {
+      if (autoAdvanceRef.current) {
+        clearInterval(autoAdvanceRef.current);
+      }
+    };
+  }, [gameSpeed, game, screen, scenario, processWeek]);
+  
+  // Tips Rotation
+  useEffect(() => {
+    if (showTips && game) {
+      const tipInterval = setInterval(() => {
+        setCurrentTip(prev => (prev + 1) % GAMEPLAY_TIPS.length);
+      }, 30000); // Change tip every 30 seconds
+      return () => clearInterval(tipInterval);
+    }
+  }, [showTips, game]);
+  
+  // Auto-Save
+  useEffect(() => {
+    if (autoSaveEnabled && game && game.week > 0 && game.week % 4 === 0) {
+      try {
+        const autoSave = {
+          game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
+          week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
+        };
+        localStorage.setItem('86d_autosave', JSON.stringify(autoSave));
+      } catch (e) {}
+    }
+  }, [game?.week, autoSaveEnabled, game, setup]);
+  
+  // Hall of Fame Update
+  const updateHallOfFame = useCallback(() => {
+    if (!game) return;
+    
+    const currentRun = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      cuisine: setup.cuisine,
+      restaurantName: setup.name,
+      difficulty: setup.difficulty || 'normal',
+      weeksSurvived: game.week,
+      peakWeeklyRevenue: game.stats?.peakWeeklyRevenue || 0,
+      maxLocations: Math.max(game.locations?.length || 1, game.stats?.locationsOpened || 1),
+      peakValuation: game.empireValuation || 0,
+      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + l.staff.length, 0) || 0,
+    };
+    
+    try {
+      const existing = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
+      const updated = [...existing, currentRun].slice(-50); // Keep last 50 runs
+      localStorage.setItem('86d_hall_of_fame', JSON.stringify(updated));
+      setHallOfFame(updated);
+    } catch (e) {}
+  }, [game, setup]);
+  
+  // Load Hall of Fame on mount
+  useEffect(() => {
+    try {
+      const hof = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
+      setHallOfFame(hof);
+      const savedTheme = localStorage.getItem('86d_theme');
+      if (savedTheme && THEMES[savedTheme]) setCurrentTheme(savedTheme);
+      const savedPrestige = parseInt(localStorage.getItem('86d_prestige') || '0');
+      setPrestigeLevel(savedPrestige);
+    } catch (e) {}
+  }, []);
+  
+  // Prestige System
+  const calculatePrestigePoints = () => {
+    if (!game) return 0;
+    let points = 0;
+    points += Math.floor(game.week / 52); // 1 point per year survived
+    points += Math.floor((game.empireValuation || 0) / 500000); // 1 point per $500K valuation
+    points += (game.locations?.length || 1) - 1; // 1 point per extra location
+    points += Math.floor((game.franchises?.length || 0) / 2); // 1 point per 2 franchises
+    if (setup.difficulty === 'hard') points *= 1.5;
+    if (setup.difficulty === 'nightmare') points *= 2;
+    return Math.floor(points);
+  };
+  
+  const startNewGamePlus = () => {
+    const points = calculatePrestigePoints();
+    const newPrestige = Math.min(5, prestigeLevel + Math.floor(points / 10));
+    
+    updateHallOfFame();
+    setPrestigeLevel(newPrestige);
+    setTotalRunsCompleted(prev => prev + 1);
+    
+    try {
+      localStorage.setItem('86d_prestige', String(newPrestige));
+    } catch (e) {}
+    
+    // Reset to welcome with prestige bonus message
+    setGame(null);
+    setScreen('welcome');
+    setOnboardingStep(0);
+    addNotification('milestone', `New Game+ started! Prestige Level ${newPrestige}`);
+  };
+  
+  // Get Prestige Bonus for current level
+  const getPrestigeBonus = () => {
+    if (prestigeLevel <= 0) return null;
+    return PRESTIGE_BONUSES[Math.min(prestigeLevel, PRESTIGE_BONUSES.length) - 1];
+  };
+  
+  // Get best record for a category
+  const getBestRecord = (categoryId) => {
+    const category = HALL_OF_FAME_CATEGORIES.find(c => c.id === categoryId);
+    if (!category || hallOfFame.length === 0) return null;
+    
+    const sorted = [...hallOfFame].sort((a, b) => (b[category.stat] || 0) - (a[category.stat] || 0));
+    return sorted[0];
+  };
+  
+  // Get difficulty modifier
+  const getDifficultyMod = () => {
+    return DIFFICULTY_MODES.find(d => d.id === (setup.difficulty || difficulty)) || DIFFICULTY_MODES[1];
+  };
+
+
+
   const handleScenarioChoice = async (option) => {
     const success = Math.random() <= option.successChance;
     const outcome = success ? option.success : option.fail;
@@ -1871,7 +2192,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v6.0.0 • Phase 4 • Polish & Advanced</Text>
+          <Text style={styles.versionText}>v7.0.0 • Phase 4 • Polish & Advanced</Text>
         </View>
       </SafeAreaView>
     );
@@ -2183,6 +2504,13 @@ export default function App() {
         <ScrollView style={styles.dashboardScroll}>
           {/* Quick Stats */}
           {loc && (
+            {/* Phase 5: Tips Banner */}
+            {showTips && game && (
+              <View style={styles.tipBanner}>
+                <Text style={styles.tipText}>{GAMEPLAY_TIPS[currentTip % GAMEPLAY_TIPS.length]?.tip || ''}</Text>
+              </View>
+            )}
+            
             <View style={styles.quickStats}>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>Location Cash</Text>
@@ -3195,6 +3523,219 @@ export default function App() {
           </View>
         )}
 
+
+
+        {/* Phase 5: Settings Modal */}
+        <Modal visible={settingsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>⚙️ Settings</Text>
+                <TouchableOpacity onPress={() => setSettingsModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.settingsSection}>🎨 Theme</Text>
+                <View style={styles.themeGrid}>
+                  {Object.values(THEMES).map(theme => (
+                    <TouchableOpacity
+                      key={theme.id}
+                      style={[styles.themeOption, currentTheme === theme.id && styles.themeSelected]}
+                      onPress={() => changeTheme(theme.id)}
+                    >
+                      <Text style={styles.themeIcon}>{theme.icon}</Text>
+                      <Text style={[styles.themeName, currentTheme === theme.id && styles.themeNameSelected]}>{theme.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={styles.settingsSection}>⏩ Game Speed</Text>
+                <View style={styles.speedGrid}>
+                  {SPEED_OPTIONS.map(speed => (
+                    <TouchableOpacity
+                      key={speed.id}
+                      style={[styles.speedOption, gameSpeed === speed.id && styles.speedSelected]}
+                      onPress={() => setGameSpeed(speed.id)}
+                    >
+                      <Text style={styles.speedIcon}>{speed.icon}</Text>
+                      <Text style={styles.speedName}>{speed.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={styles.settingsSection}>🎮 Preferences</Text>
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setSoundEnabled(!soundEnabled)}
+                >
+                  <Text style={styles.toggleLabel}>🔊 Sound Effects</Text>
+                  <View style={[styles.toggle, soundEnabled && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, soundEnabled && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                >
+                  <Text style={styles.toggleLabel}>💾 Auto-Save (every 4 weeks)</Text>
+                  <View style={[styles.toggle, autoSaveEnabled && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, autoSaveEnabled && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.toggleRow}
+                  onPress={() => setShowTips(!showTips)}
+                >
+                  <Text style={styles.toggleLabel}>💡 Show Gameplay Tips</Text>
+                  <View style={[styles.toggle, showTips && styles.toggleActive]}>
+                    <View style={[styles.toggleKnob, showTips && styles.toggleKnobActive]} />
+                  </View>
+                </TouchableOpacity>
+                
+                <Text style={styles.settingsSection}>📊 Stats</Text>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Prestige Level</Text>
+                  <Text style={styles.statsValue}>{'⭐'.repeat(prestigeLevel) || 'None'}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Total Runs</Text>
+                  <Text style={styles.statsValue}>{hallOfFame.length}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  <Text style={styles.statsLabel}>Themes Unlocked</Text>
+                  <Text style={styles.statsValue}>{themesUsed.length}/5</Text>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.hofButton}
+                  onPress={() => { setSettingsModal(false); setHallOfFameModal(true); }}
+                >
+                  <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.versionText}>86'd v7.0.0 - Phase 5</Text>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Hall of Fame Modal */}
+        <Modal visible={hallOfFameModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏆 Hall of Fame</Text>
+                <TouchableOpacity onPress={() => setHallOfFameModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {HALL_OF_FAME_CATEGORIES.map(category => {
+                  const best = getBestRecord(category.id);
+                  return (
+                    <View key={category.id} style={styles.hofCategory}>
+                      <View style={styles.hofCategoryHeader}>
+                        <Text style={styles.hofCategoryIcon}>{category.icon}</Text>
+                        <Text style={styles.hofCategoryName}>{category.name}</Text>
+                      </View>
+                      {best ? (
+                        <View style={styles.hofRecord}>
+                          <Text style={styles.hofRecordValue}>{category.format(best[category.stat] || 0)}</Text>
+                          <Text style={styles.hofRecordDetails}>
+                            {best.restaurantName || 'Unknown'} • {best.difficulty || 'Normal'} • Week {best.weeksSurvived}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.hofNoRecord}>No records yet - start playing!</Text>
+                      )}
+                    </View>
+                  );
+                })}
+                
+                <Text style={styles.settingsSection}>📜 Recent Runs ({hallOfFame.length})</Text>
+                {hallOfFame.slice(-5).reverse().map((run, i) => (
+                  <View key={run.id || i} style={styles.recentRun}>
+                    <Text style={styles.recentRunName}>{run.restaurantName || 'Unknown'}</Text>
+                    <Text style={styles.recentRunDetails}>
+                      {run.weeksSurvived} weeks • {formatCurrency(run.peakValuation || 0)} peak • {run.difficulty || 'normal'}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Difficulty Selection Modal */}
+        <Modal visible={difficultyModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🎮 Select Difficulty</Text>
+                <TouchableOpacity onPress={() => setDifficultyModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {DIFFICULTY_MODES.map(mode => (
+                  <TouchableOpacity
+                    key={mode.id}
+                    style={[styles.difficultyOption, setup.difficulty === mode.id && styles.difficultySelected]}
+                    onPress={() => {
+                      setSetup(s => ({ ...s, difficulty: mode.id }));
+                      setDifficulty(mode.id);
+                      setDifficultyModal(false);
+                    }}
+                  >
+                    <View style={styles.difficultyHeader}>
+                      <Text style={styles.difficultyIcon}>{mode.icon}</Text>
+                      <View style={styles.difficultyInfo}>
+                        <Text style={styles.difficultyName}>{mode.name}</Text>
+                        <Text style={styles.difficultyDesc}>{mode.description}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.difficultyMods}>
+                      <Text style={styles.difficultyMod}>Revenue: {mode.revenueMultiplier > 1 ? '+' : ''}{((mode.revenueMultiplier - 1) * 100).toFixed(0)}%</Text>
+                      <Text style={styles.difficultyMod}>Costs: {mode.costMultiplier > 1 ? '+' : ''}{((mode.costMultiplier - 1) * 100).toFixed(0)}%</Text>
+                      <Text style={styles.difficultyMod}>Crises: {(mode.negativeScenarioChance * 100).toFixed(0)}%</Text>
+                      {mode.startingBonus !== 0 && (
+                        <Text style={[styles.difficultyMod, mode.startingBonus > 0 ? styles.difficultyBonus : styles.difficultyPenalty]}>
+                          Capital: {mode.startingBonus > 0 ? '+' : ''}{formatCurrency(mode.startingBonus)}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 5: Notification Toast */}
+        {notifications.length > 0 && (
+          <View style={styles.notificationContainer}>
+            {notifications.map(n => (
+              <Animated.View 
+                key={n.id} 
+                style={[
+                  styles.notification,
+                  n.type === 'success' && styles.notificationSuccess,
+                  n.type === 'warning' && styles.notificationWarning,
+                  n.type === 'error' && styles.notificationError,
+                  n.type === 'achievement' && styles.notificationAchievement,
+                  n.type === 'milestone' && styles.notificationMilestone,
+                ]}
+              >
+                <Text style={styles.notificationText}>{n.message}</Text>
+              </Animated.View>
+            ))}
+          </View>
+        )}
+
+
       </SafeAreaView>
     );
   }
@@ -3684,5 +4225,88 @@ const styles = StyleSheet.create({
   tutorialSkipText: { color: colors.textMuted, fontSize: 14 },
   tutorialNext: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 6 },
   tutorialNextText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+
+
+  // Phase 5: Settings Styles
+  settingsSection: { color: colors.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 10 },
+  themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  themeOption: { width: '48%', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  themeSelected: { borderColor: colors.primary, backgroundColor: colors.surface },
+  themeIcon: { fontSize: 28, marginBottom: 6 },
+  themeName: { color: colors.textSecondary, fontSize: 12, textAlign: 'center' },
+  themeNameSelected: { color: colors.primary, fontWeight: '600' },
+  speedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  speedOption: { flex: 1, minWidth: 60, backgroundColor: colors.surfaceLight, padding: 10, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  speedSelected: { borderColor: colors.success, backgroundColor: colors.surface },
+  speedIcon: { fontSize: 18 },
+  speedName: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  toggleLabel: { color: colors.textPrimary, fontSize: 14 },
+  toggle: { width: 50, height: 28, backgroundColor: colors.surfaceLight, borderRadius: 14, padding: 2 },
+  toggleActive: { backgroundColor: colors.success },
+  toggleKnob: { width: 24, height: 24, backgroundColor: colors.textMuted, borderRadius: 12 },
+  toggleKnobActive: { backgroundColor: colors.textPrimary, marginLeft: 'auto' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
+  statsLabel: { color: colors.textSecondary, fontSize: 13 },
+  statsValue: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  hofButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 20 },
+  hofButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  versionText: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 20 },
+
+  // Phase 5: Hall of Fame Styles
+  hofCategory: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
+  hofCategoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  hofCategoryIcon: { fontSize: 24, marginRight: 10 },
+  hofCategoryName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  hofRecord: { paddingLeft: 34 },
+  hofRecordValue: { color: colors.primary, fontSize: 24, fontWeight: '700' },
+  hofRecordDetails: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  hofNoRecord: { color: colors.textMuted, fontSize: 13, fontStyle: 'italic', paddingLeft: 34 },
+  recentRun: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  recentRunName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  recentRunDetails: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+
+  // Phase 5: Difficulty Styles
+  difficultyOption: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12, borderWidth: 2, borderColor: 'transparent' },
+  difficultySelected: { borderColor: colors.primary, backgroundColor: colors.surface },
+  difficultyHeader: { flexDirection: 'row', alignItems: 'center' },
+  difficultyIcon: { fontSize: 32, marginRight: 12 },
+  difficultyInfo: { flex: 1 },
+  difficultyName: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  difficultyDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  difficultyMods: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
+  difficultyMod: { color: colors.textSecondary, fontSize: 11, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  difficultyBonus: { color: colors.success, backgroundColor: 'rgba(16, 185, 129, 0.15)' },
+  difficultyPenalty: { color: colors.accent, backgroundColor: 'rgba(220, 38, 38, 0.15)' },
+
+  // Phase 5: Notification Styles
+  notificationContainer: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 1000 },
+  notification: { backgroundColor: colors.info, padding: 12, borderRadius: 8, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  notificationSuccess: { backgroundColor: colors.success },
+  notificationWarning: { backgroundColor: colors.warning },
+  notificationError: { backgroundColor: colors.accent },
+  notificationAchievement: { backgroundColor: colors.purple },
+  notificationMilestone: { backgroundColor: colors.primary },
+  notificationText: { color: colors.textPrimary, fontSize: 13, fontWeight: '500', textAlign: 'center' },
+
+  // Phase 5: Speed Control Bar
+  speedControlBar: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: 10 },
+  speedControlBtn: { width: 40, height: 32, backgroundColor: colors.surfaceLight, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  speedControlActive: { backgroundColor: colors.success },
+  speedControlText: { fontSize: 14 },
+
+  // Phase 5: Tips Banner
+  tipBanner: { backgroundColor: colors.surfaceLight, padding: 12, marginHorizontal: 15, marginBottom: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.info },
+  tipText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+
+  // Phase 5: Settings Button (header)
+  settingsBtn: { padding: 8 },
+  settingsBtnText: { fontSize: 22 },
+
+  // Phase 5: Prestige Badge
+  prestigeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.purple, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 10 },
+  prestigeBadgeText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+
+
 });
 
