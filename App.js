@@ -1488,7 +1488,6 @@ export default function App() {
   const [reviewsModal, setReviewsModal] = useState(false);
   const [leaderboardModal, setLeaderboardModal] = useState(false);
   const [shareModal, setShareModal] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundFeedback, setSoundFeedback] = useState(null);
   
   // Save State
@@ -2971,7 +2970,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v9.0.0 • Phase 7 • Full Release</Text>
+          <Text style={styles.versionText}>v9.0.1 • Phase 7 • Full Release</Text>
         </View>
       </SafeAreaView>
     );
@@ -4449,7 +4448,7 @@ export default function App() {
                   <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
                 </TouchableOpacity>
                 
-                <Text style={styles.versionText}>86'd v9.0.0 - Phase 6</Text>
+                <Text style={styles.versionText}>86'd v9.0.1 - Phase 6</Text>
               </ScrollView>
             </View>
           </View>
