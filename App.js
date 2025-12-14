@@ -2503,14 +2503,14 @@ export default function App() {
 
         <ScrollView style={styles.dashboardScroll}>
           {/* Quick Stats */}
+          {/* Phase 5: Tips Banner */}
+          {showTips && game && (
+            <View style={styles.tipBanner}>
+              <Text style={styles.tipText}>{GAMEPLAY_TIPS[currentTip % GAMEPLAY_TIPS.length]?.tip || ''}</Text>
+            </View>
+          )}
+          
           {loc && (
-            {/* Phase 5: Tips Banner */}
-            {showTips && game && (
-              <View style={styles.tipBanner}>
-                <Text style={styles.tipText}>{GAMEPLAY_TIPS[currentTip % GAMEPLAY_TIPS.length]?.tip || ''}</Text>
-              </View>
-            )}
-            
             <View style={styles.quickStats}>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>Location Cash</Text>
