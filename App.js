@@ -21,21 +21,13 @@ const formatCurrency = (v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >
 const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 
 // ============================================
-// AI MENTOR SYSTEM (Gemini Integration)
+// AI MENTOR SYSTEM
 // ============================================
-const AI_PERSONALITY = {
-  name: "Chef Marcus",
-  background: "30 years in the industry, opened 12 restaurants, failed at 4, learned from all of them",
-  style: "Direct but supportive. Warns but doesn't block. Celebrates wins genuinely.",
-  phrases: {
-    greetings: ["Alright, let's see what we're working with.", "Another week in the trenches.", "Let's talk business."],
-    warnings: ["I've seen this before...", "Red flag here.", "This is where most people mess up."],
-    praise: ["Now that's what I like to see.", "You're figuring this out.", "Smart move."],
-    tough_love: ["Look, I'm not going to sugarcoat this.", "You need to hear this.", "Real talk:"],
-  }
-};
-
 const getAIMentorResponse = async (context, game, setup) => {
+  const totalLocations = game.locations?.length || 1;
+  const totalCash = game.locations?.reduce((sum, loc) => sum + loc.cash, 0) || game.cash;
+  const totalStaff = game.locations?.reduce((sum, loc) => sum + loc.staff.length, 0) || game.staff?.length || 0;
+  
   const prompt = `You are Chef Marcus, an AI mentor in a restaurant business simulator game called "86'd". 
 
 Your personality:
@@ -44,94 +36,61 @@ Your personality:
 - Direct but supportive - you warn but don't block decisions
 - You celebrate wins genuinely
 - You teach through reflection on past choices
-- You get more hands-off as the player proves themselves
 
-Current game state:
+Current empire state:
+- Total Locations: ${totalLocations}
 - Restaurant: ${setup.name || 'Unnamed'} (${setup.cuisine} cuisine)
 - Week: ${game.week}
-- Cash: $${game.cash.toLocaleString()}
-- Last week profit: $${game.lastWeekProfit?.toLocaleString() || 0}
-- Staff count: ${game.staff?.length || 0}
-- Reputation: ${game.reputation}%
-- Burnout: ${game.burnout}%
-- Equipment owned: ${game.equipment?.length || 0}
-- Delivery platforms: ${game.delivery?.platforms?.length || 0}
+- Total Cash: $${totalCash.toLocaleString()}
+- Total Staff: ${totalStaff}
+- Franchises: ${game.franchises?.length || 0}
+- Empire Valuation: $${(game.empireValuation || 0).toLocaleString()}
 
-Context for this response: ${context}
+Context: ${context}
 
-Respond as Chef Marcus in 2-3 sentences. Be conversational, direct, and genuinely helpful. If things are going badly, be honest but constructive. If things are going well, acknowledge it without being over the top. Reference specific numbers from the game state when relevant.`;
+Respond as Chef Marcus in 2-3 sentences. Be conversational and direct. Reference specific numbers when relevant.`;
 
   try {
-    // Get API key from window (injected by index.html) or use empty string
-    const apiKey = typeof window !== 'undefined' ? (window.GEMINI_API_KEY || '') : '';
-    
-    if (!apiKey) {
-      return getFallbackResponse(context, game);
-    }
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { 
-            temperature: 0.8, 
-            maxOutputTokens: 200,
-            topP: 0.95
-          }
-        })
-      }
-    );
+    const response = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || getFallbackResponse(context, game);
+    return data.response || getFallbackResponse(context, game);
   } catch (error) {
-    console.log('AI Error:', error);
     return getFallbackResponse(context, game);
   }
 };
 
 const getFallbackResponse = (context, game) => {
   const responses = {
-    weekly_good: [
-      "Profitable week. Keep that momentum going.",
-      "The numbers are moving in the right direction. Don't get comfortable though.",
-      "Good week. Now let's make the next one better.",
+    empire: [
+      "Multiple locations means multiple headaches. But also multiple revenue streams.",
+      "Scaling is about systems, not hustle. Document everything.",
+      "Your managers are your multipliers. Invest in them.",
     ],
-    weekly_bad: [
-      "Rough week. It happens. What matters is how you respond.",
-      "We need to talk about these numbers. Where's the bleeding coming from?",
-      "This is where most people panic. Don't. Analyze and adjust.",
+    franchise: [
+      "Franchising is selling a system, not just a brand. Is yours ready?",
+      "Franchisees will cut corners you never imagined. Build in quality controls.",
+      "The best franchisees are operators, not investors.",
     ],
-    low_cash: [
-      "Cash is getting tight. Time to get creative or cut costs.",
-      "I've been here before. You need to stop the bleeding fast.",
-      "Red alert on cash. Every dollar matters right now.",
-    ],
-    high_burnout: [
-      "You're burning out. I've seen owners destroy themselves. Delegate something.",
-      "Your burnout is showing. A tired owner makes expensive mistakes.",
-      "Hire help or cut hours. You can't run this thing from a hospital bed.",
-    ],
-    scenario: [
-      "This is a test. How you handle it defines what kind of operator you'll be.",
-      "Moment of truth. There's no perfect answer here, just trade-offs.",
-      "I've seen this situation before. Think it through.",
+    location: [
+      "Each location has its own personality. What works here might not work there.",
+      "Don't spread yourself too thin. Master one before opening another.",
+      "Location #2 fails at twice the rate of #1. Be ready.",
     ],
     default: [
-      "Keep your head down and execute.",
-      "One week at a time. That's how you build something.",
-      "Focus on what you can control.",
+      "Building an empire takes patience. One week at a time.",
+      "The numbers don't lie. Trust them over your gut.",
+      "Every decision compounds. Make good ones.",
     ]
   };
   
   let category = 'default';
-  if (context.includes('weekly') && game.lastWeekProfit > 0) category = 'weekly_good';
-  else if (context.includes('weekly') && game.lastWeekProfit <= 0) category = 'weekly_bad';
-  else if (game.cash < 10000) category = 'low_cash';
-  else if (game.burnout > 70) category = 'high_burnout';
-  else if (context.includes('scenario')) category = 'scenario';
+  if (context.includes('empire') || context.includes('locations')) category = 'empire';
+  else if (context.includes('franchise')) category = 'franchise';
+  else if (context.includes('location') || context.includes('expansion')) category = 'location';
   
   const options = responses[category];
   return options[Math.floor(Math.random() * options.length)];
@@ -174,10 +133,12 @@ const STAFF_TEMPLATES = [
   { role: 'Bartender', wage: 10, icon: '🍸', department: 'bar', skillCap: 8 },
   { role: 'Sous Chef', wage: 24, icon: '👨‍🍳', department: 'kitchen', skillCap: 9 },
   { role: 'Executive Chef', wage: 35, icon: '👨‍🍳', department: 'kitchen', skillCap: 10 },
-  { role: 'General Manager', wage: 26, icon: '👔', department: 'management', skillCap: 10 },
-  { role: 'Assistant Manager', wage: 18, icon: '📊', department: 'management', skillCap: 8 },
+  { role: 'General Manager', wage: 28, icon: '👔', department: 'management', skillCap: 10, canManage: true },
+  { role: 'Assistant Manager', wage: 20, icon: '📊', department: 'management', skillCap: 8 },
   { role: 'Expeditor', wage: 15, icon: '📢', department: 'kitchen', skillCap: 7 },
   { role: 'Busser', wage: 11, icon: '🧹', department: 'foh', skillCap: 5 },
+  { role: 'District Manager', wage: 45, icon: '🏢', department: 'corporate', skillCap: 10, canManageMultiple: true },
+  { role: 'Operations Director', wage: 55, icon: '📈', department: 'corporate', skillCap: 10, canManageMultiple: true },
 ];
 
 const TRAINING_PROGRAMS = [
@@ -187,18 +148,8 @@ const TRAINING_PROGRAMS = [
   { id: 'mixology', name: 'Advanced Mixology', icon: '🍹', cost: 400, weeks: 2, skillBoost: 2, cert: 'Mixologist', morale: 10 },
   { id: 'customer_service', name: 'Service Excellence', icon: '🎯', cost: 250, weeks: 1, skillBoost: 1, cert: 'Service Pro', morale: 10 },
   { id: 'management', name: 'Management Bootcamp', icon: '📈', cost: 800, weeks: 4, skillBoost: 3, cert: 'Manager Cert', morale: 20 },
-];
-
-const CUSTOMER_TYPES = [
-  { id: 'regular', name: 'Regular', icon: '😊', spendMod: 1.0, frequency: 0.35, tipMod: 1.1 },
-  { id: 'first_timer', name: 'First Timer', icon: '🆕', spendMod: 0.9, frequency: 0.20, tipMod: 1.0 },
-  { id: 'critic', name: 'Food Critic', icon: '📝', spendMod: 1.3, frequency: 0.02, tipMod: 0.9 },
-  { id: 'influencer', name: 'Influencer', icon: '📱', spendMod: 0.8, frequency: 0.05, tipMod: 0.7 },
-  { id: 'difficult', name: 'Difficult Guest', icon: '😤', spendMod: 1.1, frequency: 0.08, tipMod: 0.5 },
-  { id: 'big_spender', name: 'Big Spender', icon: '💰', spendMod: 1.8, frequency: 0.05, tipMod: 1.5 },
-  { id: 'date_night', name: 'Date Night', icon: '💕', spendMod: 1.4, frequency: 0.10, tipMod: 1.2 },
-  { id: 'family', name: 'Family', icon: '👨‍👩‍👧‍👦', spendMod: 1.3, frequency: 0.10, tipMod: 1.0 },
-  { id: 'business', name: 'Business Lunch', icon: '💼', spendMod: 1.5, frequency: 0.05, tipMod: 1.3 },
+  { id: 'multi_unit', name: 'Multi-Unit Management', icon: '🏢', cost: 1500, weeks: 6, skillBoost: 4, cert: 'Multi-Unit', morale: 25 },
+  { id: 'franchise_ops', name: 'Franchise Operations', icon: '🌐', cost: 2000, weeks: 8, skillBoost: 5, cert: 'Franchise Pro', morale: 30 },
 ];
 
 const EQUIPMENT = [
@@ -260,14 +211,138 @@ const LOANS = [
   { id: 'bank_medium', name: 'Bank Loan (Medium)', amount: 50000, rate: 0.09, term: 104, weeklyPayment: 550 },
   { id: 'bank_large', name: 'Bank Loan (Large)', amount: 100000, rate: 0.10, term: 156, weeklyPayment: 750 },
   { id: 'sba', name: 'SBA Loan', amount: 75000, rate: 0.065, term: 260, weeklyPayment: 350 },
+  { id: 'expansion', name: 'Expansion Loan', amount: 200000, rate: 0.085, term: 260, weeklyPayment: 950 },
   { id: 'investor', name: 'Angel Investor', amount: 50000, rate: 0.15, term: 104, weeklyPayment: 625, equity: 0.1 },
   { id: 'family', name: 'Family Loan', amount: 20000, rate: 0.03, term: 104, weeklyPayment: 200 },
   { id: 'predatory', name: 'Quick Cash Advance', amount: 15000, rate: 0.35, term: 26, weeklyPayment: 750 },
 ];
 
 // ============================================
-// EXPANDED SCENARIOS (25+)
+// LOCATION & EXPANSION SYSTEM
 // ============================================
+const LOCATION_TYPES = [
+  { id: 'urban_downtown', name: 'Urban Downtown', icon: '🏙️', rentMod: 1.5, trafficMod: 1.4, competitionMod: 1.3, buildoutCost: 150000 },
+  { id: 'urban_neighborhood', name: 'Urban Neighborhood', icon: '🏘️', rentMod: 1.2, trafficMod: 1.2, competitionMod: 1.1, buildoutCost: 120000 },
+  { id: 'suburban_strip', name: 'Suburban Strip Mall', icon: '🛒', rentMod: 0.9, trafficMod: 1.0, competitionMod: 1.0, buildoutCost: 100000 },
+  { id: 'suburban_standalone', name: 'Suburban Standalone', icon: '🏠', rentMod: 1.0, trafficMod: 0.9, competitionMod: 0.8, buildoutCost: 130000 },
+  { id: 'mall_food_court', name: 'Mall Food Court', icon: '🏬', rentMod: 1.3, trafficMod: 1.5, competitionMod: 1.4, buildoutCost: 80000 },
+  { id: 'airport', name: 'Airport Terminal', icon: '✈️', rentMod: 2.0, trafficMod: 1.8, competitionMod: 0.7, buildoutCost: 200000 },
+  { id: 'rural', name: 'Rural Main Street', icon: '🌾', rentMod: 0.6, trafficMod: 0.7, competitionMod: 0.5, buildoutCost: 70000 },
+  { id: 'ghost_kitchen', name: 'Ghost Kitchen', icon: '👻', rentMod: 0.4, trafficMod: 0, competitionMod: 0.3, buildoutCost: 40000, deliveryOnly: true },
+];
+
+const MARKETS = [
+  { id: 'same_city', name: 'Same City', icon: '📍', distanceMod: 1.0, brandBonus: 0.2, managementCost: 0 },
+  { id: 'nearby_city', name: 'Nearby City (50mi)', icon: '🚗', distanceMod: 0.9, brandBonus: 0.1, managementCost: 500 },
+  { id: 'regional', name: 'Regional (200mi)', icon: '🗺️', distanceMod: 0.7, brandBonus: 0.05, managementCost: 1500 },
+  { id: 'new_state', name: 'New State', icon: '🏛️', distanceMod: 0.5, brandBonus: 0, managementCost: 3000, requiresManager: true },
+  { id: 'national', name: 'National Expansion', icon: '🇺🇸', distanceMod: 0.3, brandBonus: 0, managementCost: 5000, requiresManager: true },
+];
+
+const FRANCHISE_TIERS = [
+  { id: 'single', name: 'Single Unit Franchise', fee: 35000, royalty: 0.05, marketingFee: 0.02, minLocations: 1, training: 4 },
+  { id: 'area', name: 'Area Developer', fee: 100000, royalty: 0.045, marketingFee: 0.02, minLocations: 3, training: 6 },
+  { id: 'master', name: 'Master Franchisee', fee: 250000, royalty: 0.04, marketingFee: 0.015, minLocations: 10, training: 8 },
+];
+
+// ============================================
+// EMPIRE SCENARIOS (Multi-location specific)
+// ============================================
+const EMPIRE_SCENARIOS = [
+  {
+    id: 'manager_poached', type: 'crisis', title: '🏃 Manager Poached',
+    message: 'Your best GM just got offered a position at a competitor. They want 25% more to stay.',
+    options: [
+      { text: 'Match + 10% bonus structure', successChance: 0.9, success: { cash: -15000, morale: 10 }, fail: { loseManager: true } },
+      { text: 'Counter with equity stake', successChance: 0.7, success: { equity: -2, morale: 20 }, fail: { loseManager: true } },
+      { text: 'Wish them well, promote from within', successChance: 0.6, success: { loseManager: true, promoteInternal: true }, fail: { loseManager: true, locationPerformance: -0.2 } },
+    ],
+    lesson: 'Great managers are worth fighting for. But building bench strength is even more important.',
+    minLocations: 2,
+  },
+  {
+    id: 'supply_chain_multi', type: 'crisis', title: '🚛 Supply Chain Crisis',
+    message: 'Your main distributor is having issues. All locations are affected. Premium vendor available at 20% higher cost.',
+    options: [
+      { text: 'Switch all locations to premium vendor', successChance: 0.95, success: { foodCostMod: 0.05, allLocations: true }, fail: {} },
+      { text: 'Scramble for local suppliers per location', successChance: 0.6, success: { foodCostMod: 0.02 }, fail: { reputation: -10, allLocations: true } },
+      { text: 'Reduce menu temporarily at all locations', successChance: 0.8, success: { capacity: -0.2, allLocations: true }, fail: { reputation: -15, allLocations: true } },
+    ],
+    lesson: 'Centralized purchasing saves money but creates single points of failure.',
+    minLocations: 2,
+  },
+  {
+    id: 'brand_crisis', type: 'crisis', title: '📱 Viral Brand Crisis',
+    message: 'A video showing a food safety issue at one location is going viral. All locations are being tagged.',
+    options: [
+      { text: 'Immediate transparency + comp meals', successChance: 0.7, success: { cash: -20000, reputation: -5, allLocations: true }, fail: { reputation: -25, allLocations: true } },
+      { text: 'PR firm damage control', successChance: 0.6, success: { cash: -15000, reputation: -10, allLocations: true }, fail: { reputation: -30, allLocations: true } },
+      { text: 'Stay quiet and wait it out', successChance: 0.3, success: { reputation: -15, allLocations: true }, fail: { reputation: -40, allLocations: true, covers: -30 } },
+    ],
+    lesson: 'In the age of social media, every location represents your entire brand.',
+    minLocations: 2,
+  },
+  {
+    id: 'franchise_applicant', type: 'opportunity', title: '🤝 Franchise Inquiry',
+    message: 'A well-funded group wants to franchise 5 locations in a new market. They have restaurant experience.',
+    options: [
+      { text: 'Accept - sign franchise agreement', successChance: 0.8, success: { cash: 175000, newFranchises: 5 }, fail: { cash: 35000, reputation: -10 } },
+      { text: 'Negotiate better terms', successChance: 0.5, success: { cash: 200000, newFranchises: 5 }, fail: { reputation: -5 } },
+      { text: 'Decline - not ready to franchise', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'Franchising is a different business than restaurants. Make sure you\'re ready.',
+    minLocations: 3,
+    minReputation: 70,
+  },
+  {
+    id: 'corporate_buyout', type: 'opportunity', title: '💰 Buyout Offer',
+    message: 'A private equity firm wants to buy your entire operation. They\'re offering 4x annual revenue.',
+    options: [
+      { text: 'Accept the offer', successChance: 1.0, success: { endGame: 'buyout' }, fail: {} },
+      { text: 'Counter at 6x revenue', successChance: 0.4, success: { endGame: 'buyout_premium' }, fail: { reputation: 5 } },
+      { text: 'Decline - keep building', successChance: 1.0, success: { reputation: 10 }, fail: {} },
+    ],
+    lesson: 'Know your number. But also know what you\'d do the day after you sell.',
+    minLocations: 5,
+    minValuation: 2000000,
+  },
+  {
+    id: 'district_expansion', type: 'opportunity', title: '🏗️ Prime Real Estate',
+    message: 'A developer is offering you first pick on 3 locations in a new mixed-use development. 20% below market rent.',
+    options: [
+      { text: 'Commit to all 3 locations', successChance: 0.7, success: { newLocationOpportunity: 3, rentDiscount: 0.2 }, fail: { cash: -50000 } },
+      { text: 'Take 1 location, option on others', successChance: 0.9, success: { newLocationOpportunity: 1, rentDiscount: 0.15 }, fail: {} },
+      { text: 'Pass - too much too fast', successChance: 1.0, success: {}, fail: {} },
+    ],
+    lesson: 'The best deals require the most capital. Build your war chest.',
+    minLocations: 2,
+    minCash: 200000,
+  },
+  {
+    id: 'unionization', type: 'staff', title: '✊ Union Talk',
+    message: 'Employees across multiple locations are talking about unionizing. A vote could happen in weeks.',
+    options: [
+      { text: 'Proactively raise wages 15% company-wide', successChance: 0.7, success: { laborCostMod: 0.15, morale: 25, allLocations: true }, fail: { morale: 10, allLocations: true } },
+      { text: 'Hire labor relations consultant', successChance: 0.5, success: { cash: -25000 }, fail: { unionized: true, allLocations: true } },
+      { text: 'Accept unionization, negotiate fairly', successChance: 0.8, success: { unionized: true, morale: 15, allLocations: true }, fail: { morale: -20, allLocations: true } },
+    ],
+    lesson: 'Happy employees rarely unionize. This is a symptom, not the disease.',
+    minLocations: 3,
+    minStaff: 30,
+  },
+  {
+    id: 'franchisee_failing', type: 'crisis', title: '📉 Struggling Franchisee',
+    message: 'One of your franchisees is failing. They\'re 3 months behind on royalties and quality is slipping.',
+    options: [
+      { text: 'Buy them out at discount', successChance: 0.8, success: { cash: -75000, convertToOwned: true }, fail: { cash: -75000, reputation: -10 } },
+      { text: 'Send support team, defer royalties', successChance: 0.5, success: { cash: -10000 }, fail: { terminateFranchise: true, reputation: -15 } },
+      { text: 'Terminate franchise agreement', successChance: 0.9, success: { terminateFranchise: true, reputation: -5 }, fail: { reputation: -20, legal: 25000 } },
+    ],
+    lesson: 'Your brand is only as strong as your weakest franchisee.',
+    minFranchises: 1,
+  },
+];
+
 const SCENARIOS = [
   // CRISIS SCENARIOS
   {
@@ -277,7 +352,7 @@ const SCENARIOS = [
       { text: 'Welcome them confidently', successChance: 0.7, success: { reputation: 5, achievement: 'clean_kitchen' }, fail: { cash: -2000, reputation: -15 } },
       { text: 'Stall while staff cleans up', successChance: 0.4, success: { reputation: 2 }, fail: { cash: -3000, reputation: -20 } },
     ],
-    lesson: 'Keep your kitchen inspection-ready at all times. The cost of violations far exceeds prevention.',
+    lesson: 'Keep your kitchen inspection-ready at all times.',
     minWeek: 2,
   },
   {
@@ -288,7 +363,7 @@ const SCENARIOS = [
       { text: 'Negotiate - offer 5% now, 5% in 3 months', successChance: 0.6, success: { laborCostMod: 0.05, morale: 5 }, fail: { staff: -2, morale: -20 } },
       { text: 'Call their bluff', successChance: 0.3, success: { reputation: 5 }, fail: { staff: -3, reputation: -10, morale: -30 } },
     ],
-    lesson: 'Invest in your team before problems escalate. Replacing staff costs 3x their monthly wage.',
+    lesson: 'Invest in your team before problems escalate.',
     minWeek: 8,
   },
   {
@@ -299,94 +374,17 @@ const SCENARIOS = [
       { text: 'Buy bags of ice, get creative ($200)', successChance: 0.5, success: { cash: -200 }, fail: { cash: -200, foodWaste: 4000 } },
       { text: 'Close for the day, salvage what you can', successChance: 1.0, success: { cash: -1500, reputation: -5 }, fail: {} },
     ],
-    lesson: 'Budget for equipment emergencies. A maintenance fund saves you from desperate decisions.',
+    lesson: 'Budget for equipment emergencies.',
     minWeek: 4,
   },
-  {
-    id: 'no_show_chef', type: 'crisis', title: '👨‍🍳 Chef No-Show',
-    message: 'Your head cook didn\'t show up. No call, no text. It\'s Saturday night and you\'re fully booked.',
-    options: [
-      { text: 'Get on the line yourself', successChance: 0.6, success: { burnout: 15, reputation: 5 }, fail: { reputation: -10, burnout: 25 } },
-      { text: 'Call in a temp agency cook ($500)', successChance: 0.5, success: { cash: -500 }, fail: { cash: -500, reputation: -15 } },
-      { text: 'Simplify the menu, push through', successChance: 0.7, success: { reputation: -3 }, fail: { reputation: -12 } },
-    ],
-    lesson: 'Always have backup contacts. Cross-train your team so no single person is indispensable.',
-    minWeek: 6,
-  },
-  {
-    id: 'food_cost_spike', type: 'crisis', title: '📈 Supply Chain Crisis',
-    message: 'Your main protein supplier just raised prices 30%. Other suppliers are weeks out.',
-    options: [
-      { text: 'Absorb the cost temporarily', successChance: 1.0, success: { foodCostMod: 0.08 }, fail: {} },
-      { text: 'Raise menu prices 15%', successChance: 0.6, success: { avgTicketMod: 0.15 }, fail: { customers: -15, reputation: -5 } },
-      { text: 'Change your menu items', successChance: 0.7, success: { foodCostMod: 0.03 }, fail: { reputation: -8 } },
-    ],
-    lesson: 'Diversify suppliers. Never depend on a single source for critical ingredients.',
-    minWeek: 10,
-  },
-  {
-    id: 'pos_crash', type: 'crisis', title: '💻 POS System Down',
-    message: 'Your point-of-sale system crashed during dinner rush. Cards aren\'t processing.',
-    options: [
-      { text: 'Cash only, apologize profusely', successChance: 0.7, success: { cash: -800, reputation: -5 }, fail: { cash: -1500, reputation: -15 } },
-      { text: 'Use Square reader on your phone', successChance: 0.8, success: { cash: -200 }, fail: { cash: -500, reputation: -8 } },
-      { text: 'Comp meals, get contact info for bills later', successChance: 0.5, success: { reputation: 10, cash: -2000 }, fail: { cash: -3500 } },
-    ],
-    lesson: 'Always have a backup payment system. Technology fails at the worst moments.',
-    minWeek: 3,
-  },
-  {
-    id: 'employee_theft', type: 'crisis', title: '🚨 Employee Theft',
-    message: 'You caught an employee stealing from the register on camera. They\'ve worked here 8 months.',
-    options: [
-      { text: 'Fire immediately, file police report', successChance: 0.9, success: { staff: -1, morale: -10 }, fail: { reputation: -5 } },
-      { text: 'Confront privately, give second chance', successChance: 0.3, success: { morale: 5 }, fail: { cash: -2000, morale: -20 } },
-      { text: 'Fire quietly, avoid drama', successChance: 0.8, success: { staff: -1 }, fail: { morale: -15 } },
-    ],
-    lesson: 'Trust but verify. Regular cash counts and inventory checks prevent theft.',
-    minWeek: 12,
-  },
-  {
-    id: 'bad_review_viral', type: 'crisis', title: '📱 Viral Bad Review',
-    message: 'A customer posted a scathing review with photos that\'s going viral locally. 50K views.',
-    options: [
-      { text: 'Public apology, offer to make it right', successChance: 0.7, success: { reputation: -5 }, fail: { reputation: -20 } },
-      { text: 'Respond professionally, state your side', successChance: 0.5, success: { reputation: -8 }, fail: { reputation: -25 } },
-      { text: 'Ignore it, let it blow over', successChance: 0.4, success: { reputation: -10 }, fail: { reputation: -30, customers: -20 } },
-    ],
-    lesson: 'Respond to every review. A thoughtful response to criticism often impresses more than the original complaint.',
-    minWeek: 8,
-  },
-  {
-    id: 'rent_increase', type: 'crisis', title: '🏢 Landlord Pressure',
-    message: 'Your landlord wants to increase rent by 25% when your lease renews in 2 months.',
-    options: [
-      { text: 'Negotiate hard, threaten to leave', successChance: 0.5, success: { rentMod: 0.1 }, fail: { rentMod: 0.25 } },
-      { text: 'Accept the increase', successChance: 1.0, success: { rentMod: 0.25 }, fail: {} },
-      { text: 'Start looking for new locations', successChance: 0.6, success: { rentMod: 0.15 }, fail: { cash: -5000, rentMod: 0.2 } },
-    ],
-    lesson: 'Location is everything, but so is cash flow. Know your numbers before negotiating.',
-    minWeek: 20,
-  },
-  {
-    id: 'kitchen_fire', type: 'crisis', title: '🔥 Kitchen Fire',
-    message: 'A small grease fire broke out. It\'s contained but there\'s damage and the fire department is here.',
-    options: [
-      { text: 'Close for repairs, reopen in 3 days', successChance: 0.9, success: { cash: -8000, closedWeeks: 0.5 }, fail: { cash: -15000, reputation: -10 } },
-      { text: 'Stay open, work around the damage', successChance: 0.4, success: { cash: -3000, reputation: -5 }, fail: { cash: -3000, reputation: -20, closedWeeks: 1 } },
-    ],
-    lesson: 'Insurance. Fire suppression systems. Regular hood cleaning. All cheaper than this.',
-    minWeek: 15,
-  },
-  // OPPORTUNITY SCENARIOS
   {
     id: 'viral_review', type: 'opportunity', title: '📱 Viral Review',
     message: 'A food blogger with 500K followers loved your food and wants to feature you.',
     options: [
-      { text: 'Roll out the red carpet', successChance: 0.75, success: { reputation: 20, customers: 50, followers: 500 }, fail: { reputation: -10 } },
+      { text: 'Roll out the red carpet', successChance: 0.75, success: { reputation: 20, covers: 50, followers: 500 }, fail: { reputation: -10 } },
       { text: 'Treat them like anyone else', successChance: 0.5, success: { reputation: 10, followers: 100 }, fail: { reputation: -5 } },
     ],
-    lesson: 'Every guest could be your next advocate or critic. Consistency matters.',
+    lesson: 'Every guest could be your next advocate or critic.',
     minWeek: 6,
   },
   {
@@ -397,165 +395,38 @@ const SCENARIOS = [
       { text: 'Negotiate for $15,000', successChance: 0.5, success: { cash: 15000, reputation: 10 }, fail: { reputation: -5 } },
       { text: 'Politely decline - too risky', successChance: 1.0, success: {}, fail: {} },
     ],
-    lesson: 'Catering is high-margin but high-stakes. One bad event can kill your reputation.',
+    lesson: 'Catering is high-margin but high-stakes.',
     minWeek: 8,
   },
   {
-    id: 'press_feature', type: 'opportunity', title: '📰 Press Feature',
-    message: 'The local newspaper wants to feature you in their "Best New Restaurants" issue.',
+    id: 'second_location_opportunity', type: 'opportunity', title: '🏢 Second Location',
+    message: 'A great location just opened up. Similar demographics, reasonable rent. This could be your chance to expand.',
     options: [
-      { text: 'Enthusiastically accept', successChance: 0.9, success: { reputation: 15, customers: 30 }, fail: { reputation: 5 } },
-    ],
-    lesson: 'Good press is free marketing. Always say yes to legitimate media.',
-    minWeek: 4,
-  },
-  {
-    id: 'delivery_partnership', type: 'opportunity', title: '🚗 Delivery Partnership',
-    message: 'DoorDash rep is offering featured placement with reduced 20% commission for 3 months.',
-    options: [
-      { text: 'Sign up for the partnership', successChance: 0.8, success: { deliveryEnabled: 'doordash', cash: 500 }, fail: { cash: -500 } },
-      { text: 'Negotiate for 15% commission', successChance: 0.4, success: { deliveryEnabled: 'doordash', commissionMod: -0.05 }, fail: { reputation: -2 } },
-      { text: 'Focus on dine-in only', successChance: 1.0, success: { reputation: 5 }, fail: {} },
-    ],
-    lesson: 'Delivery expands reach but watch those commission fees. Do the math on unit economics.',
-    minWeek: 5,
-  },
-  {
-    id: 'franchise_inquiry', type: 'opportunity', title: '🏪 Franchise Interest',
-    message: 'An investor approached you about franchising your concept. They have deep pockets.',
-    options: [
-      { text: 'Hear them out, start discussions', successChance: 0.6, success: { cash: 5000, franchiseOpportunity: true }, fail: { burnout: 10 } },
-      { text: 'Not ready yet, focus on current location', successChance: 1.0, success: { reputation: 2 }, fail: {} },
-    ],
-    lesson: 'Franchising too early kills brands. Master one location before scaling.',
-    minWeek: 40,
-  },
-  {
-    id: 'ghost_kitchen', type: 'opportunity', title: '👻 Virtual Brand Opportunity',
-    message: 'Your kitchen has downtime. You could launch a delivery-only virtual brand with minimal investment.',
-    options: [
-      { text: 'Launch a wing brand ($2,000)', successChance: 0.7, success: { virtualBrand: 'wings', cash: -2000 }, fail: { cash: -2000 } },
-      { text: 'Launch a burger brand ($1,500)', successChance: 0.75, success: { virtualBrand: 'burgers', cash: -1500 }, fail: { cash: -1500 } },
-      { text: 'Not worth the complexity', successChance: 1.0, success: {}, fail: {} },
-    ],
-    lesson: 'Virtual brands can add revenue without adding seats. Low risk, moderate reward.',
-    minWeek: 12,
-  },
-  {
-    id: 'private_event', type: 'opportunity', title: '🥂 Private Event Request',
-    message: 'Someone wants to book your entire restaurant for a 50-person birthday party.',
-    options: [
-      { text: 'Accept for $5,000 minimum', successChance: 0.8, success: { cash: 5000, reputation: 5 }, fail: { cash: 2000, reputation: -5 } },
-      { text: 'Counter with $7,500 minimum', successChance: 0.5, success: { cash: 7500, reputation: 5 }, fail: { reputation: -2 } },
-      { text: 'Decline - need regular covers', successChance: 1.0, success: {}, fail: {} },
-    ],
-    lesson: 'Private events are guaranteed revenue but opportunity cost is real. Price accordingly.',
-    minWeek: 10,
-  },
-  {
-    id: 'second_location', type: 'opportunity', title: '🏢 Second Location',
-    message: 'Perfect location opened up nearby. Similar demographics, reasonable rent. $150K to build out.',
-    options: [
-      { text: 'Pursue it - start negotiations', successChance: 0.5, success: { secondLocation: true, cash: -150000 }, fail: { cash: -10000, burnout: 20 } },
+      { text: 'Pursue it - start negotiations', successChance: 0.8, success: { expansionOpportunity: true }, fail: { cash: -5000, burnout: 10 } },
       { text: 'Not ready - need more runway', successChance: 1.0, success: { reputation: 2 }, fail: {} },
     ],
     lesson: 'Second locations fail at 2x the rate of first ones. Perfect your systems first.',
     minWeek: 52,
-    minCash: 200000,
-  },
-  // STAFF SCENARIOS
-  {
-    id: 'star_employee_offer', type: 'staff', title: '⭐ Poaching Attempt',
-    message: 'Your best cook just got offered $5/hr more at a competitor. They\'re considering it.',
-    options: [
-      { text: 'Match the offer', successChance: 0.9, success: { laborCostMod: 0.08, morale: 10 }, fail: { staff: -1 } },
-      { text: 'Counter with $3/hr raise + title', successChance: 0.7, success: { laborCostMod: 0.05, morale: 15 }, fail: { staff: -1, morale: -15 } },
-      { text: 'Wish them well', successChance: 1.0, success: { staff: -1 }, fail: {} },
-    ],
-    lesson: 'Good people are worth paying for. The cost of turnover exceeds the cost of retention.',
-    minWeek: 15,
-  },
-  {
-    id: 'toxic_employee', type: 'staff', title: '😤 Toxic Team Member',
-    message: 'One employee is talented but creating drama. Three others have complained about them.',
-    options: [
-      { text: 'Fire them immediately', successChance: 0.8, success: { staff: -1, morale: 20 }, fail: { morale: 10 } },
-      { text: 'Final warning, behavior plan', successChance: 0.4, success: { morale: 5 }, fail: { morale: -15, staff: -2 } },
-      { text: 'Talk to them privately', successChance: 0.5, success: { morale: 10 }, fail: { morale: -10 } },
-    ],
-    lesson: 'One toxic person can destroy team culture. Speed matters in these decisions.',
-    minWeek: 10,
-  },
-  {
-    id: 'workers_comp', type: 'staff', title: '🏥 Workplace Injury',
-    message: 'A dishwasher slipped and hurt their back. They\'re talking about workers comp.',
-    options: [
-      { text: 'Handle it properly - file the claim', successChance: 0.9, success: { cash: -3000, morale: 10 }, fail: { cash: -8000 } },
-      { text: 'Offer cash payment to avoid claim', successChance: 0.3, success: { cash: -1000 }, fail: { cash: -15000, reputation: -10 } },
-    ],
-    lesson: 'Workers comp exists for a reason. Cutting corners here can destroy you.',
-    minWeek: 8,
-  },
-  // FINANCIAL SCENARIOS
-  {
-    id: 'loan_offer', type: 'financial', title: '💰 Loan Offer',
-    message: 'Your bank is offering a $50K line of credit at 9% interest. Payments would be $550/week.',
-    options: [
-      { text: 'Accept - runway is valuable', successChance: 1.0, success: { cash: 50000, loan: 'bank_medium' }, fail: {} },
-      { text: 'Negotiate for better terms', successChance: 0.4, success: { cash: 50000, loan: 'bank_medium_better' }, fail: {} },
-      { text: 'Decline - stay lean', successChance: 1.0, success: {}, fail: {} },
-    ],
-    lesson: 'Debt is a tool. Used wisely it enables growth. Used poorly it kills businesses.',
-    minWeek: 12,
-  },
-  {
-    id: 'investor_pitch', type: 'financial', title: '💼 Investor Meeting',
-    message: 'An angel investor wants to put in $75K for 15% equity. They have restaurant experience.',
-    options: [
-      { text: 'Accept the investment', successChance: 0.8, success: { cash: 75000, equity: -15 }, fail: { burnout: 10 } },
-      { text: 'Counter at 10% equity', successChance: 0.4, success: { cash: 75000, equity: -10 }, fail: { reputation: -2 } },
-      { text: 'Stay independent', successChance: 1.0, success: {}, fail: {} },
-    ],
-    lesson: 'Smart money (experienced investors) is often worth more than the cash they bring.',
-    minWeek: 20,
-    minCash: 30000,
-  },
-  {
-    id: 'predatory_loan', type: 'financial', title: '🦈 Quick Cash Offer',
-    message: 'A guy offers you $15K cash advance. Payback is $750/week for 26 weeks. You need the money.',
-    options: [
-      { text: 'Take it - desperate times', successChance: 1.0, success: { cash: 15000, loan: 'predatory' }, fail: {} },
-      { text: 'Hard pass - that\'s loan sharking', successChance: 1.0, success: {}, fail: {} },
-    ],
-    lesson: 'Predatory loans kill restaurants. That 35% effective rate will crush you.',
-    minWeek: 8,
-    maxCash: 15000,
-  },
-  // SEASONAL SCENARIOS
-  {
-    id: 'january_slump', type: 'seasonal', title: '❄️ January Dead Zone',
-    message: 'New Year\'s resolutions have killed dining out. Traffic is down 40% and your regulars disappeared.',
-    options: [
-      { text: 'Push healthy menu items hard', successChance: 0.6, success: { customers: 10 }, fail: { customers: -10 } },
-      { text: 'Deep discounts to drive traffic', successChance: 0.5, success: { customers: 20, avgTicketMod: -0.2 }, fail: { reputation: -5 } },
-      { text: 'Reduce hours, cut costs, survive', successChance: 0.8, success: { laborCostMod: -0.15 }, fail: { morale: -10 } },
-    ],
-    lesson: 'January-February kills restaurants. Plan for it. Build reserves in Q4.',
-    triggerWeek: [1, 2, 3, 4, 5, 53, 54, 55, 56, 57],
-  },
-  {
-    id: 'summer_slump', type: 'seasonal', title: '☀️ Summer Slowdown',
-    message: 'Everyone\'s on vacation. Families are gone, lunch traffic crashed. It\'s dead out here.',
-    options: [
-      { text: 'Summer specials and happy hours', successChance: 0.7, success: { customers: 15 }, fail: { cash: -500 } },
-      { text: 'Focus on tourists and visitors', successChance: 0.5, success: { customers: 10, newCustomers: 0.1 }, fail: { reputation: -3 } },
-      { text: 'Push delivery and catering', successChance: 0.6, success: { deliveryOrders: 0.3 }, fail: {} },
-    ],
-    lesson: 'Summer hits different markets differently. Know your customer base.',
-    triggerWeek: [26, 27, 28, 29, 30, 31, 32, 33],
+    minCash: 150000,
+    maxLocations: 1,
   },
 ];
 
+const CUSTOMER_TYPES = [
+  { id: 'regular', name: 'Regular', icon: '😊', spendMod: 1.0, frequency: 0.35, tipMod: 1.1 },
+  { id: 'first_timer', name: 'First Timer', icon: '🆕', spendMod: 0.9, frequency: 0.20, tipMod: 1.0 },
+  { id: 'critic', name: 'Food Critic', icon: '📝', spendMod: 1.3, frequency: 0.02, tipMod: 0.9 },
+  { id: 'influencer', name: 'Influencer', icon: '📱', spendMod: 0.8, frequency: 0.05, tipMod: 0.7 },
+  { id: 'difficult', name: 'Difficult Guest', icon: '😤', spendMod: 1.1, frequency: 0.08, tipMod: 0.5 },
+  { id: 'big_spender', name: 'Big Spender', icon: '💰', spendMod: 1.8, frequency: 0.05, tipMod: 1.5 },
+  { id: 'date_night', name: 'Date Night', icon: '💕', spendMod: 1.4, frequency: 0.10, tipMod: 1.2 },
+  { id: 'family', name: 'Family', icon: '👨‍👩‍👧‍👦', spendMod: 1.3, frequency: 0.10, tipMod: 1.0 },
+  { id: 'business', name: 'Business Lunch', icon: '💼', spendMod: 1.5, frequency: 0.05, tipMod: 1.3 },
+];
+
+// ============================================
+// ACHIEVEMENTS & GOALS
+// ============================================
 const ACHIEVEMENTS = {
   // Survival
   first_week: { name: 'First Week', desc: 'Survive week 1', icon: '📅', category: 'survival', points: 10 },
@@ -578,31 +449,32 @@ const ACHIEVEMENTS = {
   dream_team: { name: 'Dream Team', desc: 'All staff skill 7+', icon: '⭐', category: 'staff', points: 200 },
   loyalty: { name: 'Loyalty', desc: 'Keep an employee 52 weeks', icon: '💍', category: 'staff', points: 100 },
   trainer: { name: 'Trainer', desc: 'Train 5 employees', icon: '📚', category: 'staff', points: 50 },
-  zero_turnover: { name: 'Zero Turnover', desc: 'No quits for 26 weeks', icon: '🎯', category: 'staff', points: 150 },
+  // Empire
+  second_location: { name: 'Expansion', desc: 'Open second location', icon: '🏪', category: 'empire', points: 300 },
+  three_locations: { name: 'Chain', desc: 'Own 3 locations', icon: '🔗', category: 'empire', points: 400 },
+  five_locations: { name: 'Regional Power', desc: 'Own 5 locations', icon: '🗺️', category: 'empire', points: 600 },
+  ten_locations: { name: 'Empire', desc: 'Own 10 locations', icon: '👑', category: 'empire', points: 1000 },
+  first_franchise: { name: 'Franchisor', desc: 'Sell first franchise', icon: '🤝', category: 'empire', points: 400 },
+  franchise_five: { name: 'Franchise Network', desc: 'Have 5 franchises', icon: '🌐', category: 'empire', points: 600 },
+  franchise_ten: { name: 'Franchise Empire', desc: 'Have 10 franchises', icon: '🏛️', category: 'empire', points: 1000 },
+  million_valuation: { name: 'Millionaire (Valuation)', desc: 'Empire worth $1M', icon: '💎', category: 'empire', points: 500 },
+  five_million: { name: 'Multi-Millionaire', desc: 'Empire worth $5M', icon: '🏆', category: 'empire', points: 800 },
+  ten_million: { name: 'Mogul', desc: 'Empire worth $10M', icon: '👑', category: 'empire', points: 1000 },
   // Operations
   menu_master: { name: 'Menu Master', desc: 'Have 15 menu items', icon: '📋', category: 'operations', points: 50 },
   fully_equipped: { name: 'Fully Equipped', desc: 'Own 5+ equipment', icon: '⚙️', category: 'operations', points: 75 },
-  upgraded: { name: 'Upgraded', desc: 'Purchase 3 upgrades', icon: '🔧', category: 'operations', points: 100 },
-  clean_kitchen: { name: 'Clean Kitchen', desc: 'Pass health inspection', icon: '🛡️', category: 'operations', points: 50 },
   delivery_king: { name: 'Delivery King', desc: 'Enable all delivery platforms', icon: '🛵', category: 'operations', points: 75 },
   virtual_mogul: { name: 'Virtual Mogul', desc: 'Run 3 virtual brands', icon: '👻', category: 'operations', points: 150 },
-  // Customer
-  thousand_served: { name: '1K Served', desc: 'Serve 1,000 customers', icon: '🎉', category: 'customer', points: 50 },
-  ten_thousand: { name: '10K Served', desc: 'Serve 10,000 customers', icon: '🎊', category: 'customer', points: 150 },
-  five_star: { name: 'Five Star', desc: 'Reach 95% reputation', icon: '⭐', category: 'customer', points: 200 },
-  regular_army: { name: 'Regular Army', desc: '50% repeat customers', icon: '😊', category: 'customer', points: 100 },
-  // Growth
-  second_location: { name: 'Expansion', desc: 'Open second location', icon: '🏪', category: 'growth', points: 300 },
-  franchise: { name: 'Franchise', desc: 'Launch franchise program', icon: '🌐', category: 'growth', points: 500 },
-  empire: { name: 'Empire', desc: 'Own 5+ locations', icon: '👑', category: 'growth', points: 1000 },
+  clean_kitchen: { name: 'Clean Kitchen', desc: 'Pass health inspection', icon: '🛡️', category: 'operations', points: 50 },
 };
 
 const GOALS = [
   { id: 'survive', name: 'Survival', desc: 'Keep the doors open for 1 year', target: { weeks: 52 }, difficulty: 'Normal' },
   { id: 'profit', name: 'Profitability', desc: 'Build $100K in cash reserves', target: { cash: 100000 }, difficulty: 'Hard' },
-  { id: 'reputation', name: 'Reputation', desc: 'Reach 90% reputation rating', target: { reputation: 90 }, difficulty: 'Hard' },
-  { id: 'empire', name: 'Empire Builder', desc: 'Open a second location', target: { locations: 2 }, difficulty: 'Expert' },
-  { id: 'legacy', name: 'Legacy', desc: 'Build a restaurant worth $500K', target: { valuation: 500000 }, difficulty: 'Expert' },
+  { id: 'empire', name: 'Empire Builder', desc: 'Own 5 locations', target: { locations: 5 }, difficulty: 'Expert' },
+  { id: 'franchise', name: 'Franchise King', desc: 'Have 10 total units (owned + franchised)', target: { totalUnits: 10 }, difficulty: 'Expert' },
+  { id: 'valuation', name: 'Exit Ready', desc: 'Build a $5M empire valuation', target: { valuation: 5000000 }, difficulty: 'Master' },
+  { id: 'legacy', name: 'Legacy', desc: 'Build a $10M empire with 20+ units', target: { valuation: 10000000, totalUnits: 20 }, difficulty: 'Legendary' },
   { id: 'sandbox', name: 'Sandbox', desc: 'No win condition - just play', target: {}, difficulty: 'Zen' },
 ];
 
@@ -619,24 +491,50 @@ const generateMenuItem = (cuisine) => {
     burgers: ['Classic Smash', 'Bacon Double', 'Mushroom Swiss', 'BBQ Bacon', 'Veggie Burger', 'Patty Melt', 'Western Burger', 'Jalapeño Popper'],
     mexican: ['Street Tacos', 'Burrito Bowl', 'Quesadilla Grande', 'Enchiladas Verdes', 'Nachos Supreme', 'Carnitas Plate', 'Fish Tacos', 'Birria Tacos'],
     pizza: ['Margherita', 'Pepperoni', 'Supreme', 'White Pizza', 'Meat Lovers', 'Hawaiian', 'Buffalo Chicken', 'Veggie Deluxe'],
-    chinese: ['Kung Pao Chicken', 'General Tso\'s', 'Lo Mein', 'Fried Rice', 'Orange Chicken', 'Beef & Broccoli', 'Sweet & Sour Pork', 'Mapo Tofu'],
-    japanese: ['Tonkotsu Ramen', 'Chicken Teriyaki', 'Tempura Combo', 'Katsu Curry', 'Chirashi Don', 'Udon Noodles', 'Gyoza Plate', 'Bento Box'],
-    thai: ['Pad Thai', 'Green Curry', 'Tom Yum Soup', 'Massaman Curry', 'Basil Chicken', 'Pad See Ew', 'Som Tum Salad', 'Mango Sticky Rice'],
-    indian: ['Butter Chicken', 'Tikka Masala', 'Lamb Biryani', 'Samosa Platter', 'Palak Paneer', 'Tandoori Mixed Grill', 'Dal Makhani', 'Garlic Naan'],
-    korean: ['Bibimbap', 'Korean BBQ Set', 'Japchae', 'Kimchi Jjigae', 'Bulgogi Bowl', 'Tteokbokki', 'Fried Chicken', 'Sundubu'],
     default: ['House Special', 'Chef\'s Choice', 'Daily Feature', 'Signature Dish', 'Classic Favorite', 'Popular Pick', 'Customer Fave', 'Must Try'],
   };
   const list = items[cuisine] || items.default;
   return list[Math.floor(Math.random() * list.length)];
 };
 
-const calculateValuation = (game, setup) => {
-  // Simple restaurant valuation: revenue multiple + assets
-  const annualRevenue = (game.totalRevenue / Math.max(1, game.week)) * 52;
-  const revenueMult = game.reputation > 80 ? 2.5 : game.reputation > 60 ? 2 : 1.5;
-  const equipmentValue = game.equipment.length * 3000;
-  const upgradeValue = game.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.cost || 0) * 0.5, 0);
-  return Math.round(annualRevenue * revenueMult + equipmentValue + upgradeValue + game.cash);
+const generateLocationName = (market, type) => {
+  const prefixes = ['Downtown', 'Midtown', 'Uptown', 'East Side', 'West End', 'North Point', 'South Gate', 'Central', 'Harbor', 'Park'];
+  const suffixes = ['Plaza', 'Square', 'Center', 'Corner', 'Station', 'Point', 'Place', 'Commons', 'Village', 'District'];
+  return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+};
+
+const calculateLocationValuation = (location, cuisine) => {
+  const annualRevenue = (location.totalRevenue / Math.max(1, location.weeksOpen)) * 52;
+  const revenueMult = location.reputation > 80 ? 3 : location.reputation > 60 ? 2.5 : 2;
+  const equipmentValue = location.equipment.length * 3000;
+  const upgradeValue = location.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.cost || 0) * 0.5, 0);
+  return Math.round(annualRevenue * revenueMult + equipmentValue + upgradeValue);
+};
+
+const calculateEmpireValuation = (game, setup) => {
+  let total = 0;
+  
+  // Owned locations
+  if (game.locations) {
+    game.locations.forEach(loc => {
+      total += calculateLocationValuation(loc, setup.cuisine);
+      total += loc.cash;
+    });
+  }
+  
+  // Franchise value (royalty stream)
+  if (game.franchises) {
+    game.franchises.forEach(f => {
+      const annualRoyalty = f.weeklyRoyalty * 52;
+      total += annualRoyalty * 5; // 5x royalty multiple
+    });
+  }
+  
+  // Brand value multiplier based on total units
+  const totalUnits = (game.locations?.length || 0) + (game.franchises?.length || 0);
+  const brandMultiplier = totalUnits > 20 ? 1.5 : totalUnits > 10 ? 1.3 : totalUnits > 5 ? 1.15 : 1;
+  
+  return Math.round(total * brandMultiplier);
 };
 
 // Mini Chart Component
@@ -654,25 +552,54 @@ const MiniChart = ({ data, color, height = 40 }) => {
   );
 };
 
-// Typing Animation Component
-const TypeWriter = ({ text, speed = 30, onComplete }) => {
-  const [displayed, setDisplayed] = useState('');
-  useEffect(() => {
-    if (!text) return;
-    let i = 0;
-    setDisplayed('');
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed(t => t + text[i]);
-        i++;
-      } else {
-        clearInterval(timer);
-        onComplete?.();
-      }
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text]);
-  return <Text style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 24 }}>{displayed}<Text style={{ color: colors.primary }}>▊</Text></Text>;
+// Create new location object
+const createLocation = (id, name, locationType, market, cuisine, startingCash) => {
+  const type = LOCATION_TYPES.find(t => t.id === locationType);
+  const mkt = MARKETS.find(m => m.id === market);
+  const cuisineData = CUISINES.find(c => c.id === cuisine);
+  
+  return {
+    id,
+    name,
+    locationType,
+    market,
+    isGhostKitchen: type?.deliveryOnly || false,
+    
+    // Financials
+    cash: startingCash,
+    totalRevenue: 0,
+    totalProfit: 0,
+    weeklyHistory: [],
+    
+    // Operations
+    staff: [],
+    menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: cuisineData.avgTicket, cost: cuisineData.avgTicket * cuisineData.foodCost, popular: true, is86d: false }],
+    equipment: [],
+    upgrades: [],
+    marketing: { channels: ['social_organic'], socialFollowers: 50 },
+    delivery: { platforms: [], orders: 0 },
+    virtualBrands: [],
+    
+    // Metrics
+    reputation: 50,
+    morale: 70,
+    covers: Math.floor(30 * (type?.trafficMod || 1)),
+    weeksOpen: 0,
+    
+    // Manager
+    manager: null,
+    managerAutonomy: 0.5, // 0-1, how much AI decides for this location
+    
+    // Costs
+    rent: Math.floor(3000 * (type?.rentMod || 1)),
+    avgTicket: cuisineData.avgTicket,
+    foodCostPct: cuisineData.foodCost,
+    
+    // Last week
+    lastWeekRevenue: 0,
+    lastWeekProfit: 0,
+    lastWeekCovers: 0,
+  };
 };
 
 // ============================================
@@ -688,14 +615,17 @@ export default function App() {
     cuisine: null,
     capital: 75000,
     name: '',
-    location: 'urban',
-    city: '',
+    location: 'urban_neighborhood',
+    market: 'same_city',
     goal: 'survive',
     experience: 'none',
   });
   
   // Game State
   const [game, setGame] = useState(null);
+  
+  // Active Location (for multi-location management)
+  const [activeLocationId, setActiveLocationId] = useState(null);
   
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
@@ -714,248 +644,278 @@ export default function App() {
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [analyticsModal, setAnalyticsModal] = useState(false);
   const [loanModal, setLoanModal] = useState(false);
-  const [pnlModal, setPnlModal] = useState(false);
   const [saveModal, setSaveModal] = useState(false);
   const [aiChatModal, setAiChatModal] = useState(false);
   const [aiChatInput, setAiChatInput] = useState('');
+  const [expansionModal, setExpansionModal] = useState(false);
+  const [franchiseModal, setFranchiseModal] = useState(false);
+  const [empireModal, setEmpireModal] = useState(false);
+  const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city' });
   
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
+  // Get active location
+  const getActiveLocation = useCallback(() => {
+    if (!game || !game.locations) return null;
+    return game.locations.find(l => l.id === activeLocationId) || game.locations[0];
+  }, [game, activeLocationId]);
+
   // Initialize Game
   const initGame = useCallback(() => {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    const locationMod = { urban: 1.2, suburban: 1.0, rural: 0.8 }[setup.location] || 1;
-    const baseCovers = Math.floor(40 + (setup.capital / 15000) * 10);
+    const locationType = LOCATION_TYPES.find(t => t.id === setup.location);
+    
+    const firstLocation = createLocation(
+      1,
+      setup.name || `${cuisine.name} - Original`,
+      setup.location,
+      setup.market,
+      setup.cuisine,
+      setup.capital * 0.7 // 70% goes to first location, 30% reserve
+    );
+    
+    firstLocation.staff = [
+      { id: 1, name: generateName(), role: 'Line Cook', wage: 16, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
+    ];
     
     const initialGame = {
       week: 0,
-      cash: setup.capital,
+      
+      // Empire-level
+      locations: [firstLocation],
+      franchises: [],
+      corporateStaff: [],
+      
+      // Finances
+      corporateCash: setup.capital * 0.3, // 30% corporate reserve
       totalRevenue: 0,
       totalProfit: 0,
-      reputation: 50,
-      burnout: 0,
-      ownerHours: 65,
-      morale: 70,
-      
-      // Staff
-      staff: [
-        { id: 1, name: generateName(), role: 'Line Cook', wage: 16, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
-      ],
-      
-      // Menu
-      menu: [
-        { id: 1, name: generateMenuItem(setup.cuisine), price: cuisine.avgTicket, cost: cuisine.avgTicket * cuisine.foodCost, popular: true, is86d: false }
-      ],
-      
-      // Financials
-      avgTicket: cuisine.avgTicket,
-      foodCostPct: cuisine.foodCost,
-      laborCostPct: 0.30,
-      covers: baseCovers,
-      locationMod,
-      rent: Math.floor(setup.capital * 0.03),
       loans: [],
       equity: 100,
       
-      // Customers
-      customersServed: { total: 0, byType: {} },
-      regulars: 0,
-      
-      // Operations
-      equipment: [],
-      upgrades: [],
-      marketing: { channels: ['social_organic'], promotions: [], socialFollowers: 100, loyaltyMembers: 0 },
-      delivery: { platforms: [], orders: 0 },
-      virtualBrands: [],
+      // Empire metrics
+      empireValuation: setup.capital,
+      brandStrength: 50,
       
       // Progress
-      weeklyHistory: [],
       achievements: ['first_week'],
       scenariosSeen: [],
       profitStreak: 0,
-      locations: 1,
       
-      // Last Week Data
-      lastWeekRevenue: 0,
-      lastWeekProfit: 0,
-      lastWeekCosts: {},
-      lastWeekCovers: 0,
+      // Owner
+      burnout: 0,
+      ownerHours: 65,
+      
+      // Franchise system
+      franchiseEnabled: false,
+      franchiseFee: 35000,
+      royaltyRate: 0.05,
     };
     
     setGame(initialGame);
+    setActiveLocationId(1);
     setScreen('dashboard');
     
     // Initial AI greeting
     setTimeout(async () => {
       setAiLoading(true);
-      const response = await getAIMentorResponse('Player just opened their restaurant. Give them encouraging but realistic opening advice.', initialGame, setup);
+      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup);
       setAiMessage(response);
       setAiLoading(false);
     }, 500);
   }, [setup]);
 
   // ============================================
-  // GAME LOGIC
+  // LOCATION PROCESSING
   // ============================================
-  
+  const processLocationWeek = useCallback((location, cuisine) => {
+    const type = LOCATION_TYPES.find(t => t.id === location.locationType);
+    
+    // Calculate modifiers
+    const equipCapacityMod = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
+    const upgradeCapacityMod = location.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
+    const marketingReachMod = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
+    const staffQualityMod = location.staff.length > 0 ? location.staff.reduce((sum, s) => sum + s.skill, 0) / location.staff.length / 20 : 0;
+    const moraleMod = (location.morale - 50) / 200;
+    const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
+    
+    // Covers calculation
+    let weekCovers = location.isGhostKitchen ? 0 : Math.floor(location.covers * (type?.trafficMod || 1));
+    weekCovers = Math.floor(weekCovers * (1 + equipCapacityMod + upgradeCapacityMod + marketingReachMod + staffQualityMod + managerBonus));
+    weekCovers = Math.floor(weekCovers * (1 + location.reputation / 200));
+    weekCovers = Math.floor(weekCovers * (1 + moraleMod));
+    weekCovers = Math.floor(weekCovers * (0.85 + Math.random() * 0.3));
+    
+    // Revenue calculation
+    let totalSpend = 0;
+    for (let i = 0; i < weekCovers; i++) {
+      const rand = Math.random();
+      let cumulative = 0;
+      let type = CUSTOMER_TYPES[0];
+      for (const ct of CUSTOMER_TYPES) {
+        cumulative += ct.frequency;
+        if (rand <= cumulative) { type = ct; break; }
+      }
+      totalSpend += location.avgTicket * type.spendMod * (0.9 + Math.random() * 0.2);
+    }
+    
+    const dineInRevenue = totalSpend;
+    
+    // Delivery revenue
+    const deliveryOrders = location.delivery.platforms.length > 0 ? Math.floor((location.isGhostKitchen ? 80 : weekCovers * 0.25) * location.delivery.platforms.length / 3) : 0;
+    const avgCommission = location.delivery.platforms.length > 0 
+      ? location.delivery.platforms.reduce((sum, p) => sum + (DELIVERY_PLATFORMS.find(dp => dp.id === p)?.commission || 0.25), 0) / location.delivery.platforms.length 
+      : 0;
+    const deliveryRevenue = deliveryOrders * location.avgTicket * (1 - avgCommission);
+    
+    // Virtual brand revenue
+    const virtualBrandRevenue = location.virtualBrands.reduce((sum, vb) => {
+      const brand = VIRTUAL_BRANDS.find(v => v.id === vb);
+      if (!brand) return sum;
+      const orders = Math.floor(15 + Math.random() * 20);
+      return sum + orders * brand.avgTicket * 0.70;
+    }, 0);
+    
+    // Bar revenue
+    const barRevenue = location.upgrades.includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
+    
+    const totalRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
+    
+    // Costs
+    const foodCost = totalRevenue * location.foodCostPct;
+    const laborCost = location.staff.reduce((sum, s) => sum + s.wage * 40, 0);
+    const rent = location.rent;
+    const utilities = Math.floor(rent * 0.15);
+    const marketingCost = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
+    const equipmentMaint = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
+    const ccFees = totalRevenue * 0.025;
+    
+    const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + ccFees;
+    const weekProfit = totalRevenue - totalCosts;
+    
+    // Update staff
+    const updatedStaff = location.staff.map(s => {
+      let newMorale = s.morale;
+      if (weekProfit > 0) newMorale += 2;
+      if (weekProfit < -1000) newMorale -= 5;
+      newMorale = Math.max(20, Math.min(100, newMorale + (Math.random() - 0.5) * 5));
+      const skillGain = s.weeks > 0 && s.weeks % 8 === 0 && s.skill < 10 ? 0.5 : 0;
+      return { ...s, weeks: s.weeks + 1, morale: Math.round(newMorale), skill: Math.min(10, s.skill + skillGain) };
+    }).filter(s => !(s.morale < 30 && Math.random() < 0.3)); // Staff quits
+    
+    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + s.morale, 0) / updatedStaff.length : 50;
+    
+    // Update history
+    const newHistory = [...location.weeklyHistory, { 
+      week: location.weeksOpen + 1, 
+      revenue: totalRevenue, 
+      profit: weekProfit, 
+      covers: weekCovers + deliveryOrders,
+    }].slice(-52);
+    
+    return {
+      ...location,
+      cash: location.cash + weekProfit,
+      totalRevenue: location.totalRevenue + totalRevenue,
+      totalProfit: location.totalProfit + weekProfit,
+      lastWeekRevenue: totalRevenue,
+      lastWeekProfit: weekProfit,
+      lastWeekCovers: weekCovers + deliveryOrders,
+      staff: updatedStaff,
+      morale: Math.round(avgMorale),
+      weeksOpen: location.weeksOpen + 1,
+      weeklyHistory: newHistory,
+      reputation: Math.min(100, Math.max(0, location.reputation + (weekProfit > 0 ? 1 : -1))),
+      delivery: { ...location.delivery, orders: location.delivery.orders + deliveryOrders },
+    };
+  }, []);
+
+  // ============================================
+  // MAIN WEEK PROCESSING
+  // ============================================
   const processWeek = useCallback(async () => {
     if (!game) return;
     
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    
     setGame(g => {
-      const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+      // Process all locations
+      const updatedLocations = g.locations.map(loc => processLocationWeek(loc, cuisine));
       
-      // Calculate all modifiers
-      const equipCapacityMod = g.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
-      const upgradeCapacityMod = g.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
-      const marketingReachMod = g.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
-      const staffQualityMod = g.staff.length > 0 ? g.staff.reduce((sum, s) => sum + s.skill, 0) / g.staff.length / 20 : 0;
-      const moraleMod = (g.morale - 50) / 200; // -0.25 to +0.25
+      // Calculate empire totals
+      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
+      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + l.lastWeekRevenue, 0);
+      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + l.lastWeekProfit, 0);
       
-      // Base covers calculation
-      let weekCovers = Math.floor(g.covers * g.locationMod);
-      weekCovers = Math.floor(weekCovers * (1 + equipCapacityMod + upgradeCapacityMod + marketingReachMod + staffQualityMod));
-      weekCovers = Math.floor(weekCovers * (1 + g.reputation / 200));
-      weekCovers = Math.floor(weekCovers * (1 + moraleMod));
-      weekCovers = Math.floor(weekCovers * (0.85 + Math.random() * 0.3)); // Natural variance
+      // Process franchise royalties
+      const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
       
-      // Customer types and spending
-      const customersByType = {};
-      let totalSpend = 0;
-      let tips = 0;
-      
-      for (let i = 0; i < weekCovers; i++) {
-        const rand = Math.random();
-        let cumulative = 0;
-        let type = CUSTOMER_TYPES[0];
-        for (const ct of CUSTOMER_TYPES) {
-          cumulative += ct.frequency;
-          if (rand <= cumulative) { type = ct; break; }
-        }
-        customersByType[type.id] = (customersByType[type.id] || 0) + 1;
-        const spend = g.avgTicket * type.spendMod * (0.9 + Math.random() * 0.2);
-        totalSpend += spend;
-        tips += spend * 0.18 * type.tipMod;
-      }
-      
-      // Revenue streams
-      const dineInRevenue = totalSpend;
-      
-      // Delivery revenue
-      const deliveryOrders = g.delivery.platforms.length > 0 ? Math.floor(weekCovers * 0.25 * g.delivery.platforms.length / 3) : 0;
-      const avgCommission = g.delivery.platforms.length > 0 
-        ? g.delivery.platforms.reduce((sum, p) => sum + (DELIVERY_PLATFORMS.find(dp => dp.id === p)?.commission || 0.25), 0) / g.delivery.platforms.length 
-        : 0;
-      const deliveryRevenue = deliveryOrders * g.avgTicket * (1 - avgCommission);
-      
-      // Virtual brand revenue
-      const virtualBrandRevenue = g.virtualBrands.reduce((sum, vb) => {
-        const brand = VIRTUAL_BRANDS.find(v => v.id === vb);
-        if (!brand) return sum;
-        const orders = Math.floor(15 + Math.random() * 20);
-        return sum + orders * brand.avgTicket * 0.70;
-      }, 0);
-      
-      // Bar revenue if upgraded
-      const barRevenue = g.upgrades.includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
-      
-      const totalRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
-      
-      // COSTS
-      const foodCost = totalRevenue * g.foodCostPct;
-      const laborCost = g.staff.reduce((sum, s) => sum + s.wage * 40, 0) + (g.ownerHours > 40 ? 0 : (40 - g.ownerHours) * 20);
-      const rent = g.rent;
-      const utilities = Math.floor(rent * 0.15);
-      const marketingCost = g.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
-      const equipmentMaint = g.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
+      // Loan payments from corporate
       const loanPayments = g.loans.reduce((sum, l) => {
         const loan = LOANS.find(lo => lo.id === l.type);
         return sum + (loan?.weeklyPayment || 0);
       }, 0);
-      const ccFees = totalRevenue * 0.025;
       
-      const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + loanPayments + ccFees;
-      const weekProfit = totalRevenue - totalCosts;
+      // Corporate costs (management, district managers, etc)
+      const corporateCosts = g.corporateStaff.reduce((sum, s) => sum + s.wage * 40, 0);
+      const marketCosts = g.locations.reduce((sum, l) => {
+        const mkt = MARKETS.find(m => m.id === l.market);
+        return sum + (mkt?.managementCost || 0);
+      }, 0);
       
-      // Update staff morale and skills
-      const updatedStaff = g.staff.map(s => {
-        let newMorale = s.morale;
-        if (weekProfit > 0) newMorale += 2;
-        if (weekProfit < -1000) newMorale -= 5;
-        if (g.burnout > 70) newMorale -= 3;
-        newMorale = Math.max(20, Math.min(100, newMorale + (Math.random() - 0.5) * 5));
-        
-        // Skill improvement over time
-        const skillGain = s.weeks > 0 && s.weeks % 8 === 0 && s.skill < (STAFF_TEMPLATES.find(t => t.role === s.role)?.skillCap || 10) ? 0.5 : 0;
-        
-        return { ...s, weeks: s.weeks + 1, morale: Math.round(newMorale), skill: Math.min(10, s.skill + skillGain) };
-      });
+      // Update corporate cash
+      const newCorporateCash = g.corporateCash + franchiseRoyalties - loanPayments - corporateCosts - marketCosts;
       
-      // Random staff quit check
-      const quitThreshold = 30;
-      const stayingStaff = updatedStaff.filter(s => {
-        if (s.morale < quitThreshold && Math.random() < 0.3) {
-          return false; // Staff quits
-        }
-        return true;
-      });
-      
-      // Update team morale
-      const avgMorale = stayingStaff.length > 0 ? stayingStaff.reduce((sum, s) => sum + s.morale, 0) / stayingStaff.length : 50;
-      
-      // Profit streak
-      const newProfitStreak = weekProfit > 0 ? g.profitStreak + 1 : 0;
+      // Calculate empire valuation
+      const empireValuation = calculateEmpireValuation({ ...g, locations: updatedLocations }, setup);
       
       // Update achievements
       const newAchievements = [...g.achievements];
       const weekNum = g.week + 1;
+      const totalLocations = updatedLocations.length;
+      const totalFranchises = g.franchises.length;
+      const totalUnits = totalLocations + totalFranchises;
+      
       if (weekNum >= 4 && !newAchievements.includes('first_month')) newAchievements.push('first_month');
       if (weekNum >= 13 && !newAchievements.includes('three_months')) newAchievements.push('three_months');
       if (weekNum >= 26 && !newAchievements.includes('six_months')) newAchievements.push('six_months');
       if (weekNum >= 52 && !newAchievements.includes('survivor')) newAchievements.push('survivor');
       if (weekNum >= 104 && !newAchievements.includes('two_years')) newAchievements.push('two_years');
-      if (weekProfit > 0 && !newAchievements.includes('first_profit')) newAchievements.push('first_profit');
-      if (newProfitStreak >= 10 && !newAchievements.includes('profit_streak')) newAchievements.push('profit_streak');
-      if (g.cash + weekProfit >= 50000 && !newAchievements.includes('fifty_k')) newAchievements.push('fifty_k');
-      if (g.cash + weekProfit >= 100000 && !newAchievements.includes('hundred_k')) newAchievements.push('hundred_k');
-      if (g.cash + weekProfit >= 250000 && !newAchievements.includes('quarter_mil')) newAchievements.push('quarter_mil');
-      if (stayingStaff.length >= 10 && !newAchievements.includes('full_team')) newAchievements.push('full_team');
-      if (g.menu.length >= 15 && !newAchievements.includes('menu_master')) newAchievements.push('menu_master');
-      if (g.equipment.length >= 5 && !newAchievements.includes('fully_equipped')) newAchievements.push('fully_equipped');
-      if (g.customersServed.total + weekCovers >= 1000 && !newAchievements.includes('thousand_served')) newAchievements.push('thousand_served');
-      if (g.customersServed.total + weekCovers >= 10000 && !newAchievements.includes('ten_thousand')) newAchievements.push('ten_thousand');
-      if (g.virtualBrands.length >= 3 && !newAchievements.includes('virtual_mogul')) newAchievements.push('virtual_mogul');
+      if (totalWeekProfit > 0 && !newAchievements.includes('first_profit')) newAchievements.push('first_profit');
+      if (totalLocations >= 2 && !newAchievements.includes('second_location')) newAchievements.push('second_location');
+      if (totalLocations >= 3 && !newAchievements.includes('three_locations')) newAchievements.push('three_locations');
+      if (totalLocations >= 5 && !newAchievements.includes('five_locations')) newAchievements.push('five_locations');
+      if (totalLocations >= 10 && !newAchievements.includes('ten_locations')) newAchievements.push('ten_locations');
+      if (totalFranchises >= 1 && !newAchievements.includes('first_franchise')) newAchievements.push('first_franchise');
+      if (totalFranchises >= 5 && !newAchievements.includes('franchise_five')) newAchievements.push('franchise_five');
+      if (totalFranchises >= 10 && !newAchievements.includes('franchise_ten')) newAchievements.push('franchise_ten');
+      if (empireValuation >= 1000000 && !newAchievements.includes('million_valuation')) newAchievements.push('million_valuation');
+      if (empireValuation >= 5000000 && !newAchievements.includes('five_million')) newAchievements.push('five_million');
+      if (empireValuation >= 10000000 && !newAchievements.includes('ten_million')) newAchievements.push('ten_million');
       
       // Check for scenarios
-      const availableScenarios = SCENARIOS.filter(s => {
+      const allScenarios = [...SCENARIOS, ...EMPIRE_SCENARIOS];
+      const availableScenarios = allScenarios.filter(s => {
         if (g.scenariosSeen.includes(s.id)) return false;
         if (s.minWeek && weekNum < s.minWeek) return false;
-        if (s.minCash && g.cash < s.minCash) return false;
-        if (s.maxCash && g.cash > s.maxCash) return false;
-        if (s.triggerWeek && !s.triggerWeek.includes(weekNum % 52)) return false;
+        if (s.minCash && totalLocationCash + newCorporateCash < s.minCash) return false;
+        if (s.minLocations && totalLocations < s.minLocations) return false;
+        if (s.maxLocations && totalLocations > s.maxLocations) return false;
+        if (s.minFranchises && totalFranchises < s.minFranchises) return false;
+        if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
+        if (s.minValuation && empireValuation < s.minValuation) return false;
         return true;
       });
       
-      if (Math.random() < 0.18 && availableScenarios.length > 0 && weekNum > 1) {
+      if (Math.random() < 0.15 && availableScenarios.length > 0 && weekNum > 1) {
         const randomScenario = availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
         setTimeout(() => setScenario(randomScenario), 500);
       }
       
-      // Update history
-      const newHistory = [...g.weeklyHistory, { 
-        week: weekNum, 
-        revenue: totalRevenue, 
-        profit: weekProfit, 
-        covers: weekCovers,
-        costs: totalCosts,
-        reputation: g.reputation,
-      }].slice(-52);
-      
-      // New cash total
-      const newCash = g.cash + weekProfit;
-      
       // Check game end conditions
-      if (newCash < -20000) {
+      const lowestCash = Math.min(...updatedLocations.map(l => l.cash), newCorporateCash);
+      if (lowestCash < -50000) {
         setTimeout(() => setScreen('gameover'), 100);
       }
       
@@ -963,32 +923,27 @@ export default function App() {
       const goal = GOALS.find(gl => gl.id === setup.goal);
       if (goal && goal.id !== 'sandbox') {
         if (goal.target.weeks && weekNum >= goal.target.weeks) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.cash && newCash >= goal.target.cash) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.reputation && g.reputation >= goal.target.reputation) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.cash && totalLocationCash + newCorporateCash >= goal.target.cash) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.locations && totalLocations >= goal.target.locations) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.totalUnits && totalUnits >= goal.target.totalUnits) setTimeout(() => setScreen('win'), 100);
+        if (goal.target.valuation && empireValuation >= goal.target.valuation) setTimeout(() => setScreen('win'), 100);
       }
+      
+      // Update owner burnout
+      const locationsWithoutManagers = updatedLocations.filter(l => !l.manager).length;
+      const burnoutChange = locationsWithoutManagers > 1 ? 8 : locationsWithoutManagers === 1 ? 3 : -2;
       
       return {
         ...g,
         week: weekNum,
-        cash: newCash,
-        totalRevenue: g.totalRevenue + totalRevenue,
-        totalProfit: g.totalProfit + weekProfit,
-        lastWeekRevenue: totalRevenue,
-        lastWeekProfit: weekProfit,
-        lastWeekCosts: { food: foodCost, labor: laborCost, rent, utilities, marketing: marketingCost, equipment: equipmentMaint, loans: loanPayments, ccFees },
-        lastWeekCovers: weekCovers,
-        customersServed: {
-          total: g.customersServed.total + weekCovers,
-          byType: Object.entries(customersByType).reduce((acc, [k, v]) => ({ ...acc, [k]: (g.customersServed.byType[k] || 0) + v }), g.customersServed.byType),
-        },
-        staff: stayingStaff,
-        morale: Math.round(avgMorale),
-        delivery: { ...g.delivery, orders: g.delivery.orders + deliveryOrders },
-        weeklyHistory: newHistory,
+        locations: updatedLocations,
+        corporateCash: newCorporateCash,
+        totalRevenue: g.totalRevenue + totalWeekRevenue,
+        totalProfit: g.totalProfit + totalWeekProfit,
+        empireValuation,
         achievements: newAchievements,
-        profitStreak: newProfitStreak,
-        burnout: Math.min(100, Math.max(0, g.burnout + (g.ownerHours > 50 ? 5 : -3) + (weekProfit < 0 ? 3 : 0))),
-        reputation: Math.min(100, Math.max(0, g.reputation + (weekProfit > 0 ? 1 : -1) + (avgMorale > 70 ? 1 : avgMorale < 40 ? -2 : 0))),
+        profitStreak: totalWeekProfit > 0 ? g.profitStreak + 1 : 0,
+        burnout: Math.min(100, Math.max(0, g.burnout + burnoutChange)),
       };
     });
     
@@ -996,22 +951,27 @@ export default function App() {
     setTimeout(async () => {
       if (game) {
         setAiLoading(true);
-        const context = game.lastWeekProfit > 0 
-          ? 'Weekly summary - profitable week. Acknowledge the win and give one tip for improvement.'
-          : 'Weekly summary - lost money this week. Be direct about the problem without being harsh.';
+        const totalLocations = game.locations?.length || 1;
+        const context = totalLocations > 1 
+          ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
+          : game.locations?.[0]?.lastWeekProfit > 0 
+            ? 'Weekly summary - profitable week.'
+            : 'Weekly summary - lost money this week.';
         const response = await getAIMentorResponse(context, game, setup);
         setAiMessage(response);
         setAiLoading(false);
       }
     }, 800);
-  }, [game, setup]);
+  }, [game, setup, processLocationWeek]);
 
   // ============================================
   // ACTION HANDLERS
   // ============================================
   
-  const hireStaff = (template) => {
-    if (!game || game.cash < template.wage * 40) return;
+  const hireStaff = (template, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc || loc.cash < template.wage * 40) return;
+    
     const newStaff = {
       id: Date.now(),
       name: generateName(),
@@ -1023,44 +983,96 @@ export default function App() {
       morale: 65 + Math.floor(Math.random() * 20),
       icon: template.icon,
       department: template.department,
+      canManage: template.canManage || false,
+      canManageMultiple: template.canManageMultiple || false,
     };
+    
     setGame(g => ({
       ...g,
-      cash: g.cash - template.wage * 40,
-      staff: [...g.staff, newStaff],
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - template.wage * 40,
+        staff: [...l.staff, newStaff],
+      } : l),
       achievements: g.achievements.includes('first_hire') ? g.achievements : [...g.achievements, 'first_hire'],
     }));
     setStaffModal(false);
   };
 
-  const fireStaff = (id) => {
+  const hireCorporateStaff = (template) => {
+    if (!game || game.corporateCash < template.wage * 40) return;
+    
+    const newStaff = {
+      id: Date.now(),
+      name: generateName(),
+      role: template.role,
+      wage: template.wage,
+      skill: 5 + Math.floor(Math.random() * 3),
+      weeks: 0,
+      training: [],
+      morale: 70,
+      icon: template.icon,
+      department: template.department,
+      canManageMultiple: template.canManageMultiple || false,
+    };
+    
     setGame(g => ({
       ...g,
-      staff: g.staff.filter(s => s.id !== id),
-      morale: Math.max(30, g.morale - 10),
+      corporateCash: g.corporateCash - template.wage * 40,
+      corporateStaff: [...g.corporateStaff, newStaff],
     }));
   };
 
-  const giveRaise = (id, amount) => {
+  const fireStaff = (staffId, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc) return;
+    
     setGame(g => ({
       ...g,
-      staff: g.staff.map(s => s.id === id ? { ...s, wage: s.wage + amount, morale: Math.min(100, s.morale + 15) } : s),
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        staff: l.staff.filter(s => s.id !== staffId),
+        morale: Math.max(30, l.morale - 10),
+        manager: l.manager?.id === staffId ? null : l.manager,
+      } : l),
+    }));
+  };
+
+  const promoteToManager = (staffId, locationId = null) => {
+    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    if (!loc) return;
+    
+    const staff = loc.staff.find(s => s.id === staffId);
+    if (!staff || !staff.canManage) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        manager: staff,
+        staff: l.staff.map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
+      } : l),
     }));
   };
 
   const startTraining = (program) => {
-    if (!selectedStaff || !game || game.cash < program.cost) return;
+    if (!selectedStaff || !game) return;
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < program.cost) return;
+    
     setGame(g => ({
       ...g,
-      cash: g.cash - program.cost,
-      staff: g.staff.map(s => s.id === selectedStaff.id ? {
-        ...s,
-        training: [...s.training, program.id],
-        skill: Math.min(10, s.skill + program.skillBoost),
-        morale: Math.min(100, s.morale + program.morale),
-      } : s),
-      achievements: g.staff.filter(st => st.training.length > 0).length >= 4 && !g.achievements.includes('trainer') 
-        ? [...g.achievements, 'trainer'] : g.achievements,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - program.cost,
+        staff: l.staff.map(s => s.id === selectedStaff.id ? {
+          ...s,
+          training: [...s.training, program.id],
+          skill: Math.min(10, s.skill + program.skillBoost),
+          morale: Math.min(100, s.morale + program.morale),
+          canManage: program.id === 'management' || program.id === 'multi_unit' ? true : s.canManage,
+        } : s),
+      } : l),
     }));
     setTrainingModal(false);
     setSelectedStaff(null);
@@ -1068,90 +1080,114 @@ export default function App() {
 
   const addMenuItem = () => {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    if (!cuisine || !game) return;
+    const loc = getActiveLocation();
+    if (!cuisine || !loc) return;
+    
     const priceVariance = 0.7 + Math.random() * 0.6;
     setGame(g => ({
       ...g,
-      menu: [...g.menu, {
-        id: Date.now(),
-        name: generateMenuItem(setup.cuisine),
-        price: Math.round(cuisine.avgTicket * priceVariance * 100) / 100,
-        cost: cuisine.avgTicket * cuisine.foodCost * priceVariance,
-        popular: Math.random() > 0.7,
-        is86d: false,
-      }],
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        menu: [...l.menu, {
+          id: Date.now(),
+          name: generateMenuItem(setup.cuisine),
+          price: Math.round(cuisine.avgTicket * priceVariance * 100) / 100,
+          cost: cuisine.avgTicket * cuisine.foodCost * priceVariance,
+          popular: Math.random() > 0.7,
+          is86d: false,
+        }],
+      } : l),
     }));
   };
 
-  const toggle86 = (id) => {
+  const toggle86 = (itemId) => {
+    const loc = getActiveLocation();
+    if (!loc) return;
     setGame(g => ({
       ...g,
-      menu: g.menu.map(m => m.id === id ? { ...m, is86d: !m.is86d } : m),
-    }));
-  };
-
-  const updatePrice = (id, newPrice) => {
-    setGame(g => ({
-      ...g,
-      menu: g.menu.map(m => m.id === id ? { ...m, price: parseFloat(newPrice) || m.price } : m),
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        menu: l.menu.map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
+      } : l),
     }));
   };
 
   const buyEquipment = (eq) => {
-    if (!game || game.cash < eq.cost || game.equipment.includes(eq.id)) return;
-    setGame(g => ({ ...g, cash: g.cash - eq.cost, equipment: [...g.equipment, eq.id] }));
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < eq.cost || loc.equipment.includes(eq.id)) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - eq.cost,
+        equipment: [...l.equipment, eq.id],
+      } : l),
+    }));
   };
 
   const buyUpgrade = (up) => {
-    if (!game || game.cash < up.cost || game.upgrades.includes(up.id)) return;
+    const loc = getActiveLocation();
+    if (!loc || loc.cash < up.cost || loc.upgrades.includes(up.id)) return;
     setGame(g => ({
       ...g,
-      cash: g.cash - up.cost,
-      upgrades: [...g.upgrades, up.id],
-      reputation: g.reputation + (up.effect.reputation || 0),
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - up.cost,
+        upgrades: [...l.upgrades, up.id],
+        reputation: l.reputation + (up.effect.reputation || 0),
+      } : l),
     }));
   };
 
   const toggleMarketingChannel = (channelId) => {
-    setGame(g => {
-      const isActive = g.marketing.channels.includes(channelId);
-      return {
-        ...g,
+    const loc = getActiveLocation();
+    if (!loc) return;
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
         marketing: {
-          ...g.marketing,
-          channels: isActive
-            ? g.marketing.channels.filter(c => c !== channelId)
-            : [...g.marketing.channels, channelId],
+          ...l.marketing,
+          channels: l.marketing.channels.includes(channelId)
+            ? l.marketing.channels.filter(c => c !== channelId)
+            : [...l.marketing.channels, channelId],
         },
-      };
-    });
+      } : l),
+    }));
   };
 
   const toggleDeliveryPlatform = (platformId) => {
     const platform = DELIVERY_PLATFORMS.find(p => p.id === platformId);
-    if (!platform || !game) return;
-    setGame(g => {
-      const isActive = g.delivery.platforms.includes(platformId);
-      if (isActive) {
-        return { ...g, delivery: { ...g.delivery, platforms: g.delivery.platforms.filter(p => p !== platformId) } };
-      } else if (g.cash >= platform.setup) {
-        return {
-          ...g,
-          cash: g.cash - platform.setup,
-          delivery: { ...g.delivery, platforms: [...g.delivery.platforms, platformId] },
-        };
-      }
-      return g;
-    });
+    const loc = getActiveLocation();
+    if (!platform || !loc) return;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.map(l => {
+        if (l.id !== loc.id) return l;
+        const isActive = l.delivery.platforms.includes(platformId);
+        if (isActive) {
+          return { ...l, delivery: { ...l.delivery, platforms: l.delivery.platforms.filter(p => p !== platformId) } };
+        } else if (l.cash >= platform.setup) {
+          return { ...l, cash: l.cash - platform.setup, delivery: { ...l.delivery, platforms: [...l.delivery.platforms, platformId] } };
+        }
+        return l;
+      }),
+    }));
   };
 
   const launchVirtualBrand = (brandId) => {
     const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
-    if (!game || !brand || game.virtualBrands.includes(brandId) || game.cash < brand.setupCost) return;
+    const loc = getActiveLocation();
+    if (!loc || !brand || loc.virtualBrands.includes(brandId) || loc.cash < brand.setupCost) return;
+    
     setGame(g => ({
       ...g,
-      cash: g.cash - brand.setupCost,
-      virtualBrands: [...g.virtualBrands, brandId],
+      locations: g.locations.map(l => l.id === loc.id ? {
+        ...l,
+        cash: l.cash - brand.setupCost,
+        virtualBrands: [...l.virtualBrands, brandId],
+      } : l),
     }));
   };
 
@@ -1160,11 +1196,98 @@ export default function App() {
     if (!loan || !game) return;
     setGame(g => ({
       ...g,
-      cash: g.cash + loan.amount,
+      corporateCash: g.corporateCash + loan.amount,
       loans: [...g.loans, { type: loanId, remaining: loan.term, principal: loan.amount }],
       equity: g.equity - (loan.equity || 0),
     }));
     setLoanModal(false);
+  };
+
+  // ============================================
+  // EXPANSION & FRANCHISE HANDLERS
+  // ============================================
+  
+  const openNewLocation = () => {
+    const type = LOCATION_TYPES.find(t => t.id === newLocationData.type);
+    const mkt = MARKETS.find(m => m.id === newLocationData.market);
+    
+    if (!type || !mkt || !game) return;
+    
+    const totalCost = type.buildoutCost;
+    if (game.corporateCash < totalCost) {
+      alert('Not enough corporate cash for buildout!');
+      return;
+    }
+    
+    const newId = Math.max(...game.locations.map(l => l.id)) + 1;
+    const newLocation = createLocation(
+      newId,
+      newLocationData.name || generateLocationName(newLocationData.market, newLocationData.type),
+      newLocationData.type,
+      newLocationData.market,
+      setup.cuisine,
+      totalCost * 0.3 // Starting operating cash
+    );
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash - totalCost,
+      locations: [...g.locations, newLocation],
+    }));
+    
+    setExpansionModal(false);
+    setNewLocationData({ name: '', type: 'suburban_strip', market: 'same_city' });
+    
+    // AI response
+    setTimeout(async () => {
+      setAiLoading(true);
+      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup);
+      setAiMessage(response);
+      setAiLoading(false);
+    }, 500);
+  };
+
+  const enableFranchising = () => {
+    if (!game || game.locations.length < 3) {
+      alert('Need at least 3 successful locations before franchising');
+      return;
+    }
+    if (game.corporateCash < 50000) {
+      alert('Need $50K for franchise system setup');
+      return;
+    }
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash - 50000,
+      franchiseEnabled: true,
+    }));
+  };
+
+  const sellFranchise = (tier) => {
+    const franchiseTier = FRANCHISE_TIERS.find(t => t.id === tier);
+    if (!franchiseTier || !game || !game.franchiseEnabled) return;
+    
+    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / game.locations.length;
+    const weeklyRoyalty = avgLocationRevenue * franchiseTier.royalty;
+    
+    const newFranchise = {
+      id: Date.now(),
+      tier: tier,
+      name: `Franchisee ${game.franchises.length + 1}`,
+      weeklyRoyalty,
+      weeksActive: 0,
+      performance: 0.8 + Math.random() * 0.4, // 80-120% performance vs company average
+      quality: 70 + Math.floor(Math.random() * 20),
+    };
+    
+    setGame(g => ({
+      ...g,
+      corporateCash: g.corporateCash + franchiseTier.fee,
+      franchises: [...g.franchises, newFranchise],
+    }));
+    
+    setFranchiseModal(false);
   };
 
   const handleScenarioChoice = async (option) => {
@@ -1175,39 +1298,80 @@ export default function App() {
     setGame(g => {
       let updated = { ...g, scenariosSeen: [...g.scenariosSeen, scenario.id] };
       
-      if (outcome.cash) updated.cash += outcome.cash;
-      if (outcome.reputation) updated.reputation = Math.min(100, Math.max(0, updated.reputation + outcome.reputation));
-      if (outcome.foodWaste) updated.cash -= outcome.foodWaste;
-      if (outcome.morale) updated.morale = Math.min(100, Math.max(0, updated.morale + outcome.morale));
-      if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
-      if (outcome.staff) {
-        const toRemove = Math.abs(outcome.staff);
-        updated.staff = updated.staff.slice(0, Math.max(1, updated.staff.length - toRemove));
+      // Handle empire-wide effects
+      if (outcome.allLocations) {
+        updated.locations = updated.locations.map(l => {
+          let loc = { ...l };
+          if (outcome.reputation) loc.reputation = Math.min(100, Math.max(0, loc.reputation + outcome.reputation));
+          if (outcome.morale) loc.morale = Math.min(100, Math.max(0, loc.morale + outcome.morale));
+          if (outcome.covers) loc.covers += outcome.covers;
+          if (outcome.foodCostMod) loc.foodCostPct += outcome.foodCostMod;
+          if (outcome.laborCostMod) {
+            loc.staff = loc.staff.map(s => ({ ...s, wage: Math.round(s.wage * (1 + outcome.laborCostMod)) }));
+          }
+          return loc;
+        });
       }
-      if (outcome.laborCostMod) updated.laborCostPct += outcome.laborCostMod;
-      if (outcome.foodCostMod) updated.foodCostPct += outcome.foodCostMod;
-      if (outcome.avgTicketMod) updated.avgTicket *= (1 + outcome.avgTicketMod);
-      if (outcome.rentMod) updated.rent *= (1 + outcome.rentMod);
-      if (outcome.customers) updated.covers += outcome.customers;
-      if (outcome.followers) updated.marketing.socialFollowers += outcome.followers;
-      if (outcome.deliveryEnabled) {
-        if (!updated.delivery.platforms.includes(outcome.deliveryEnabled)) {
-          updated.delivery.platforms.push(outcome.deliveryEnabled);
+      
+      // Handle single location effects
+      if (!outcome.allLocations) {
+        const loc = getActiveLocation();
+        if (loc) {
+          updated.locations = updated.locations.map(l => {
+            if (l.id !== loc.id) return l;
+            let newLoc = { ...l };
+            if (outcome.cash) newLoc.cash += outcome.cash;
+            if (outcome.reputation) newLoc.reputation = Math.min(100, Math.max(0, newLoc.reputation + outcome.reputation));
+            if (outcome.morale) newLoc.morale = Math.min(100, Math.max(0, newLoc.morale + outcome.morale));
+            if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
+            if (outcome.covers) newLoc.covers += outcome.covers;
+            if (outcome.followers) newLoc.marketing.socialFollowers += outcome.followers;
+            return newLoc;
+          });
         }
       }
-      if (outcome.virtualBrand && !updated.virtualBrands.includes(outcome.virtualBrand)) {
-        updated.virtualBrands.push(outcome.virtualBrand);
+      
+      // Corporate cash effects
+      if (outcome.cash && outcome.allLocations) {
+        updated.corporateCash += outcome.cash;
       }
-      if (outcome.achievement && !updated.achievements.includes(outcome.achievement)) {
-        updated.achievements.push(outcome.achievement);
+      
+      // Expansion opportunity
+      if (outcome.expansionOpportunity) {
+        setExpansionModal(true);
+      }
+      
+      // New franchises
+      if (outcome.newFranchises) {
+        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / updated.locations.length;
+        for (let i = 0; i < outcome.newFranchises; i++) {
+          updated.franchises.push({
+            id: Date.now() + i,
+            tier: 'area',
+            name: `Area Developer ${updated.franchises.length + 1}`,
+            weeklyRoyalty: avgRevenue * 0.045,
+            weeksActive: 0,
+            performance: 0.9 + Math.random() * 0.2,
+            quality: 75 + Math.floor(Math.random() * 15),
+          });
+        }
+      }
+      
+      // Equity changes
+      if (outcome.equity) {
+        updated.equity += outcome.equity;
+      }
+      
+      // End game conditions
+      if (outcome.endGame === 'buyout') {
+        setTimeout(() => setScreen('win'), 100);
       }
       
       return updated;
     });
     
-    // AI commentary on scenario
     setAiLoading(true);
-    const context = `Player just faced scenario "${scenario.title}". They chose "${option.text}" and ${success ? 'succeeded' : 'failed'}. Give brief commentary.`;
+    const context = `Player faced "${scenario.title}" and ${success ? 'succeeded' : 'failed'}. Give brief commentary.`;
     const response = await getAIMentorResponse(context, game, setup);
     setAiMessage(response);
     setAiLoading(false);
@@ -1236,6 +1400,7 @@ export default function App() {
   const loadGame = (save) => {
     setSetup(save.setup);
     setGame(save.game);
+    setActiveLocationId(save.game.locations[0].id);
     setScreen('dashboard');
     setSaveModal(false);
   };
@@ -1243,7 +1408,7 @@ export default function App() {
   const restart = () => {
     setScreen('welcome');
     setOnboardingStep(0);
-    setSetup({ cuisine: null, capital: 75000, name: '', location: 'urban', city: '', goal: 'survive', experience: 'none' });
+    setSetup({ cuisine: null, capital: 75000, name: '', location: 'urban_neighborhood', market: 'same_city', goal: 'survive', experience: 'none' });
     setGame(null);
     setScenario(null);
     setScenarioResult(null);
@@ -1261,11 +1426,11 @@ export default function App() {
           <Text style={styles.welcomeTitle}>86'd</Text>
           <View style={styles.welcomeDivider} />
           <Text style={styles.welcomeQuote}>"The restaurant business doesn't care about your dreams."</Text>
-          <Text style={styles.welcomeSubtext}>Build your restaurant empire.{'\n'}Learn from an AI mentor with 30 years experience.{'\n'}Try not to get 86'd.</Text>
+          <Text style={styles.welcomeSubtext}>Build your restaurant empire.{'\n'}Learn from an AI mentor.{'\n'}Scale or get 86'd.</Text>
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
-            <Text style={styles.startButtonText}>START YOUR JOURNEY</Text>
+            <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v4.0.0 • Phase 2 • AI Powered</Text>
+          <Text style={styles.versionText}>v5.0.0 • Phase 3 • Empire Building</Text>
         </View>
       </SafeAreaView>
     );
@@ -1279,8 +1444,7 @@ export default function App() {
       { title: 'Choose Your Cuisine', key: 'cuisine' },
       { title: 'Starting Capital', key: 'capital' },
       { title: 'Name Your Restaurant', key: 'name' },
-      { title: 'Location', key: 'location' },
-      { title: 'Your Background', key: 'experience' },
+      { title: 'First Location', key: 'location' },
       { title: 'Set Your Goal', key: 'goal' },
     ];
     const step = steps[onboardingStep];
@@ -1298,12 +1462,11 @@ export default function App() {
             
             <View style={styles.messageBox}>
               <Text style={styles.messageText}>
-                {step.key === 'cuisine' && "What type of food will you serve? This affects everything - your food costs, average ticket, and how hard it'll be to execute."}
-                {step.key === 'capital' && "How much are you putting in? More capital means more runway, but also higher stakes. There's no magic number - I've seen $30K concepts crush $300K buildouts."}
-                {step.key === 'name' && "What are you calling this place? Make it memorable. Make it yours."}
-                {step.key === 'location' && "Where are you setting up? Urban means more foot traffic but higher rent. Suburban is balanced. Rural is cheaper but you'll work harder for every customer."}
-                {step.key === 'experience' && "What's your background? Be honest - this helps me calibrate my advice. No shame in being new, just different challenges."}
-                {step.key === 'goal' && "What does winning look like to you? Everyone's definition of success is different."}
+                {step.key === 'cuisine' && "What type of food will you build your empire on? This affects everything - food costs, average ticket, and complexity."}
+                {step.key === 'capital' && "How much are you starting with? This is your war chest - first location plus corporate reserve."}
+                {step.key === 'name' && "What's your brand? This will be the foundation of your empire."}
+                {step.key === 'location' && "Where will you open your flagship location? This sets the tone for expansion."}
+                {step.key === 'goal' && "How big do you want to build? Single location survival or multi-state empire?"}
               </Text>
             </View>
 
@@ -1322,7 +1485,7 @@ export default function App() {
                     <Text style={styles.selectedIcon}>{CUISINES.find(c => c.id === setup.cuisine)?.icon}</Text>
                     <View>
                       <Text style={styles.selectedName}>{CUISINES.find(c => c.id === setup.cuisine)?.name}</Text>
-                      <Text style={styles.selectedStats}>Food Cost: {formatPct(CUISINES.find(c => c.id === setup.cuisine)?.foodCost)} • Avg Ticket: {formatCurrency(CUISINES.find(c => c.id === setup.cuisine)?.avgTicket)} • {CUISINES.find(c => c.id === setup.cuisine)?.difficulty}</Text>
+                      <Text style={styles.selectedStats}>Food Cost: {formatPct(CUISINES.find(c => c.id === setup.cuisine)?.foodCost)} • Avg Ticket: {formatCurrency(CUISINES.find(c => c.id === setup.cuisine)?.avgTicket)}</Text>
                     </View>
                   </View>
                 )}
@@ -1332,19 +1495,19 @@ export default function App() {
             {step.key === 'capital' && (
               <>
                 <View style={styles.capitalDisplay}>
-                  <Text style={[styles.capitalAmount, { color: setup.capital < 50000 ? colors.accent : setup.capital < 100000 ? colors.warning : colors.success }]}>{formatCurrency(setup.capital)}</Text>
-                  <View style={[styles.tierBadge, { backgroundColor: setup.capital < 50000 ? colors.accent : setup.capital < 100000 ? colors.warning : colors.success }]}>
-                    <Text style={styles.tierText}>{setup.capital < 50000 ? 'BOOTSTRAP' : setup.capital < 100000 ? 'STANDARD' : setup.capital < 200000 ? 'WELL-FUNDED' : 'PREMIUM'}</Text>
+                  <Text style={[styles.capitalAmount, { color: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : colors.success }]}>{formatCurrency(setup.capital)}</Text>
+                  <View style={[styles.tierBadge, { backgroundColor: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : setup.capital < 300000 ? colors.success : colors.purple }]}>
+                    <Text style={styles.tierText}>{setup.capital < 75000 ? 'BOOTSTRAP' : setup.capital < 150000 ? 'STANDARD' : setup.capital < 300000 ? 'WELL-FUNDED' : 'EMPIRE READY'}</Text>
                   </View>
                   <Text style={styles.tierDesc}>
-                    {setup.capital < 50000 && "You'll be doing everything yourself. No room for mistakes."}
-                    {setup.capital >= 50000 && setup.capital < 100000 && "Tight but doable. You can hire a small team."}
-                    {setup.capital >= 100000 && setup.capital < 200000 && "Solid runway. Focus on execution."}
-                    {setup.capital >= 200000 && "Good cushion. Don't let it make you sloppy."}
+                    {setup.capital < 75000 && "Tight. One location, no safety net."}
+                    {setup.capital >= 75000 && setup.capital < 150000 && "Solid start. Room to breathe."}
+                    {setup.capital >= 150000 && setup.capital < 300000 && "Good runway for location #1 + reserve for #2."}
+                    {setup.capital >= 300000 && "Ready to scale fast if you execute."}
                   </Text>
                 </View>
-                <Slider style={styles.slider} minimumValue={25000} maximumValue={500000} step={5000} value={setup.capital} onValueChange={(v) => setSetup(s => ({ ...s, capital: v }))} minimumTrackTintColor={colors.primary} maximumTrackTintColor={colors.surfaceLight} thumbTintColor={colors.primary} />
-                <View style={styles.sliderLabels}><Text style={styles.sliderLabel}>$25K</Text><Text style={styles.sliderLabel}>$500K</Text></View>
+                <Slider style={styles.slider} minimumValue={50000} maximumValue={500000} step={10000} value={setup.capital} onValueChange={(v) => setSetup(s => ({ ...s, capital: v }))} minimumTrackTintColor={colors.primary} maximumTrackTintColor={colors.surfaceLight} thumbTintColor={colors.primary} />
+                <View style={styles.sliderLabels}><Text style={styles.sliderLabel}>$50K</Text><Text style={styles.sliderLabel}>$500K</Text></View>
               </>
             )}
 
@@ -1353,31 +1516,14 @@ export default function App() {
             )}
 
             {step.key === 'location' && (
-              <View style={styles.optionRow}>
-                {[
-                  { id: 'urban', name: 'Urban', desc: '+20% traffic, +20% rent' },
-                  { id: 'suburban', name: 'Suburban', desc: 'Balanced traffic & costs' },
-                  { id: 'rural', name: 'Rural', desc: '-20% traffic, -20% rent' }
-                ].map(loc => (
-                  <TouchableOpacity key={loc.id} style={[styles.optionButton, setup.location === loc.id && styles.optionButtonActive]} onPress={() => setSetup(s => ({ ...s, location: loc.id }))}>
-                    <Text style={[styles.optionText, setup.location === loc.id && styles.optionTextActive]}>{loc.name}</Text>
-                    <Text style={styles.optionDesc}>{loc.desc}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {step.key === 'experience' && (
               <View style={styles.goalOptions}>
-                {[
-                  { id: 'none', name: 'Complete Newbie', desc: "Never worked in a restaurant" },
-                  { id: 'some', name: 'Some Experience', desc: "Worked FOH or BOH before" },
-                  { id: 'manager', name: 'Management', desc: "Managed a restaurant" },
-                  { id: 'owner', name: 'Previous Owner', desc: "Owned a restaurant before" },
-                ].map(exp => (
-                  <TouchableOpacity key={exp.id} style={[styles.goalButton, setup.experience === exp.id && styles.goalButtonActive]} onPress={() => setSetup(s => ({ ...s, experience: exp.id }))}>
-                    <Text style={[styles.goalText, setup.experience === exp.id && styles.goalTextActive]}>{exp.name}</Text>
-                    <Text style={styles.goalDesc}>{exp.desc}</Text>
+                {LOCATION_TYPES.slice(0, 6).map(loc => (
+                  <TouchableOpacity key={loc.id} style={[styles.goalButton, setup.location === loc.id && styles.goalButtonActive]} onPress={() => setSetup(s => ({ ...s, location: loc.id }))}>
+                    <Text style={{ fontSize: 24 }}>{loc.icon}</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[styles.goalText, setup.location === loc.id && styles.goalTextActive]}>{loc.name}</Text>
+                      <Text style={styles.goalDesc}>Rent: {loc.rentMod > 1 ? '+' : ''}{Math.round((loc.rentMod - 1) * 100)}% • Traffic: {loc.trafficMod > 1 ? '+' : ''}{Math.round((loc.trafficMod - 1) * 100)}% • Buildout: {formatCurrency(loc.buildoutCost)}</Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1434,7 +1580,7 @@ export default function App() {
   }
 
   // ============================================
-  // RENDER - SCENARIO SCREEN
+  // RENDER - SCENARIO
   // ============================================
   if (scenario) {
     return (
@@ -1442,13 +1588,11 @@ export default function App() {
         <StatusBar barStyle="light-content" />
         <ScrollView style={styles.scenarioContainer}>
           <View style={styles.scenarioContent}>
-            <View style={styles.scenarioHeader}>
-              <View style={[styles.scenarioTypeBadge, { backgroundColor: scenario.type === 'crisis' ? colors.accent : scenario.type === 'opportunity' ? colors.success : colors.info }]}>
-                <Text style={styles.scenarioTypeText}>{scenario.type.toUpperCase()}</Text>
-              </View>
+            <View style={[styles.scenarioTypeBadge, { backgroundColor: scenario.type === 'crisis' ? colors.accent : scenario.type === 'opportunity' ? colors.success : colors.info }]}>
+              <Text style={styles.scenarioTypeText}>{scenario.type.toUpperCase()}</Text>
             </View>
             <Text style={styles.scenarioTitle}>{scenario.title}</Text>
-            <Text style={styles.scenarioSubtitle}>Week {game?.week}</Text>
+            <Text style={styles.scenarioSubtitle}>Week {game?.week} • {game?.locations?.length > 1 ? 'Empire-wide' : getActiveLocation()?.name}</Text>
             <View style={styles.scenarioMessageBox}>
               <Text style={styles.scenarioMessage}>{scenario.message}</Text>
             </View>
@@ -1457,7 +1601,7 @@ export default function App() {
               scenario.options.map((opt, i) => (
                 <TouchableOpacity key={i} style={styles.scenarioOption} onPress={() => handleScenarioChoice(opt)}>
                   <Text style={styles.scenarioOptionText}>{opt.text}</Text>
-                  <Text style={styles.scenarioChance}>{Math.round(opt.successChance * 100)}% success</Text>
+                  <Text style={styles.scenarioChance}>{Math.round(opt.successChance * 100)}%</Text>
                 </TouchableOpacity>
               ))
             ) : (
@@ -1466,38 +1610,15 @@ export default function App() {
                   <Text style={[styles.scenarioResultText, { color: scenarioResult.success ? colors.success : colors.accent }]}>
                     {scenarioResult.success ? '✓ SUCCESS' : '✗ FAILED'}
                   </Text>
-                  {scenarioResult.outcome.cash && (
-                    <Text style={{ color: scenarioResult.outcome.cash > 0 ? colors.success : colors.accent, fontSize: 16 }}>
-                      {scenarioResult.outcome.cash > 0 ? '+' : ''}{formatCurrency(scenarioResult.outcome.cash)}
-                    </Text>
-                  )}
-                  {scenarioResult.outcome.reputation && (
-                    <Text style={{ color: scenarioResult.outcome.reputation > 0 ? colors.success : colors.accent }}>
-                      Reputation {scenarioResult.outcome.reputation > 0 ? '+' : ''}{scenarioResult.outcome.reputation}
-                    </Text>
-                  )}
-                  {scenarioResult.outcome.morale && (
-                    <Text style={{ color: scenarioResult.outcome.morale > 0 ? colors.success : colors.accent }}>
-                      Morale {scenarioResult.outcome.morale > 0 ? '+' : ''}{scenarioResult.outcome.morale}
-                    </Text>
-                  )}
                 </View>
-                
-                {/* AI Commentary */}
                 <View style={styles.aiCommentBox}>
                   <Text style={styles.aiCommentLabel}>👨‍🍳 Chef Marcus</Text>
-                  {aiLoading ? (
-                    <ActivityIndicator color={colors.primary} />
-                  ) : (
-                    <Text style={styles.aiCommentText}>{aiMessage}</Text>
-                  )}
+                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiCommentText}>{aiMessage}</Text>}
                 </View>
-                
                 <View style={styles.lessonBox}>
-                  <Text style={styles.lessonLabel}>💡 LESSON LEARNED</Text>
+                  <Text style={styles.lessonLabel}>💡 LESSON</Text>
                   <Text style={styles.lessonText}>{scenario.lesson}</Text>
                 </View>
-                
                 <TouchableOpacity style={styles.continueButton} onPress={closeScenario}>
                   <Text style={styles.continueButtonText}>CONTINUE</Text>
                 </TouchableOpacity>
@@ -1510,27 +1631,30 @@ export default function App() {
   }
 
   // ============================================
-  // RENDER - GAME OVER
+  // RENDER - GAME OVER / WIN
   // ============================================
-  if (screen === 'gameover') {
+  if (screen === 'gameover' || screen === 'win') {
+    const isWin = screen === 'win';
+    const totalUnits = (game?.locations?.length || 0) + (game?.franchises?.length || 0);
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.endContainer}>
-          <Text style={{ fontSize: 64 }}>💀</Text>
-          <Text style={styles.endTitle}>86'd</Text>
-          <Text style={styles.endSubtitle}>Your restaurant has closed</Text>
-          <View style={[styles.endDivider, { backgroundColor: colors.accent }]} />
-          <Text style={styles.endMessage}>You made it {game?.week} weeks</Text>
+          <Text style={{ fontSize: 64 }}>{isWin ? '🏆' : '💀'}</Text>
+          <Text style={[styles.endTitle, { color: isWin ? colors.success : colors.accent }]}>{isWin ? 'EMPIRE BUILT!' : '86\'d'}</Text>
+          <Text style={styles.endSubtitle}>{isWin ? 'You achieved your goal' : 'Your empire has collapsed'}</Text>
+          <View style={[styles.endDivider, { backgroundColor: isWin ? colors.success : colors.accent }]} />
           <View style={styles.endStats}>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Weeks</Text><Text style={styles.endStatValue}>{game?.week}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Locations Owned</Text><Text style={styles.endStatValue}>{game?.locations?.length || 0}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Franchises</Text><Text style={styles.endStatValue}>{game?.franchises?.length || 0}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Units</Text><Text style={styles.endStatValue}>{totalUnits}</Text></View>
+            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Empire Valuation</Text><Text style={[styles.endStatValue, { color: colors.success }]}>{formatCurrency(game?.empireValuation || 0)}</Text></View>
             <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Revenue</Text><Text style={styles.endStatValue}>{formatCurrency(game?.totalRevenue || 0)}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Profit/Loss</Text><Text style={[styles.endStatValue, { color: game?.totalProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(game?.totalProfit || 0)}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Customers Served</Text><Text style={styles.endStatValue}>{(game?.customersServed?.total || 0).toLocaleString()}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Peak Staff</Text><Text style={styles.endStatValue}>{game?.staff?.length || 0}</Text></View>
             <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Achievements</Text><Text style={styles.endStatValue}>{game?.achievements?.length || 0}/{Object.keys(ACHIEVEMENTS).length}</Text></View>
           </View>
           <TouchableOpacity style={styles.restartButton} onPress={restart}>
-            <Text style={styles.restartButtonText}>TRY AGAIN</Text>
+            <Text style={styles.restartButtonText}>{isWin ? 'PLAY AGAIN' : 'TRY AGAIN'}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1538,350 +1662,524 @@ export default function App() {
   }
 
   // ============================================
-  // RENDER - WIN SCREEN
-  // ============================================
-  if (screen === 'win') {
-    const goal = GOALS.find(g => g.id === setup.goal);
-    const valuation = game ? calculateValuation(game, setup) : 0;
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.endContainer}>
-          <Text style={{ fontSize: 64 }}>🏆</Text>
-          <Text style={[styles.endTitle, { color: colors.success }]}>SUCCESS!</Text>
-          <Text style={styles.endSubtitle}>You achieved your goal</Text>
-          <View style={[styles.endDivider, { backgroundColor: colors.success }]} />
-          <Text style={styles.winCondition}>{goal?.name}: {goal?.desc}</Text>
-          <View style={styles.endStats}>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Weeks Survived</Text><Text style={styles.endStatValue}>{game?.week}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Final Cash</Text><Text style={styles.endStatValue}>{formatCurrency(game?.cash || 0)}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Restaurant Valuation</Text><Text style={[styles.endStatValue, { color: colors.success }]}>{formatCurrency(valuation)}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Total Revenue</Text><Text style={styles.endStatValue}>{formatCurrency(game?.totalRevenue || 0)}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Customers Served</Text><Text style={styles.endStatValue}>{(game?.customersServed?.total || 0).toLocaleString()}</Text></View>
-            <View style={styles.endStatRow}><Text style={styles.endStatLabel}>Achievements</Text><Text style={styles.endStatValue}>{game?.achievements?.length || 0}/{Object.keys(ACHIEVEMENTS).length}</Text></View>
-          </View>
-          <TouchableOpacity style={styles.restartButton} onPress={restart}>
-            <Text style={styles.restartButtonText}>PLAY AGAIN</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ============================================
-  // RENDER - DASHBOARD
+  // RENDER - MAIN DASHBOARD
   // ============================================
   if (screen === 'dashboard' && game) {
+    const loc = getActiveLocation();
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    const isLowCash = game.cash < setup.capital * 0.1;
-    const isHighBurnout = game.burnout > 70;
-    const isLowMorale = game.morale < 40;
-    const valuation = calculateValuation(game, setup);
-
+    const totalCash = game.locations.reduce((sum, l) => sum + l.cash, 0) + game.corporateCash;
+    const totalUnits = game.locations.length + game.franchises.length;
+    const isMultiLocation = game.locations.length > 1;
+    
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         
-        {/* Header */}
-        <View style={styles.dashHeader}>
-          <View>
-            <Text style={styles.dashTitle}>{setup.name || cuisine?.name}</Text>
-            <Text style={styles.dashSubtitle}>Week {game.week} • {cuisine?.icon} {cuisine?.name}</Text>
+        {/* Empire Header */}
+        <View style={styles.empireHeader}>
+          <View style={styles.empireHeaderLeft}>
+            <Text style={styles.empireName}>{setup.name}</Text>
+            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}</Text>
           </View>
-          <TouchableOpacity style={styles.nextWeekButton} onPress={processWeek}>
-            <Text style={styles.nextWeekText}>Next Week →</Text>
-          </TouchableOpacity>
+          <View style={styles.empireHeaderRight}>
+            <Text style={styles.empireValuation}>{formatCurrency(game.empireValuation)}</Text>
+            <Text style={styles.empireValuationLabel}>Empire Value</Text>
+          </View>
         </View>
 
-        {/* Warnings */}
-        {(isLowCash || isHighBurnout || isLowMorale) && (
-          <View style={styles.warningBanner}>
-            {isLowCash && <Text style={styles.warningText}>⚠️ Low Cash</Text>}
-            {isHighBurnout && <Text style={styles.warningText}>⚠️ Burnout</Text>}
-            {isLowMorale && <Text style={styles.warningText}>⚠️ Low Morale</Text>}
-          </View>
+        {/* Location Selector (if multiple) */}
+        {isMultiLocation && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.locationSelector}>
+            <TouchableOpacity 
+              style={[styles.locationTab, !activeLocationId && styles.locationTabActive]} 
+              onPress={() => setEmpireModal(true)}
+            >
+              <Text style={styles.locationTabIcon}>🏛️</Text>
+              <Text style={[styles.locationTabText, !activeLocationId && styles.locationTabTextActive]}>Empire</Text>
+            </TouchableOpacity>
+            {game.locations.map(l => (
+              <TouchableOpacity 
+                key={l.id} 
+                style={[styles.locationTab, activeLocationId === l.id && styles.locationTabActive]}
+                onPress={() => setActiveLocationId(l.id)}
+              >
+                <Text style={styles.locationTabIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon || '🏪'}</Text>
+                <View>
+                  <Text style={[styles.locationTabText, activeLocationId === l.id && styles.locationTabTextActive]} numberOfLines={1}>{l.name}</Text>
+                  <Text style={styles.locationTabCash}>{formatCurrency(l.cash)}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.addLocationTab} onPress={() => setExpansionModal(true)}>
+              <Text style={styles.addLocationIcon}>+</Text>
+              <Text style={styles.addLocationText}>New</Text>
+            </TouchableOpacity>
+          </ScrollView>
         )}
 
         {/* AI Message Bar */}
-        {aiMessage && (
-          <TouchableOpacity style={styles.aiMessageBar} onPress={() => setAiChatModal(true)}>
-            <Text style={styles.aiMessageIcon}>👨‍🍳</Text>
-            <Text style={styles.aiMessageText} numberOfLines={2}>{aiLoading ? 'Thinking...' : aiMessage}</Text>
-            <Text style={styles.aiMessageExpand}>💬</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.aiBar} onPress={() => setAiChatModal(true)}>
+          <Text style={styles.aiBarIcon}>👨‍🍳</Text>
+          {aiLoading ? (
+            <ActivityIndicator color={colors.primary} style={{ marginLeft: 10 }} />
+          ) : (
+            <Text style={styles.aiBarText} numberOfLines={2}>{aiMessage || 'Tap to chat with Chef Marcus...'}</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Warning Banners */}
+        {loc && loc.cash < 5000 && (
+          <View style={[styles.warningBanner, { backgroundColor: colors.accent }]}>
+            <Text style={styles.warningText}>⚠️ LOW CASH at {loc.name} - {formatCurrency(loc.cash)}</Text>
+          </View>
+        )}
+        {game.burnout > 70 && (
+          <View style={[styles.warningBanner, { backgroundColor: colors.warning }]}>
+            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {game.locations.filter(l => !l.manager).length} locations without managers</Text>
+          </View>
         )}
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          {['overview', 'menu', 'staff', 'ops', 'finance', 'achieve'].map(tab => (
-            <TouchableOpacity key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === 'overview' ? '📊' : tab === 'menu' ? '🍽️' : tab === 'staff' ? '👥' : tab === 'ops' ? '⚙️' : tab === 'finance' ? '💰' : '🏆'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <ScrollView style={styles.dashContent}>
-          {/* OVERVIEW TAB */}
-          {activeTab === 'overview' && (
-            <>
-              <View style={styles.cashDisplay}>
-                <Text style={styles.cashLabel}>CASH ON HAND</Text>
-                <Text style={[styles.cashAmount, { color: game.cash < 0 ? colors.accent : colors.textPrimary }]}>{formatCurrency(game.cash)}</Text>
-                <View style={styles.statsRow}>
-                  <View style={styles.statItem}><Text style={styles.statLabel}>LAST WEEK</Text><Text style={[styles.statValue, { color: game.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(game.lastWeekProfit)}</Text></View>
-                  <View style={styles.statItem}><Text style={styles.statLabel}>REPUTATION</Text><Text style={styles.statValue}>{game.reputation}%</Text></View>
-                  <View style={styles.statItem}><Text style={styles.statLabel}>COVERS/WK</Text><Text style={styles.statValue}>{game.lastWeekCovers || game.covers}</Text></View>
-                </View>
-                {game.weeklyHistory.length > 1 && <MiniChart data={game.weeklyHistory.map(w => w.profit)} color={colors.success} />}
+        <ScrollView style={styles.dashboardScroll}>
+          {/* Quick Stats */}
+          {loc && (
+            <View style={styles.quickStats}>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Location Cash</Text>
+                <Text style={[styles.statValue, { color: loc.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(loc.cash)}</Text>
               </View>
-
-              {/* Health Meters */}
-              <View style={styles.metersRow}>
-                <View style={styles.meterCard}>
-                  <Text style={styles.meterLabel}>Burnout</Text>
-                  <View style={styles.meterBarBg}><View style={[styles.meterBar, { width: `${game.burnout}%`, backgroundColor: game.burnout > 70 ? colors.accent : game.burnout > 40 ? colors.warning : colors.success }]} /></View>
-                  <Text style={styles.meterValue}>{game.burnout}%</Text>
-                </View>
-                <View style={styles.meterCard}>
-                  <Text style={styles.meterLabel}>Team Morale</Text>
-                  <View style={styles.meterBarBg}><View style={[styles.meterBar, { width: `${game.morale}%`, backgroundColor: game.morale < 40 ? colors.accent : game.morale < 60 ? colors.warning : colors.success }]} /></View>
-                  <Text style={styles.meterValue}>{game.morale}%</Text>
-                </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Last Week</Text>
+                <Text style={[styles.statValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text>
               </View>
-
-              {/* Quick Actions */}
-              <View style={styles.quickActionsGrid}>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setMarketingModal(true)}>
-                  <Text style={styles.quickActionIcon}>📣</Text><Text style={styles.quickActionLabel}>Marketing</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setDeliveryModal(true)}>
-                  <Text style={styles.quickActionIcon}>🛵</Text><Text style={styles.quickActionLabel}>Delivery</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setLoanModal(true)}>
-                  <Text style={styles.quickActionIcon}>🏦</Text><Text style={styles.quickActionLabel}>Financing</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setPnlModal(true)}>
-                  <Text style={styles.quickActionIcon}>📈</Text><Text style={styles.quickActionLabel}>P&L</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setAnalyticsModal(true)}>
-                  <Text style={styles.quickActionIcon}>📊</Text><Text style={styles.quickActionLabel}>Analytics</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionCard} onPress={() => setSaveModal(true)}>
-                  <Text style={styles.quickActionIcon}>💾</Text><Text style={styles.quickActionLabel}>Save</Text>
-                </TouchableOpacity>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Covers</Text>
+                <Text style={styles.statValue}>{loc.lastWeekCovers}</Text>
               </View>
-
-              {/* Active Systems */}
-              <View style={styles.activeSystems}>
-                {game.marketing.channels.length > 1 && <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>📣 {game.marketing.channels.length} channels</Text></View>}
-                {game.delivery.platforms.length > 0 && <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>🛵 {game.delivery.platforms.length} platforms</Text></View>}
-                {game.virtualBrands.length > 0 && <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>👻 {game.virtualBrands.length} brands</Text></View>}
-                {game.equipment.length > 0 && <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>⚙️ {game.equipment.length} equipment</Text></View>}
-                {game.loans.length > 0 && <View style={[styles.activeBadge, { backgroundColor: colors.accent + '30' }]}><Text style={styles.activeBadgeText}>💳 {game.loans.length} loans</Text></View>}
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Reputation</Text>
+                <Text style={[styles.statValue, { color: loc.reputation > 70 ? colors.success : loc.reputation > 40 ? colors.warning : colors.accent }]}>{loc.reputation}%</Text>
               </View>
-            </>
+            </View>
           )}
 
-          {/* MENU TAB */}
-          {activeTab === 'menu' && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>MENU ({game.menu.length} items)</Text>
-                <TouchableOpacity style={styles.addButton} onPress={addMenuItem}><Text style={styles.addButtonText}>+ Add Item</Text></TouchableOpacity>
+          {/* Corporate Stats (if multi-location) */}
+          {isMultiLocation && (
+            <View style={styles.corporateStats}>
+              <Text style={styles.sectionTitle}>Empire Overview</Text>
+              <View style={styles.corporateRow}>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Corporate Cash</Text>
+                  <Text style={styles.corporateStatValue}>{formatCurrency(game.corporateCash)}</Text>
+                </View>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Franchise Royalties</Text>
+                  <Text style={styles.corporateStatValue}>{formatCurrency(game.franchises.reduce((s, f) => s + f.weeklyRoyalty, 0))}/wk</Text>
+                </View>
+                <View style={styles.corporateStat}>
+                  <Text style={styles.corporateStatLabel}>Total Staff</Text>
+                  <Text style={styles.corporateStatValue}>{game.locations.reduce((s, l) => s + l.staff.length, 0)}</Text>
+                </View>
               </View>
-              {game.menu.map(item => (
-                <View key={item.id} style={[styles.menuItem, item.is86d && styles.menuItem86d]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.menuItemName}>{item.name} {item.popular && '⭐'}</Text>
-                    <Text style={styles.menuItemStats}>{formatCurrency(item.price)} • Cost: {formatPct(item.cost / item.price)} • Margin: {formatPct(1 - item.cost / item.price)}</Text>
+            </View>
+          )}
+
+          {/* Mini Chart */}
+          {loc && loc.weeklyHistory.length > 1 && (
+            <View style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>Revenue Trend (12 weeks)</Text>
+              <MiniChart data={loc.weeklyHistory.map(w => w.revenue)} color={colors.info} height={50} />
+              <Text style={styles.chartTitle}>Profit Trend</Text>
+              <MiniChart data={loc.weeklyHistory.map(w => w.profit)} color={colors.success} height={50} />
+            </View>
+          )}
+
+          {/* Tab Navigation */}
+          <View style={styles.tabBar}>
+            {['overview', 'staff', 'ops', 'finance', 'empire'].map(tab => (
+              <TouchableOpacity key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Tab Content */}
+          <View style={styles.tabContent}>
+            
+            {/* OVERVIEW TAB */}
+            {activeTab === 'overview' && loc && (
+              <>
+                {/* Health Meters */}
+                <View style={styles.healthMeters}>
+                  <View style={styles.meterContainer}>
+                    <Text style={styles.meterLabel}>Owner Burnout</Text>
+                    <View style={styles.meterBar}>
+                      <View style={[styles.meterFill, { width: `${game.burnout}%`, backgroundColor: game.burnout > 70 ? colors.accent : game.burnout > 40 ? colors.warning : colors.success }]} />
+                    </View>
+                    <Text style={styles.meterValue}>{game.burnout}%</Text>
                   </View>
-                  {item.is86d && <Text style={styles.tag86d}>86'd</Text>}
-                  <TouchableOpacity style={styles.menuAction} onPress={() => toggle86(item.id)}>
-                    <Text style={styles.menuActionText}>{item.is86d ? '✓' : '✗'}</Text>
+                  <View style={styles.meterContainer}>
+                    <Text style={styles.meterLabel}>Team Morale</Text>
+                    <View style={styles.meterBar}>
+                      <View style={[styles.meterFill, { width: `${loc.morale}%`, backgroundColor: loc.morale > 70 ? colors.success : loc.morale > 40 ? colors.warning : colors.accent }]} />
+                    </View>
+                    <Text style={styles.meterValue}>{loc.morale}%</Text>
+                  </View>
+                </View>
+
+                {/* Manager Status */}
+                <View style={styles.managerCard}>
+                  <Text style={styles.managerLabel}>Location Manager</Text>
+                  {loc.manager ? (
+                    <View style={styles.managerInfo}>
+                      <Text style={styles.managerIcon}>{loc.manager.icon}</Text>
+                      <View>
+                        <Text style={styles.managerName}>{loc.manager.name}</Text>
+                        <Text style={styles.managerRole}>{loc.manager.role} • Skill {loc.manager.skill}/10</Text>
+                      </View>
+                      <View style={[styles.managerBadge, { backgroundColor: colors.success }]}>
+                        <Text style={styles.managerBadgeText}>Active</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.noManager}>
+                      <Text style={styles.noManagerText}>No manager assigned - YOU are running this location</Text>
+                      <Text style={styles.noManagerHint}>Hire a GM and promote them to reduce burnout</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Quick Actions */}
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                <View style={styles.quickActions}>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setStaffModal(true)}>
+                    <Text style={styles.quickActionIcon}>👥</Text>
+                    <Text style={styles.quickActionText}>Staff</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setMarketingModal(true)}>
+                    <Text style={styles.quickActionIcon}>📣</Text>
+                    <Text style={styles.quickActionText}>Marketing</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setDeliveryModal(true)}>
+                    <Text style={styles.quickActionIcon}>🛵</Text>
+                    <Text style={styles.quickActionText}>Delivery</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setLoanModal(true)}>
+                    <Text style={styles.quickActionIcon}>💰</Text>
+                    <Text style={styles.quickActionText}>Finance</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setAnalyticsModal(true)}>
+                    <Text style={styles.quickActionIcon}>📊</Text>
+                    <Text style={styles.quickActionText}>Analytics</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setSaveModal(true)}>
+                    <Text style={styles.quickActionIcon}>💾</Text>
+                    <Text style={styles.quickActionText}>Save</Text>
                   </TouchableOpacity>
                 </View>
-              ))}
-              <View style={styles.menuSummary}>
-                <Text style={styles.menuSummaryText}>Avg Ticket: {formatCurrency(game.avgTicket)} • Food Cost: {formatPct(game.foodCostPct)}</Text>
-              </View>
-            </>
-          )}
 
-          {/* STAFF TAB */}
-          {activeTab === 'staff' && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>TEAM ({game.staff.length})</Text>
-                <TouchableOpacity style={styles.addButton} onPress={() => setStaffModal(true)}><Text style={styles.addButtonText}>+ Hire</Text></TouchableOpacity>
-              </View>
-              {game.staff.map(s => (
-                <View key={s.id} style={styles.staffCard}>
-                  <View style={styles.staffInfo}>
-                    <Text style={styles.staffIcon}>{s.icon}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.staffName}>{s.name}</Text>
-                      <Text style={styles.staffRole}>{s.role} • Skill {s.skill}/10 • ${s.wage}/hr • {s.weeks}wks</Text>
-                      <View style={styles.staffMoraleBar}><View style={[styles.staffMoraleFill, { width: `${s.morale}%`, backgroundColor: s.morale < 40 ? colors.accent : s.morale < 60 ? colors.warning : colors.success }]} /></View>
-                      {s.training.length > 0 && <Text style={styles.certBadge}>{s.training.map(t => TRAINING_PROGRAMS.find(p => p.id === t)?.cert).join(', ')}</Text>}
-                    </View>
-                  </View>
-                  <View style={styles.staffActions}>
-                    <TouchableOpacity onPress={() => { setSelectedStaff(s); setTrainingModal(true); }}><Text style={{ color: colors.info, fontSize: 18 }}>📚</Text></TouchableOpacity>
-                    <TouchableOpacity onPress={() => giveRaise(s.id, 2)}><Text style={{ color: colors.success, fontSize: 18 }}>💵</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.fireButton} onPress={() => fireStaff(s.id)}><Text style={styles.fireButtonText}>Fire</Text></TouchableOpacity>
-                  </View>
+                {/* Active Systems Badges */}
+                <Text style={styles.sectionTitle}>Active Systems</Text>
+                <View style={styles.badgeContainer}>
+                  {loc.marketing.channels.map(c => (
+                    <View key={c} style={styles.badge}><Text style={styles.badgeText}>{MARKETING_CHANNELS.find(m => m.id === c)?.icon} {MARKETING_CHANNELS.find(m => m.id === c)?.name}</Text></View>
+                  ))}
+                  {loc.delivery.platforms.map(p => (
+                    <View key={p} style={[styles.badge, { backgroundColor: colors.info }]}><Text style={styles.badgeText}>{DELIVERY_PLATFORMS.find(d => d.id === p)?.icon} {DELIVERY_PLATFORMS.find(d => d.id === p)?.name}</Text></View>
+                  ))}
+                  {loc.virtualBrands.map(v => (
+                    <View key={v} style={[styles.badge, { backgroundColor: colors.purple }]}><Text style={styles.badgeText}>{VIRTUAL_BRANDS.find(vb => vb.id === v)?.icon} {VIRTUAL_BRANDS.find(vb => vb.id === v)?.name}</Text></View>
+                  ))}
+                  {loc.equipment.map(e => (
+                    <View key={e} style={[styles.badge, { backgroundColor: colors.surfaceLight }]}><Text style={styles.badgeText}>{EQUIPMENT.find(eq => eq.id === e)?.icon} {EQUIPMENT.find(eq => eq.id === e)?.name}</Text></View>
+                  ))}
                 </View>
-              ))}
-              <View style={styles.laborSummary}>
-                <Text style={styles.laborSummaryText}>Weekly Labor: {formatCurrency(game.staff.reduce((sum, s) => sum + s.wage * 40, 0))} • Avg Morale: {game.morale}%</Text>
-              </View>
-            </>
-          )}
+              </>
+            )}
 
-          {/* OPS TAB */}
-          {activeTab === 'ops' && (
-            <>
-              <Text style={styles.sectionTitle}>EQUIPMENT</Text>
-              <View style={styles.equipmentGrid}>
-                {EQUIPMENT.map(eq => {
-                  const owned = game.equipment.includes(eq.id);
-                  return (
-                    <TouchableOpacity key={eq.id} style={[styles.equipCard, owned && styles.equipCardOwned]} onPress={() => buyEquipment(eq)} disabled={owned || game.cash < eq.cost}>
-                      <Text style={{ fontSize: 24 }}>{eq.icon}</Text>
-                      <Text style={styles.equipName}>{eq.name}</Text>
-                      <Text style={styles.equipCost}>{owned ? '✓ Owned' : formatCurrency(eq.cost)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>UPGRADES</Text>
-              <View style={styles.equipmentGrid}>
-                {UPGRADES.map(up => {
-                  const owned = game.upgrades.includes(up.id);
-                  return (
-                    <TouchableOpacity key={up.id} style={[styles.equipCard, owned && styles.equipCardOwned]} onPress={() => buyUpgrade(up)} disabled={owned || game.cash < up.cost}>
-                      <Text style={{ fontSize: 24 }}>{up.icon}</Text>
-                      <Text style={styles.equipName}>{up.name}</Text>
-                      <Text style={styles.equipCost}>{owned ? '✓ Done' : formatCurrency(up.cost)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>VIRTUAL BRANDS</Text>
-              <View style={styles.equipmentGrid}>
-                {VIRTUAL_BRANDS.map(vb => {
-                  const active = game.virtualBrands.includes(vb.id);
-                  return (
-                    <TouchableOpacity key={vb.id} style={[styles.equipCard, active && styles.equipCardOwned]} onPress={() => launchVirtualBrand(vb.id)} disabled={active || game.cash < vb.setupCost}>
-                      <Text style={{ fontSize: 24 }}>{vb.icon}</Text>
-                      <Text style={styles.equipName}>{vb.name}</Text>
-                      <Text style={styles.equipCost}>{active ? '✓ Active' : formatCurrency(vb.setupCost)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* FINANCE TAB */}
-          {activeTab === 'finance' && (
-            <>
-              <View style={styles.financeCard}>
-                <Text style={styles.financeTitle}>Business Valuation</Text>
-                <Text style={styles.financeValue}>{formatCurrency(valuation)}</Text>
-                <Text style={styles.financeDesc}>Based on revenue, reputation & assets</Text>
-              </View>
-
-              <View style={styles.financeCard}>
-                <Text style={styles.financeTitle}>Weekly P&L Summary</Text>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Revenue</Text><Text style={[styles.pnlValue, { color: colors.success }]}>{formatCurrency(game.lastWeekRevenue)}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Food Cost</Text><Text style={styles.pnlValue}>-{formatCurrency(game.lastWeekCosts.food || 0)}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Labor</Text><Text style={styles.pnlValue}>-{formatCurrency(game.lastWeekCosts.labor || 0)}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Rent</Text><Text style={styles.pnlValue}>-{formatCurrency(game.lastWeekCosts.rent || 0)}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Other</Text><Text style={styles.pnlValue}>-{formatCurrency((game.lastWeekCosts.utilities || 0) + (game.lastWeekCosts.marketing || 0) + (game.lastWeekCosts.ccFees || 0))}</Text></View>
-                <View style={[styles.pnlRow, styles.pnlTotalRow]}><Text style={styles.pnlTotalLabel}>Net Profit</Text><Text style={[styles.pnlTotalValue, { color: game.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(game.lastWeekProfit)}</Text></View>
-              </View>
-
-              {game.loans.length > 0 && (
-                <View style={styles.financeCard}>
-                  <Text style={styles.financeTitle}>Active Loans</Text>
-                  {game.loans.map((loan, i) => {
-                    const loanData = LOANS.find(l => l.id === loan.type);
-                    return (
-                      <View key={i} style={styles.loanItem}>
-                        <Text style={styles.loanName}>{loanData?.name}</Text>
-                        <Text style={styles.loanDetails}>{formatCurrency(loanData?.weeklyPayment || 0)}/wk • {loan.remaining} weeks left</Text>
+            {/* STAFF TAB */}
+            {activeTab === 'staff' && loc && (
+              <>
+                <View style={styles.staffHeader}>
+                  <Text style={styles.sectionTitle}>Staff ({loc.staff.length})</Text>
+                  <TouchableOpacity style={styles.hireButton} onPress={() => setStaffModal(true)}>
+                    <Text style={styles.hireButtonText}>+ HIRE</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {loc.staff.length === 0 ? (
+                  <Text style={styles.emptyText}>No staff hired yet. Running solo!</Text>
+                ) : (
+                  loc.staff.map(s => (
+                    <View key={s.id} style={styles.staffCard}>
+                      <Text style={styles.staffIcon}>{s.icon}</Text>
+                      <View style={styles.staffInfo}>
+                        <Text style={styles.staffName}>{s.name}</Text>
+                        <Text style={styles.staffRole}>{s.role} • ${s.wage}/hr • Skill {s.skill}/10</Text>
+                        <View style={styles.staffMoraleBar}>
+                          <View style={[styles.staffMoraleFill, { width: `${s.morale}%`, backgroundColor: s.morale > 60 ? colors.success : colors.warning }]} />
+                        </View>
                       </View>
+                      <View style={styles.staffActions}>
+                        {s.canManage && !loc.manager && (
+                          <TouchableOpacity style={styles.promoteBtn} onPress={() => promoteToManager(s.id)}>
+                            <Text style={styles.promoteBtnText}>⬆️</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity style={styles.trainBtn} onPress={() => { setSelectedStaff(s); setTrainingModal(true); }}>
+                          <Text style={styles.trainBtnText}>📚</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.fireBtn} onPress={() => fireStaff(s.id)}>
+                          <Text style={styles.fireBtnText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </>
+            )}
+
+            {/* OPS TAB */}
+            {activeTab === 'ops' && loc && (
+              <>
+                {/* Menu */}
+                <View style={styles.menuHeader}>
+                  <Text style={styles.sectionTitle}>Menu ({loc.menu.length} items)</Text>
+                  <TouchableOpacity style={styles.addMenuBtn} onPress={addMenuItem}>
+                    <Text style={styles.addMenuBtnText}>+ ADD ITEM</Text>
+                  </TouchableOpacity>
+                </View>
+                {loc.menu.map(item => (
+                  <TouchableOpacity key={item.id} style={[styles.menuItem, item.is86d && styles.menuItem86d]} onPress={() => toggle86(item.id)}>
+                    <View>
+                      <Text style={[styles.menuItemName, item.is86d && styles.menuItemName86d]}>{item.name}</Text>
+                      <Text style={styles.menuItemPrice}>{formatCurrency(item.price)} • Cost: {formatCurrency(item.cost)}</Text>
+                    </View>
+                    <Text style={styles.menuStatus}>{item.is86d ? '86\'d' : item.popular ? '⭐' : ''}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Equipment */}
+                <Text style={styles.sectionTitle}>Equipment</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {EQUIPMENT.map(eq => {
+                    const owned = loc.equipment.includes(eq.id);
+                    return (
+                      <TouchableOpacity key={eq.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyEquipment(eq)} disabled={owned}>
+                        <Text style={styles.equipmentIcon}>{eq.icon}</Text>
+                        <Text style={styles.equipmentName}>{eq.name}</Text>
+                        <Text style={styles.equipmentCost}>{owned ? 'OWNED' : formatCurrency(eq.cost)}</Text>
+                      </TouchableOpacity>
                     );
                   })}
+                </ScrollView>
+
+                {/* Upgrades */}
+                <Text style={styles.sectionTitle}>Upgrades</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {UPGRADES.map(up => {
+                    const owned = loc.upgrades.includes(up.id);
+                    return (
+                      <TouchableOpacity key={up.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyUpgrade(up)} disabled={owned}>
+                        <Text style={styles.equipmentIcon}>{up.icon}</Text>
+                        <Text style={styles.equipmentName}>{up.name}</Text>
+                        <Text style={styles.equipmentCost}>{owned ? 'DONE' : formatCurrency(up.cost)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Virtual Brands */}
+                <Text style={styles.sectionTitle}>Virtual Brands (Ghost Kitchens)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
+                  {VIRTUAL_BRANDS.map(vb => {
+                    const active = loc.virtualBrands.includes(vb.id);
+                    return (
+                      <TouchableOpacity key={vb.id} style={[styles.equipmentCard, active && styles.equipmentOwned]} onPress={() => !active && launchVirtualBrand(vb.id)} disabled={active}>
+                        <Text style={styles.equipmentIcon}>{vb.icon}</Text>
+                        <Text style={styles.equipmentName}>{vb.name}</Text>
+                        <Text style={styles.equipmentCost}>{active ? 'ACTIVE' : formatCurrency(vb.setupCost)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
+
+            {/* FINANCE TAB */}
+            {activeTab === 'finance' && loc && (
+              <>
+                {/* P&L Summary */}
+                <Text style={styles.sectionTitle}>Last Week P&L</Text>
+                <View style={styles.plCard}>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
+                  <View style={styles.plDivider} />
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency(loc.marketing.channels.reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
+                  <View style={styles.plDivider} />
+                  <View style={styles.plRow}><Text style={[styles.plLabel, { fontWeight: 'bold' }]}>Net Profit</Text><Text style={[styles.plValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent, fontWeight: 'bold' }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text></View>
                 </View>
-              )}
 
-              <View style={styles.financeCard}>
-                <Text style={styles.financeTitle}>Key Ratios</Text>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Food Cost %</Text><Text style={styles.pnlValue}>{formatPct(game.foodCostPct)}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Labor Cost %</Text><Text style={styles.pnlValue}>{formatPct(game.staff.reduce((sum, s) => sum + s.wage * 40, 0) / Math.max(1, game.lastWeekRevenue))}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Prime Cost</Text><Text style={styles.pnlValue}>{formatPct(game.foodCostPct + game.staff.reduce((sum, s) => sum + s.wage * 40, 0) / Math.max(1, game.lastWeekRevenue))}</Text></View>
-                <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Profit Margin</Text><Text style={[styles.pnlValue, { color: game.lastWeekProfit / game.lastWeekRevenue > 0.1 ? colors.success : colors.warning }]}>{formatPct(game.lastWeekProfit / Math.max(1, game.lastWeekRevenue))}</Text></View>
-              </View>
-            </>
-          )}
+                {/* Loans */}
+                <View style={styles.loanHeader}>
+                  <Text style={styles.sectionTitle}>Active Loans</Text>
+                  <TouchableOpacity style={styles.loanBtn} onPress={() => setLoanModal(true)}>
+                    <Text style={styles.loanBtnText}>+ NEW LOAN</Text>
+                  </TouchableOpacity>
+                </View>
+                {game.loans.length === 0 ? (
+                  <Text style={styles.emptyText}>No active loans - debt free!</Text>
+                ) : (
+                  game.loans.map((loan, i) => {
+                    const loanData = LOANS.find(l => l.id === loan.type);
+                    return (
+                      <View key={i} style={styles.loanCard}>
+                        <Text style={styles.loanName}>{loanData?.name}</Text>
+                        <Text style={styles.loanDetails}>{loan.remaining} weeks left • {formatCurrency(loanData?.weeklyPayment || 0)}/week</Text>
+                      </View>
+                    );
+                  })
+                )}
 
-          {/* ACHIEVEMENTS TAB */}
-          {activeTab === 'achieve' && (
-            <>
-              <View style={styles.achieveHeader}>
-                <Text style={styles.achieveScore}>{game.achievements.length}/{Object.keys(ACHIEVEMENTS).length}</Text>
-                <Text style={styles.achieveLabel}>Achievements Unlocked</Text>
-              </View>
-              {Object.entries(
-                Object.entries(ACHIEVEMENTS).reduce((acc, [id, ach]) => {
-                  const cat = ach.category || 'other';
-                  if (!acc[cat]) acc[cat] = [];
-                  acc[cat].push({ id, ...ach });
-                  return acc;
-                }, {})
-              ).map(([cat, achs]) => (
-                <View key={cat} style={{ marginBottom: 16 }}>
-                  <Text style={styles.achieveCategory}>{cat.toUpperCase()}</Text>
-                  <View style={styles.achieveGrid}>
-                    {achs.map(ach => {
-                      const unlocked = game.achievements.includes(ach.id);
-                      return (
-                        <View key={ach.id} style={[styles.achieveBadge, unlocked && styles.achieveBadgeUnlocked]}>
-                          <Text style={{ fontSize: 24, opacity: unlocked ? 1 : 0.3 }}>{ach.icon}</Text>
-                          <Text style={[styles.achieveName, { opacity: unlocked ? 1 : 0.5 }]}>{ach.name}</Text>
-                          <Text style={styles.achieveDesc}>{ach.desc}</Text>
-                        </View>
-                      );
-                    })}
+                {/* Equity */}
+                <View style={styles.equityCard}>
+                  <Text style={styles.equityLabel}>Your Equity</Text>
+                  <Text style={[styles.equityValue, { color: game.equity >= 80 ? colors.success : game.equity >= 50 ? colors.warning : colors.accent }]}>{game.equity}%</Text>
+                </View>
+              </>
+            )}
+
+            {/* EMPIRE TAB */}
+            {activeTab === 'empire' && (
+              <>
+                {/* Empire Stats */}
+                <View style={styles.empireStatsCard}>
+                  <View style={styles.empireStat}>
+                    <Text style={styles.empireStatValue}>{game.locations.length}</Text>
+                    <Text style={styles.empireStatLabel}>Owned</Text>
+                  </View>
+                  <View style={styles.empireStat}>
+                    <Text style={styles.empireStatValue}>{game.franchises.length}</Text>
+                    <Text style={styles.empireStatLabel}>Franchises</Text>
+                  </View>
+                  <View style={styles.empireStat}>
+                    <Text style={[styles.empireStatValue, { color: colors.success }]}>{formatCurrency(game.empireValuation)}</Text>
+                    <Text style={styles.empireStatLabel}>Valuation</Text>
                   </View>
                 </View>
-              ))}
-            </>
-          )}
+
+                {/* Expansion */}
+                <Text style={styles.sectionTitle}>Expansion</Text>
+                <TouchableOpacity style={styles.expansionButton} onPress={() => setExpansionModal(true)}>
+                  <Text style={styles.expansionButtonIcon}>🏪</Text>
+                  <View>
+                    <Text style={styles.expansionButtonTitle}>Open New Location</Text>
+                    <Text style={styles.expansionButtonDesc}>Expand your owned footprint</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Franchising */}
+                <Text style={styles.sectionTitle}>Franchising</Text>
+                {!game.franchiseEnabled ? (
+                  <TouchableOpacity 
+                    style={[styles.expansionButton, game.locations.length < 3 && styles.expansionButtonDisabled]} 
+                    onPress={enableFranchising}
+                    disabled={game.locations.length < 3}
+                  >
+                    <Text style={styles.expansionButtonIcon}>🌐</Text>
+                    <View>
+                      <Text style={styles.expansionButtonTitle}>Enable Franchising</Text>
+                      <Text style={styles.expansionButtonDesc}>
+                        {game.locations.length < 3 
+                          ? `Need 3 locations first (have ${game.locations.length})` 
+                          : '$50K setup • Let others expand your brand'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <View style={styles.franchiseEnabled}>
+                      <Text style={styles.franchiseEnabledText}>✓ Franchising Active</Text>
+                      <Text style={styles.franchiseRate}>{formatPct(game.royaltyRate)} royalty rate</Text>
+                    </View>
+                    <TouchableOpacity style={styles.expansionButton} onPress={() => setFranchiseModal(true)}>
+                      <Text style={styles.expansionButtonIcon}>🤝</Text>
+                      <View>
+                        <Text style={styles.expansionButtonTitle}>Sell Franchise</Text>
+                        <Text style={styles.expansionButtonDesc}>Find franchisees to grow your brand</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Active Franchises */}
+                {game.franchises.length > 0 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises.length})</Text>
+                    {game.franchises.map(f => (
+                      <View key={f.id} style={styles.franchiseCard}>
+                        <View>
+                          <Text style={styles.franchiseName}>{f.name}</Text>
+                          <Text style={styles.franchiseTier}>{FRANCHISE_TIERS.find(t => t.id === f.tier)?.name}</Text>
+                        </View>
+                        <View style={styles.franchiseStats}>
+                          <Text style={styles.franchiseRoyalty}>{formatCurrency(f.weeklyRoyalty)}/wk</Text>
+                          <Text style={styles.franchiseQuality}>Quality: {f.quality}%</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {/* All Locations List */}
+                <Text style={styles.sectionTitle}>All Locations</Text>
+                {game.locations.map(l => (
+                  <TouchableOpacity key={l.id} style={styles.locationCard} onPress={() => setActiveLocationId(l.id)}>
+                    <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
+                    <View style={styles.locationCardInfo}>
+                      <Text style={styles.locationCardName}>{l.name}</Text>
+                      <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
+                    </View>
+                    <View>
+                      <Text style={[styles.locationCardCash, { color: l.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(l.cash)}</Text>
+                      <Text style={[styles.locationCardProfit, { color: l.lastWeekProfit >= 0 ? colors.success : colors.accent }]}>{l.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(l.lastWeekProfit)}/wk</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+          </View>
         </ScrollView>
 
+        {/* Bottom Action Bar */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.nextWeekButton} onPress={processWeek}>
+            <Text style={styles.nextWeekButtonText}>▶ NEXT WEEK</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ============================================ */}
         {/* MODALS */}
-        
+        {/* ============================================ */}
+
         {/* Staff Hire Modal */}
         <Modal visible={staffModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>Hire Staff</Text><TouchableOpacity onPress={() => setStaffModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
-                {STAFF_TEMPLATES.map(t => (
-                  <TouchableOpacity key={t.role} style={styles.hireOption} onPress={() => hireStaff(t)} disabled={game.cash < t.wage * 40}>
-                    <Text style={{ fontSize: 24 }}>{t.icon}</Text>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hire Staff</Text>
+                <TouchableOpacity onPress={() => setStaffModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {STAFF_TEMPLATES.filter(t => !t.canManageMultiple).map(t => (
+                  <TouchableOpacity key={t.role} style={styles.hireOption} onPress={() => hireStaff(t)}>
+                    <Text style={styles.hireIcon}>{t.icon}</Text>
+                    <View style={styles.hireInfo}>
                       <Text style={styles.hireName}>{t.role}</Text>
-                      <Text style={styles.hireDetails}>${t.wage}/hr • {t.department} • Max skill: {t.skillCap}</Text>
+                      <Text style={styles.hireWage}>${t.wage}/hr • {t.department}</Text>
                     </View>
-                    <Text style={{ color: game.cash >= t.wage * 40 ? colors.success : colors.accent }}>{formatCurrency(t.wage * 40)}</Text>
+                    <Text style={styles.hireCost}>{formatCurrency(t.wage * 40)}/wk</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1893,19 +2191,21 @@ export default function App() {
         <Modal visible={trainingModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>Train {selectedStaff?.name}</Text><TouchableOpacity onPress={() => { setTrainingModal(false); setSelectedStaff(null); }}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Training: {selectedStaff?.name}</Text>
+                <TouchableOpacity onPress={() => { setTrainingModal(false); setSelectedStaff(null); }}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
                 {TRAINING_PROGRAMS.map(p => {
-                  const alreadyHas = selectedStaff?.training?.includes(p.id);
+                  const completed = selectedStaff?.training?.includes(p.id);
                   return (
-                    <TouchableOpacity key={p.id} style={styles.hireOption} onPress={() => startTraining(p)} disabled={alreadyHas || game.cash < p.cost}>
-                      <Text style={{ fontSize: 24 }}>{p.icon}</Text>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.hireName}>{p.name}</Text>
-                        <Text style={styles.hireDetails}>{formatCurrency(p.cost)} • {p.weeks} wk • +{p.skillBoost} skill • +{p.morale} morale</Text>
-                        {p.cert && <Text style={{ color: colors.info, fontSize: 11 }}>Earns: {p.cert}</Text>}
+                    <TouchableOpacity key={p.id} style={[styles.trainingOption, completed && styles.trainingCompleted]} onPress={() => !completed && startTraining(p)} disabled={completed}>
+                      <Text style={styles.trainingIcon}>{p.icon}</Text>
+                      <View style={styles.trainingInfo}>
+                        <Text style={styles.trainingName}>{p.name}</Text>
+                        <Text style={styles.trainingDesc}>+{p.skillBoost} skill • +{p.morale} morale • {p.weeks}wk</Text>
                       </View>
-                      <Text style={{ color: alreadyHas ? colors.success : colors.textMuted }}>{alreadyHas ? '✓' : '→'}</Text>
+                      <Text style={styles.trainingCost}>{completed ? '✓' : formatCurrency(p.cost)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1918,18 +2218,21 @@ export default function App() {
         <Modal visible={marketingModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>📣 Marketing</Text><TouchableOpacity onPress={() => setMarketingModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Marketing Channels</Text>
+                <TouchableOpacity onPress={() => setMarketingModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
                 {MARKETING_CHANNELS.map(c => {
-                  const active = game.marketing.channels.includes(c.id);
+                  const active = loc?.marketing.channels.includes(c.id);
                   return (
-                    <TouchableOpacity key={c.id} style={[styles.channelItem, active && styles.channelItemActive]} onPress={() => toggleMarketingChannel(c.id)}>
-                      <Text style={{ fontSize: 20 }}>{c.icon}</Text>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.channelName}>{c.name}</Text>
-                        <Text style={styles.channelCost}>{c.costPerWeek > 0 ? `${formatCurrency(c.costPerWeek)}/week` : 'Free'}</Text>
+                    <TouchableOpacity key={c.id} style={[styles.channelOption, active && styles.channelActive]} onPress={() => toggleMarketingChannel(c.id)}>
+                      <Text style={styles.channelIcon}>{c.icon}</Text>
+                      <View style={styles.channelInfo}>
+                        <Text style={[styles.channelName, active && styles.channelNameActive]}>{c.name}</Text>
+                        <Text style={styles.channelEffect}>+{Math.round(c.effect.reach * 100)}% reach</Text>
                       </View>
-                      <Text style={{ color: active ? colors.success : colors.textMuted }}>{active ? '✓ Active' : 'Enable'}</Text>
+                      <Text style={styles.channelCost}>{c.costPerWeek > 0 ? `${formatCurrency(c.costPerWeek)}/wk` : 'FREE'}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1942,18 +2245,21 @@ export default function App() {
         <Modal visible={deliveryModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>🛵 Delivery</Text><TouchableOpacity onPress={() => setDeliveryModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Delivery Platforms</Text>
+                <TouchableOpacity onPress={() => setDeliveryModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
                 {DELIVERY_PLATFORMS.map(p => {
-                  const active = game.delivery.platforms.includes(p.id);
+                  const active = loc?.delivery.platforms.includes(p.id);
                   return (
-                    <TouchableOpacity key={p.id} style={[styles.channelItem, active && styles.channelItemActive]} onPress={() => toggleDeliveryPlatform(p.id)} disabled={!active && game.cash < p.setup}>
-                      <Text style={{ fontSize: 20 }}>{p.icon}</Text>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.channelName}>{p.name}</Text>
-                        <Text style={styles.channelCost}>{Math.round(p.commission * 100)}% commission • {p.setup > 0 ? `${formatCurrency(p.setup)} setup` : 'No setup'}</Text>
+                    <TouchableOpacity key={p.id} style={[styles.deliveryOption, active && styles.deliveryActive]} onPress={() => toggleDeliveryPlatform(p.id)}>
+                      <Text style={styles.deliveryIcon}>{p.icon}</Text>
+                      <View style={styles.deliveryInfo}>
+                        <Text style={[styles.deliveryName, active && styles.deliveryNameActive]}>{p.name}</Text>
+                        <Text style={styles.deliveryCommission}>{formatPct(p.commission)} commission • +{Math.round(p.reach * 100)}% reach</Text>
                       </View>
-                      <Text style={{ color: active ? colors.success : game.cash < p.setup ? colors.accent : colors.textMuted }}>{active ? '✓ Active' : game.cash < p.setup ? "Can't afford" : 'Enable'}</Text>
+                      <Text style={styles.deliveryCost}>{active ? '✓ ACTIVE' : p.setup > 0 ? formatCurrency(p.setup) : 'FREE'}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1966,17 +2272,20 @@ export default function App() {
         <Modal visible={loanModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>🏦 Financing</Text><TouchableOpacity onPress={() => setLoanModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
-                <Text style={styles.loanWarning}>⚠️ Debt is a tool. Use wisely. Weekly payments come out automatically.</Text>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Financing Options</Text>
+                <TouchableOpacity onPress={() => setLoanModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Loans add to CORPORATE cash</Text>
+              <ScrollView>
                 {LOANS.map(l => (
-                  <TouchableOpacity key={l.id} style={[styles.channelItem, l.id === 'predatory' && { borderColor: colors.accent, borderWidth: 1 }]} onPress={() => takeLoan(l.id)}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.channelName, l.id === 'predatory' && { color: colors.accent }]}>{l.name}</Text>
-                      <Text style={styles.channelCost}>{formatCurrency(l.amount)} • {Math.round(l.rate * 100)}% APR • {formatCurrency(l.weeklyPayment)}/wk for {l.term} wks</Text>
-                      {l.equity && <Text style={{ color: colors.warning, fontSize: 11 }}>Gives up {l.equity * 100}% equity</Text>}
+                  <TouchableOpacity key={l.id} style={styles.loanOption} onPress={() => takeLoan(l.id)}>
+                    <View style={styles.loanOptionInfo}>
+                      <Text style={styles.loanOptionName}>{l.name}</Text>
+                      <Text style={styles.loanOptionDetails}>{formatCurrency(l.amount)} @ {formatPct(l.rate)} • {l.term} weeks</Text>
+                      {l.equity && <Text style={styles.loanEquity}>⚠️ -{l.equity * 100}% equity</Text>}
                     </View>
-                    <Text style={{ color: colors.success }}>Get Funds</Text>
+                    <Text style={styles.loanPayment}>{formatCurrency(l.weeklyPayment)}/wk</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1988,26 +2297,124 @@ export default function App() {
         <Modal visible={analyticsModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>📊 Analytics</Text><TouchableOpacity onPress={() => setAnalyticsModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <ScrollView style={{ padding: 16 }}>
-                <View style={styles.analyticsCard}><Text style={styles.analyticsTitle}>Revenue Trend</Text><MiniChart data={game.weeklyHistory.map(w => w.revenue)} color={colors.primary} height={60} /></View>
-                <View style={styles.analyticsCard}><Text style={styles.analyticsTitle}>Profit Trend</Text><MiniChart data={game.weeklyHistory.map(w => w.profit)} color={colors.success} height={60} /></View>
-                <View style={styles.analyticsCard}>
-                  <Text style={styles.analyticsTitle}>Key Metrics</Text>
-                  <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Total Revenue</Text><Text style={styles.pnlValue}>{formatCurrency(game.totalRevenue)}</Text></View>
-                  <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Total Profit</Text><Text style={[styles.pnlValue, { color: game.totalProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(game.totalProfit)}</Text></View>
-                  <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Customers Served</Text><Text style={styles.pnlValue}>{game.customersServed.total.toLocaleString()}</Text></View>
-                  <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Delivery Orders</Text><Text style={styles.pnlValue}>{game.delivery.orders}</Text></View>
-                  <View style={styles.pnlRow}><Text style={styles.pnlLabel}>Profit Streak</Text><Text style={styles.pnlValue}>{game.profitStreak} weeks</Text></View>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Analytics - {loc?.name}</Text>
+                <TouchableOpacity onPress={() => setAnalyticsModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {loc && (
+                  <>
+                    <Text style={styles.analyticsSection}>Lifetime Stats</Text>
+                    <View style={styles.analyticsGrid}>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.weeksOpen}</Text><Text style={styles.analyticsLabel}>Weeks Open</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.totalRevenue)}</Text><Text style={styles.analyticsLabel}>Total Revenue</Text></View>
+                      <View style={styles.analyticsStat}><Text style={[styles.analyticsValue, { color: loc.totalProfit >= 0 ? colors.success : colors.accent }]}>{formatCurrency(loc.totalProfit)}</Text><Text style={styles.analyticsLabel}>Total Profit</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(calculateLocationValuation(loc, setup.cuisine))}</Text><Text style={styles.analyticsLabel}>Location Value</Text></View>
+                    </View>
+                    <Text style={styles.analyticsSection}>Key Ratios</Text>
+                    <View style={styles.analyticsGrid}>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatPct(loc.foodCostPct)}</Text><Text style={styles.analyticsLabel}>Food Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.staff.length > 0 ? formatPct(loc.staff.reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.lastWeekRevenue > 0 ? formatPct(loc.lastWeekProfit / loc.lastWeekRevenue) : '0%'}</Text><Text style={styles.analyticsLabel}>Profit Margin</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.lastWeekRevenue / Math.max(1, loc.lastWeekCovers))}</Text><Text style={styles.analyticsLabel}>Avg Check</Text></View>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Expansion Modal */}
+        <Modal visible={expansionModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Open New Location</Text>
+                <TouchableOpacity onPress={() => setExpansionModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.inputLabel}>Location Name</Text>
+                <TextInput 
+                  style={styles.textInput} 
+                  placeholder="e.g., Downtown Plaza" 
+                  placeholderTextColor={colors.textMuted} 
+                  value={newLocationData.name} 
+                  onChangeText={t => setNewLocationData(d => ({ ...d, name: t }))} 
+                />
+
+                <Text style={styles.inputLabel}>Location Type</Text>
+                {LOCATION_TYPES.map(t => (
+                  <TouchableOpacity 
+                    key={t.id} 
+                    style={[styles.locationTypeOption, newLocationData.type === t.id && styles.locationTypeSelected]}
+                    onPress={() => setNewLocationData(d => ({ ...d, type: t.id }))}
+                  >
+                    <Text style={styles.locationTypeIcon}>{t.icon}</Text>
+                    <View style={styles.locationTypeInfo}>
+                      <Text style={[styles.locationTypeName, newLocationData.type === t.id && styles.locationTypeNameSelected]}>{t.name}</Text>
+                      <Text style={styles.locationTypeDetails}>Rent: {t.rentMod > 1 ? '+' : ''}{Math.round((t.rentMod - 1) * 100)}% • Traffic: {t.trafficMod > 1 ? '+' : ''}{Math.round((t.trafficMod - 1) * 100)}%</Text>
+                    </View>
+                    <Text style={styles.locationTypeCost}>{formatCurrency(t.buildoutCost)}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                <Text style={styles.inputLabel}>Market</Text>
+                {MARKETS.map(m => (
+                  <TouchableOpacity 
+                    key={m.id} 
+                    style={[styles.marketOption, newLocationData.market === m.id && styles.marketSelected]}
+                    onPress={() => setNewLocationData(d => ({ ...d, market: m.id }))}
+                  >
+                    <Text style={styles.marketIcon}>{m.icon}</Text>
+                    <View style={styles.marketInfo}>
+                      <Text style={[styles.marketName, newLocationData.market === m.id && styles.marketNameSelected]}>{m.name}</Text>
+                      <Text style={styles.marketDetails}>Brand bonus: +{Math.round(m.brandBonus * 100)}% • Management: {m.managementCost > 0 ? `${formatCurrency(m.managementCost)}/wk` : 'None'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.expansionSummary}>
+                  <Text style={styles.expansionSummaryTitle}>Total Investment</Text>
+                  <Text style={styles.expansionSummaryValue}>{formatCurrency(LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0)}</Text>
+                  <Text style={styles.expansionSummaryNote}>Corporate Cash: {formatCurrency(game.corporateCash)}</Text>
                 </View>
-                <View style={styles.analyticsCard}>
-                  <Text style={styles.analyticsTitle}>Customer Mix</Text>
-                  {Object.entries(game.customersServed.byType || {}).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([type, count]) => {
-                    const ct = CUSTOMER_TYPES.find(c => c.id === type);
-                    const pct = game.customersServed.total > 0 ? (count / game.customersServed.total * 100).toFixed(1) : 0;
-                    return ct ? <View key={type} style={styles.pnlRow}><Text style={styles.pnlLabel}>{ct.icon} {ct.name}</Text><Text style={styles.pnlValue}>{count} ({pct}%)</Text></View> : null;
-                  })}
-                </View>
+
+                <TouchableOpacity 
+                  style={[styles.expandButton, game.corporateCash < (LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0) && styles.expandButtonDisabled]}
+                  onPress={openNewLocation}
+                  disabled={game.corporateCash < (LOCATION_TYPES.find(t => t.id === newLocationData.type)?.buildoutCost || 0)}
+                >
+                  <Text style={styles.expandButtonText}>OPEN LOCATION</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Franchise Modal */}
+        <Modal visible={franchiseModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Sell Franchise</Text>
+                <TouchableOpacity onPress={() => setFranchiseModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.franchiseIntro}>Choose a franchise tier to offer:</Text>
+                {FRANCHISE_TIERS.map(tier => (
+                  <TouchableOpacity key={tier.id} style={styles.franchiseTierOption} onPress={() => sellFranchise(tier.id)}>
+                    <View style={styles.franchiseTierInfo}>
+                      <Text style={styles.franchiseTierName}>{tier.name}</Text>
+                      <Text style={styles.franchiseTierDetails}>Min {tier.minLocations} locations • {tier.training} weeks training</Text>
+                      <Text style={styles.franchiseTierRates}>Royalty: {formatPct(tier.royalty)} + Marketing: {formatPct(tier.marketingFee)}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.franchiseTierFee}>{formatCurrency(tier.fee)}</Text>
+                      <Text style={styles.franchiseTierFeeLabel}>One-time fee</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </ScrollView>
             </View>
           </View>
@@ -2017,45 +2424,56 @@ export default function App() {
         <Modal visible={aiChatModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>👨‍🍳 Chef Marcus</Text><TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <View style={{ padding: 16 }}>
-                <View style={styles.aiChatBubble}>
-                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiChatText}>{aiMessage || "What's on your mind? Ask me anything about running your restaurant."}</Text>}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👨‍🍳 Chat with Chef Marcus</Text>
+                <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <View style={styles.aiChatContainer}>
+                <View style={styles.aiResponse}>
+                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiResponseText}>{aiMessage || 'Ask me anything about running your empire...'}</Text>}
                 </View>
                 <View style={styles.aiInputRow}>
-                  <TextInput style={styles.aiInput} placeholder="Ask Chef Marcus..." placeholderTextColor={colors.textMuted} value={aiChatInput} onChangeText={setAiChatInput} onSubmitEditing={askAI} />
-                  <TouchableOpacity style={styles.aiSendButton} onPress={askAI}><Text style={styles.aiSendText}>Ask</Text></TouchableOpacity>
+                  <TextInput style={styles.aiInput} placeholder="Ask about staff, expansion, finances..." placeholderTextColor={colors.textMuted} value={aiChatInput} onChangeText={setAiChatInput} />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={askAI}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
                 </View>
               </View>
             </View>
           </View>
         </Modal>
 
-        {/* Save Modal */}
+        {/* Save/Load Modal */}
         <Modal visible={saveModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}><Text style={styles.modalTitle}>💾 Save/Load</Text><TouchableOpacity onPress={() => setSaveModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity></View>
-              <View style={{ padding: 16 }}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Save / Load Game</Text>
+                <TouchableOpacity onPress={() => setSaveModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
                 {[1, 2, 3].map(slot => {
                   const save = savedGames.find(s => s.slot === slot);
                   return (
                     <View key={slot} style={styles.saveSlot}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.saveSlotTitle}>Slot {slot}</Text>
-                        {save ? <Text style={styles.saveSlotInfo}>{save.setup.name} • Week {save.game.week} • {formatCurrency(save.game.cash)}</Text> : <Text style={styles.saveSlotInfo}>Empty</Text>}
-                      </View>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity onPress={() => saveGame(slot)} style={[styles.saveButton, { backgroundColor: colors.primary }]}><Text style={styles.saveButtonText}>Save</Text></TouchableOpacity>
-                        {save && <TouchableOpacity onPress={() => loadGame(save)} style={[styles.saveButton, { backgroundColor: colors.surface }]}><Text style={[styles.saveButtonText, { color: colors.textPrimary }]}>Load</Text></TouchableOpacity>}
-                      </View>
+                      <Text style={styles.saveSlotTitle}>Slot {slot}</Text>
+                      {save ? (
+                        <>
+                          <Text style={styles.saveSlotInfo}>{save.setup.name} • Week {save.game.week} • {save.game.locations.length} locations</Text>
+                          <View style={styles.saveSlotButtons}>
+                            <TouchableOpacity style={styles.loadBtn} onPress={() => loadGame(save)}><Text style={styles.loadBtnText}>LOAD</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.overwriteBtn} onPress={() => saveGame(slot)}><Text style={styles.overwriteBtnText}>OVERWRITE</Text></TouchableOpacity>
+                          </View>
+                        </>
+                      ) : (
+                        <TouchableOpacity style={styles.saveBtn} onPress={() => saveGame(slot)}><Text style={styles.saveBtnText}>SAVE HERE</Text></TouchableOpacity>
+                      )}
                     </View>
                   );
                 })}
-              </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
+
       </SafeAreaView>
     );
   }
@@ -2070,247 +2488,384 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   
   // Welcome
-  welcomeContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  welcomeTitle: { fontSize: 72, fontWeight: '900', color: colors.primary, letterSpacing: -4 },
-  welcomeDivider: { width: 60, height: 3, backgroundColor: colors.primary, marginVertical: 16 },
-  welcomeQuote: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', fontStyle: 'italic', marginBottom: 8 },
-  welcomeSubtext: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 32 },
-  startButton: { backgroundColor: colors.primary, paddingHorizontal: 48, paddingVertical: 16, borderRadius: 8 },
-  startButtonText: { color: colors.background, fontSize: 16, fontWeight: '700', letterSpacing: 1 },
-  versionText: { position: 'absolute', bottom: 24, fontSize: 11, color: colors.textMuted },
-  
+  welcomeContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  welcomeTitle: { fontSize: 72, fontWeight: '900', color: colors.primary, letterSpacing: -3 },
+  welcomeDivider: { width: 60, height: 4, backgroundColor: colors.primary, marginVertical: 20 },
+  welcomeQuote: { fontSize: 16, color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginBottom: 20 },
+  welcomeSubtext: { fontSize: 14, color: colors.textMuted, textAlign: 'center', marginBottom: 30, lineHeight: 22 },
+  startButton: { backgroundColor: colors.primary, paddingHorizontal: 40, paddingVertical: 16, borderRadius: 8 },
+  startButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+  versionText: { color: colors.textMuted, fontSize: 12, marginTop: 30 },
+
   // Onboarding
   onboardingContainer: { flex: 1 },
-  onboardingContent: { padding: 24, paddingTop: 16 },
-  progressBarContainer: { height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, marginBottom: 8 },
-  progressBar: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
-  stepText: { fontSize: 12, color: colors.textMuted, marginBottom: 16 },
-  messageBox: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 24 },
-  messageText: { fontSize: 15, color: colors.textPrimary, lineHeight: 24 },
-  dropdownButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownText: { fontSize: 16, color: colors.textPrimary },
-  dropdownPlaceholder: { fontSize: 16, color: colors.textMuted },
+  onboardingContent: { padding: 20 },
+  progressBarContainer: { height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, marginBottom: 20 },
+  progressBar: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },
+  stepText: { color: colors.textMuted, fontSize: 12, marginBottom: 10, letterSpacing: 1 },
+  messageBox: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 20, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  messageText: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  dropdownButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  dropdownText: { color: colors.textPrimary, fontSize: 16 },
+  dropdownPlaceholder: { color: colors.textMuted, fontSize: 16 },
   dropdownArrow: { color: colors.textMuted },
-  selectedCuisine: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '20', padding: 16, borderRadius: 8, marginTop: 16 },
-  selectedIcon: { fontSize: 36, marginRight: 12 },
-  selectedName: { fontSize: 18, color: colors.primary, fontWeight: '600' },
-  selectedStats: { fontSize: 12, color: colors.textSecondary },
-  capitalDisplay: { alignItems: 'center', marginBottom: 16 },
+  selectedCuisine: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  selectedIcon: { fontSize: 40, marginRight: 15 },
+  selectedName: { color: colors.textPrimary, fontSize: 18, fontWeight: '600' },
+  selectedStats: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
+  capitalDisplay: { alignItems: 'center', marginBottom: 10 },
   capitalAmount: { fontSize: 48, fontWeight: '700' },
-  tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, marginTop: 8 },
-  tierText: { fontSize: 12, fontWeight: '700', letterSpacing: 1, color: colors.background },
-  tierDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 8, textAlign: 'center' },
+  tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginTop: 8 },
+  tierText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+  tierDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 8, textAlign: 'center' },
   slider: { width: '100%', height: 40 },
   sliderLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  sliderLabel: { fontSize: 12, color: colors.textMuted },
-  textInput: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, fontSize: 16, color: colors.textPrimary },
-  optionRow: { flexDirection: 'row', gap: 12 },
-  optionButton: { flex: 1, backgroundColor: colors.surface, padding: 16, borderRadius: 8, alignItems: 'center' },
-  optionButtonActive: { backgroundColor: colors.primary + '30', borderWidth: 2, borderColor: colors.primary },
-  optionText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
-  optionTextActive: { color: colors.primary },
-  optionDesc: { fontSize: 10, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
-  goalOptions: { gap: 12 },
-  goalButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8 },
-  goalButtonActive: { backgroundColor: colors.primary + '20', borderWidth: 2, borderColor: colors.primary },
-  goalText: { fontSize: 16, color: colors.textPrimary, fontWeight: '500' },
+  sliderLabel: { color: colors.textMuted, fontSize: 12 },
+  textInput: { backgroundColor: colors.surface, color: colors.textPrimary, padding: 16, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: colors.border },
+  goalOptions: { gap: 10 },
+  goalButton: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.border, flexDirection: 'row', alignItems: 'center' },
+  goalButtonActive: { borderColor: colors.primary, backgroundColor: colors.surfaceLight },
+  goalText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
   goalTextActive: { color: colors.primary },
-  goalDesc: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  continueButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24 },
+  goalDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  continueButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 30 },
   continueButtonDisabled: { backgroundColor: colors.surfaceLight },
-  continueButtonText: { fontSize: 16, fontWeight: '600', color: colors.background },
+  continueButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
   continueButtonTextDisabled: { color: colors.textMuted },
-  backButton: { padding: 12, alignItems: 'center', marginTop: 8 },
-  backButtonText: { color: colors.textMuted, fontSize: 14 },
-  
+  backButton: { alignItems: 'center', marginTop: 15 },
+  backButtonText: { color: colors.textSecondary, fontSize: 14 },
+
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
-  modalClose: { fontSize: 24, color: colors.textMuted, padding: 4 },
-  searchInput: { backgroundColor: colors.surfaceLight, margin: 16, marginTop: 8, padding: 12, borderRadius: 8, color: colors.textPrimary },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', padding: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  modalTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginBottom: 15 },
+  modalClose: { color: colors.textMuted, fontSize: 24 },
+  searchInput: { backgroundColor: colors.surfaceLight, color: colors.textPrimary, padding: 12, borderRadius: 8, marginBottom: 15 },
   cuisineList: { maxHeight: 400 },
-  cuisineOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  cuisineOptionSelected: { backgroundColor: colors.primary + '20' },
+  cuisineOption: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 8 },
+  cuisineOptionSelected: { backgroundColor: colors.surfaceLight },
   cuisineIcon: { fontSize: 28, marginRight: 12 },
   cuisineInfo: { flex: 1 },
-  cuisineName: { fontSize: 16, color: colors.textPrimary, fontWeight: '500' },
+  cuisineName: { color: colors.textPrimary, fontSize: 16, fontWeight: '500' },
   cuisineNameSelected: { color: colors.primary },
-  cuisineStats: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  
-  // Dashboard
-  dashHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  dashTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  dashSubtitle: { fontSize: 12, color: colors.textMuted },
-  nextWeekButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
-  nextWeekText: { fontSize: 13, fontWeight: '600', color: colors.background },
-  dashContent: { flex: 1, padding: 16 },
-  warningBanner: { backgroundColor: colors.accent + '20', padding: 8, flexDirection: 'row', justifyContent: 'center', gap: 16 },
-  warningText: { color: colors.accent, fontSize: 12, fontWeight: '500' },
-  
-  // AI Message Bar
-  aiMessageBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  aiMessageIcon: { fontSize: 20, marginRight: 8 },
-  aiMessageText: { flex: 1, fontSize: 13, color: colors.textSecondary },
-  aiMessageExpand: { fontSize: 16 },
-  
-  // Tabs
-  tabContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: colors.primary },
-  tabText: { fontSize: 16 },
-  tabTextActive: { },
-  
-  // Cash Display
-  cashDisplay: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 16 },
-  cashLabel: { fontSize: 11, color: colors.textMuted, letterSpacing: 1 },
-  cashAmount: { fontSize: 36, fontWeight: '700', marginVertical: 4 },
-  statsRow: { flexDirection: 'row', marginTop: 12 },
-  statItem: { flex: 1 },
-  statLabel: { fontSize: 10, color: colors.textMuted, letterSpacing: 0.5 },
-  statValue: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginTop: 2 },
-  
-  // Meters
-  metersRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  meterCard: { flex: 1, backgroundColor: colors.surface, padding: 12, borderRadius: 8 },
-  meterLabel: { fontSize: 12, color: colors.textSecondary },
-  meterBarBg: { height: 6, backgroundColor: colors.surfaceLight, borderRadius: 3, marginTop: 6 },
-  meterBar: { height: '100%', borderRadius: 3 },
-  meterValue: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginTop: 4 },
-  
-  // Quick Actions
-  quickActionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  quickActionCard: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, width: (width - 48) / 3, alignItems: 'center' },
-  quickActionIcon: { fontSize: 20 },
-  quickActionLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 4 },
-  
-  // Active Systems
-  activeSystems: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  activeBadge: { backgroundColor: colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  activeBadgeText: { fontSize: 10, color: colors.textSecondary },
-  
-  // Section
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 12, color: colors.textMuted, letterSpacing: 1, fontWeight: '600' },
-  addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  addButtonText: { fontSize: 12, fontWeight: '600', color: colors.background },
-  
-  // Menu
-  menuItem: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  menuItem86d: { opacity: 0.5 },
-  menuItemName: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  menuItemStats: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  menuAction: { backgroundColor: colors.surfaceLight, width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
-  menuActionText: { fontSize: 12 },
-  tag86d: { backgroundColor: colors.accent, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, fontSize: 10, color: colors.textPrimary, marginRight: 8 },
-  menuSummary: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginTop: 8 },
-  menuSummaryText: { fontSize: 12, color: colors.textSecondary, textAlign: 'center' },
-  
-  // Staff
-  staffCard: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
-  staffInfo: { flexDirection: 'row', alignItems: 'flex-start' },
-  staffIcon: { fontSize: 24, marginRight: 10 },
-  staffName: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  staffRole: { fontSize: 11, color: colors.textMuted },
-  staffMoraleBar: { height: 3, backgroundColor: colors.surfaceLight, borderRadius: 2, marginTop: 4, width: '60%' },
-  staffMoraleFill: { height: '100%', borderRadius: 2 },
-  certBadge: { backgroundColor: colors.info + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, fontSize: 9, color: colors.info, marginTop: 4, alignSelf: 'flex-start' },
-  staffActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
-  fireButton: { backgroundColor: colors.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  fireButtonText: { fontSize: 11, fontWeight: '500', color: colors.textPrimary },
-  laborSummary: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginTop: 8 },
-  laborSummaryText: { fontSize: 12, color: colors.textSecondary, textAlign: 'center' },
-  
-  // Equipment
-  equipmentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  equipCard: { backgroundColor: colors.surface, padding: 10, borderRadius: 8, width: (width - 56) / 3, alignItems: 'center' },
-  equipCardOwned: { backgroundColor: colors.success + '20', borderWidth: 1, borderColor: colors.success },
-  equipName: { fontSize: 9, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
-  equipCost: { fontSize: 9, color: colors.textMuted },
-  
-  // Finance
-  financeCard: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 12 },
-  financeTitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 8 },
-  financeValue: { fontSize: 28, fontWeight: '700', color: colors.success },
-  financeDesc: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
-  pnlRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  pnlLabel: { fontSize: 13, color: colors.textSecondary },
-  pnlValue: { fontSize: 13, color: colors.textPrimary, fontWeight: '500' },
-  pnlTotalRow: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 },
-  pnlTotalLabel: { fontSize: 15, color: colors.textPrimary, fontWeight: '600' },
-  pnlTotalValue: { fontSize: 17, fontWeight: '700' },
-  loanItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  loanName: { fontSize: 14, color: colors.textPrimary },
-  loanDetails: { fontSize: 11, color: colors.textMuted },
-  
-  // Achievements
-  achieveHeader: { alignItems: 'center', marginBottom: 20 },
-  achieveScore: { fontSize: 48, fontWeight: '700', color: colors.primary },
-  achieveLabel: { fontSize: 14, color: colors.textSecondary },
-  achieveCategory: { fontSize: 11, color: colors.textMuted, letterSpacing: 1, marginBottom: 8 },
-  achieveGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  achieveBadge: { backgroundColor: colors.surface, padding: 8, borderRadius: 8, width: (width - 56) / 3, alignItems: 'center' },
-  achieveBadgeUnlocked: { backgroundColor: colors.primary + '20', borderWidth: 1, borderColor: colors.primary },
-  achieveName: { fontSize: 10, color: colors.textPrimary, marginTop: 4, textAlign: 'center', fontWeight: '500' },
-  achieveDesc: { fontSize: 8, color: colors.textMuted, textAlign: 'center' },
-  
+  cuisineStats: { color: colors.textMuted, fontSize: 12 },
+
   // Scenario
   scenarioContainer: { flex: 1 },
-  scenarioContent: { padding: 24 },
-  scenarioHeader: { alignItems: 'center', marginBottom: 8 },
-  scenarioTypeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4 },
-  scenarioTypeText: { fontSize: 10, fontWeight: '700', color: colors.textPrimary, letterSpacing: 1 },
-  scenarioTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
-  scenarioSubtitle: { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 20 },
-  scenarioMessageBox: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 20 },
-  scenarioMessage: { fontSize: 15, color: colors.textPrimary, lineHeight: 24 },
-  scenarioOption: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  scenarioOptionText: { fontSize: 14, color: colors.textPrimary, flex: 1 },
-  scenarioChance: { fontSize: 12, color: colors.textMuted },
+  scenarioContent: { padding: 20 },
+  scenarioTypeBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 15 },
+  scenarioTypeText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+  scenarioTitle: { color: colors.textPrimary, fontSize: 28, fontWeight: '700', marginBottom: 5 },
+  scenarioSubtitle: { color: colors.textMuted, fontSize: 14, marginBottom: 20 },
+  scenarioMessageBox: { backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 25 },
+  scenarioMessage: { color: colors.textSecondary, fontSize: 16, lineHeight: 24 },
+  scenarioOption: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scenarioOptionText: { color: colors.textPrimary, fontSize: 15, flex: 1, marginRight: 10 },
+  scenarioChance: { color: colors.textMuted, fontSize: 13 },
   scenarioResult: { alignItems: 'center', marginVertical: 20 },
-  scenarioResultText: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
-  aiCommentBox: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, marginVertical: 16 },
-  aiCommentLabel: { fontSize: 12, color: colors.primary, fontWeight: '600', marginBottom: 8 },
-  aiCommentText: { fontSize: 14, color: colors.textSecondary, lineHeight: 22 },
-  lessonBox: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, marginTop: 20 },
-  lessonLabel: { fontSize: 10, color: colors.textMuted, letterSpacing: 1, marginBottom: 8 },
-  lessonText: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' },
-  
-  // End Screens
-  endContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  endTitle: { fontSize: 28, fontWeight: '700', color: colors.accent },
-  endSubtitle: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
-  endDivider: { width: 60, height: 3, marginVertical: 24 },
-  endMessage: { fontSize: 16, color: colors.textMuted, marginBottom: 24 },
-  endStats: { width: '100%', backgroundColor: colors.surface, padding: 20, borderRadius: 12, marginBottom: 24 },
-  endStatRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  endStatLabel: { fontSize: 14, color: colors.textSecondary },
-  endStatValue: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  winCondition: { fontSize: 18, fontWeight: '600', textAlign: 'center', marginBottom: 16, color: colors.textPrimary },
-  restartButton: { backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 8 },
-  restartButtonText: { fontSize: 16, fontWeight: '600', color: colors.background },
-  
-  // Modals
-  hireOption: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: colors.surfaceLight, borderRadius: 8, marginBottom: 8 },
-  hireName: { fontSize: 15, color: colors.textPrimary, fontWeight: '500' },
-  hireDetails: { fontSize: 11, color: colors.textMuted },
-  channelItem: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: colors.surfaceLight, borderRadius: 8, marginBottom: 8 },
-  channelItemActive: { backgroundColor: colors.success + '20', borderWidth: 1, borderColor: colors.success },
-  channelName: { fontSize: 14, color: colors.textPrimary, fontWeight: '500' },
-  channelCost: { fontSize: 11, color: colors.textMuted },
-  loanWarning: { backgroundColor: colors.warning + '20', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: colors.warning },
-  analyticsCard: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 12 },
-  analyticsTitle: { fontSize: 12, color: colors.textMuted, marginBottom: 8 },
-  aiChatBubble: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 12, marginBottom: 16, minHeight: 80 },
-  aiChatText: { fontSize: 14, color: colors.textPrimary, lineHeight: 22 },
-  aiInputRow: { flexDirection: 'row', gap: 8 },
-  aiInput: { flex: 1, backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, color: colors.textPrimary },
-  aiSendButton: { backgroundColor: colors.primary, paddingHorizontal: 20, borderRadius: 8, justifyContent: 'center' },
-  aiSendText: { color: colors.background, fontWeight: '600' },
-  saveSlot: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: colors.surfaceLight, borderRadius: 8, marginBottom: 8 },
-  saveSlotTitle: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  saveSlotInfo: { fontSize: 12, color: colors.textMuted },
-  saveButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  saveButtonText: { fontSize: 12, fontWeight: '500', color: colors.background },
+  scenarioResultText: { fontSize: 24, fontWeight: '700' },
+  aiCommentBox: { backgroundColor: colors.surfaceLight, padding: 16, borderRadius: 8, marginBottom: 15 },
+  aiCommentLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  aiCommentText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
+  lessonBox: { backgroundColor: colors.surface, padding: 16, borderRadius: 8, marginBottom: 25, borderLeftWidth: 3, borderLeftColor: colors.warning },
+  lessonLabel: { color: colors.warning, fontSize: 11, fontWeight: '700', marginBottom: 8 },
+  lessonText: { color: colors.textSecondary, fontSize: 14, fontStyle: 'italic' },
+
+  // End Screen
+  endContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  endTitle: { fontSize: 36, fontWeight: '900', marginTop: 20 },
+  endSubtitle: { color: colors.textSecondary, fontSize: 16, marginTop: 10 },
+  endDivider: { width: 60, height: 4, marginVertical: 25 },
+  endStats: { width: '100%', maxWidth: 300 },
+  endStatRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  endStatLabel: { color: colors.textSecondary, fontSize: 14 },
+  endStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  restartButton: { backgroundColor: colors.primary, paddingHorizontal: 40, paddingVertical: 16, borderRadius: 8, marginTop: 30 },
+  restartButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // Empire Header
+  empireHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  empireHeaderLeft: {},
+  empireName: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  empireStats: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  empireHeaderRight: { alignItems: 'flex-end' },
+  empireValuation: { color: colors.success, fontSize: 20, fontWeight: '700' },
+  empireValuationLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Location Selector
+  locationSelector: { backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  locationTab: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginRight: 8 },
+  locationTabActive: { backgroundColor: colors.primary },
+  locationTabIcon: { fontSize: 16, marginRight: 6 },
+  locationTabText: { color: colors.textSecondary, fontSize: 12, fontWeight: '500', maxWidth: 80 },
+  locationTabTextActive: { color: colors.background },
+  locationTabCash: { color: colors.textMuted, fontSize: 10 },
+  addLocationTab: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.border, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted },
+  addLocationIcon: { color: colors.textMuted, fontSize: 18 },
+  addLocationText: { color: colors.textMuted, fontSize: 10 },
+
+  // AI Bar
+  aiBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, marginHorizontal: 10, marginTop: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  aiBarIcon: { fontSize: 20 },
+  aiBarText: { color: colors.textSecondary, fontSize: 13, flex: 1, marginLeft: 10 },
+
+  // Warning Banner
+  warningBanner: { padding: 10, marginHorizontal: 10, marginTop: 10, borderRadius: 6 },
+  warningText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+
+  // Dashboard
+  dashboardScroll: { flex: 1 },
+  quickStats: { flexDirection: 'row', padding: 10, gap: 8 },
+  statCard: { flex: 1, backgroundColor: colors.surface, padding: 12, borderRadius: 8, alignItems: 'center' },
+  statLabel: { color: colors.textMuted, fontSize: 10 },
+  statValue: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginTop: 4 },
+
+  // Corporate Stats
+  corporateStats: { backgroundColor: colors.surface, margin: 10, padding: 15, borderRadius: 8 },
+  corporateRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  corporateStat: { alignItems: 'center' },
+  corporateStatLabel: { color: colors.textMuted, fontSize: 10 },
+  corporateStatValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 2 },
+
+  // Charts
+  chartContainer: { backgroundColor: colors.surface, margin: 10, padding: 15, borderRadius: 8 },
+  chartTitle: { color: colors.textMuted, fontSize: 11, marginBottom: 5, marginTop: 10 },
+
+  // Tabs
+  tabBar: { flexDirection: 'row', backgroundColor: colors.surface, marginHorizontal: 10, borderRadius: 8, padding: 4 },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
+  tabTextActive: { color: colors.background },
+  tabContent: { padding: 10 },
+  sectionTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+
+  // Health Meters
+  healthMeters: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  meterContainer: { flex: 1, backgroundColor: colors.surface, padding: 12, borderRadius: 8 },
+  meterLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 6 },
+  meterBar: { height: 6, backgroundColor: colors.surfaceLight, borderRadius: 3 },
+  meterFill: { height: 6, borderRadius: 3 },
+  meterValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 6 },
+
+  // Manager Card
+  managerCard: { backgroundColor: colors.surface, padding: 15, borderRadius: 8, marginBottom: 10 },
+  managerLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 10 },
+  managerInfo: { flexDirection: 'row', alignItems: 'center' },
+  managerIcon: { fontSize: 28, marginRight: 12 },
+  managerName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  managerRole: { color: colors.textMuted, fontSize: 12 },
+  managerBadge: { marginLeft: 'auto', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  managerBadgeText: { color: colors.textPrimary, fontSize: 10, fontWeight: '600' },
+  noManager: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 6 },
+  noManagerText: { color: colors.warning, fontSize: 13 },
+  noManagerHint: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+
+  // Quick Actions
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickAction: { width: (width - 60) / 3, backgroundColor: colors.surface, padding: 15, borderRadius: 8, alignItems: 'center' },
+  quickActionIcon: { fontSize: 24, marginBottom: 6 },
+  quickActionText: { color: colors.textSecondary, fontSize: 11 },
+
+  // Badges
+  badgeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  badge: { backgroundColor: colors.success, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  badgeText: { color: colors.textPrimary, fontSize: 10 },
+
+  // Staff
+  staffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  hireButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  hireButtonText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  emptyText: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+  staffCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  staffIcon: { fontSize: 24, marginRight: 10 },
+  staffInfo: { flex: 1 },
+  staffName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  staffRole: { color: colors.textMuted, fontSize: 11 },
+  staffMoraleBar: { height: 3, backgroundColor: colors.surfaceLight, borderRadius: 2, marginTop: 6, width: 80 },
+  staffMoraleFill: { height: 3, borderRadius: 2 },
+  staffActions: { flexDirection: 'row', gap: 8 },
+  promoteBtn: { backgroundColor: colors.success, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  promoteBtnText: { fontSize: 12 },
+  trainBtn: { backgroundColor: colors.info, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  trainBtnText: { fontSize: 12 },
+  fireBtn: { backgroundColor: colors.accent, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  fireBtnText: { color: colors.textPrimary, fontSize: 14 },
+
+  // Menu
+  menuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  addMenuBtn: { backgroundColor: colors.info, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  addMenuBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 6 },
+  menuItem86d: { opacity: 0.5 },
+  menuItemName: { color: colors.textPrimary, fontSize: 14 },
+  menuItemName86d: { textDecorationLine: 'line-through' },
+  menuItemPrice: { color: colors.textMuted, fontSize: 11 },
+  menuStatus: { color: colors.warning, fontSize: 12 },
+
+  // Equipment
+  equipmentScroll: { marginBottom: 10 },
+  equipmentCard: { width: 100, backgroundColor: colors.surface, padding: 12, borderRadius: 8, alignItems: 'center', marginRight: 8 },
+  equipmentOwned: { backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.success },
+  equipmentIcon: { fontSize: 28, marginBottom: 6 },
+  equipmentName: { color: colors.textPrimary, fontSize: 11, textAlign: 'center' },
+  equipmentCost: { color: colors.textMuted, fontSize: 10, marginTop: 4 },
+
+  // P&L
+  plCard: { backgroundColor: colors.surface, padding: 15, borderRadius: 8 },
+  plRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  plLabel: { color: colors.textSecondary, fontSize: 13 },
+  plValue: { color: colors.textPrimary, fontSize: 13 },
+  plDivider: { height: 1, backgroundColor: colors.border, marginVertical: 8 },
+
+  // Loans
+  loanHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  loanBtn: { backgroundColor: colors.warning, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  loanBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  loanCard: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  loanName: { color: colors.textPrimary, fontSize: 14 },
+  loanDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  equityCard: { backgroundColor: colors.surface, padding: 20, borderRadius: 8, alignItems: 'center', marginTop: 15 },
+  equityLabel: { color: colors.textMuted, fontSize: 12 },
+  equityValue: { fontSize: 36, fontWeight: '700', marginTop: 6 },
+
+  // Empire Tab
+  empireStatsCard: { flexDirection: 'row', backgroundColor: colors.surface, padding: 20, borderRadius: 8, justifyContent: 'space-around' },
+  empireStat: { alignItems: 'center' },
+  empireStatValue: { color: colors.textPrimary, fontSize: 24, fontWeight: '700' },
+  empireStatLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  expansionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 15, borderRadius: 8, marginBottom: 10 },
+  expansionButtonDisabled: { opacity: 0.5 },
+  expansionButtonIcon: { fontSize: 32, marginRight: 15 },
+  expansionButtonTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  expansionButtonDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  franchiseEnabled: { backgroundColor: colors.success, padding: 12, borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  franchiseEnabledText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  franchiseRate: { color: colors.textPrimary, fontSize: 12 },
+  franchiseCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  franchiseName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  franchiseTier: { color: colors.textMuted, fontSize: 11 },
+  franchiseStats: { alignItems: 'flex-end' },
+  franchiseRoyalty: { color: colors.success, fontSize: 14, fontWeight: '600' },
+  franchiseQuality: { color: colors.textMuted, fontSize: 11 },
+  locationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  locationCardIcon: { fontSize: 24, marginRight: 12 },
+  locationCardInfo: { flex: 1 },
+  locationCardName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  locationCardDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  locationCardCash: { fontSize: 14, fontWeight: '600' },
+  locationCardProfit: { fontSize: 11, marginTop: 2 },
+
+  // Modal Hire
+  hireOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  hireIcon: { fontSize: 24, marginRight: 12 },
+  hireInfo: { flex: 1 },
+  hireName: { color: colors.textPrimary, fontSize: 14 },
+  hireWage: { color: colors.textMuted, fontSize: 11 },
+  hireCost: { color: colors.warning, fontSize: 12, fontWeight: '600' },
+
+  // Modal Training
+  trainingOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  trainingCompleted: { opacity: 0.5 },
+  trainingIcon: { fontSize: 24, marginRight: 12 },
+  trainingInfo: { flex: 1 },
+  trainingName: { color: colors.textPrimary, fontSize: 14 },
+  trainingDesc: { color: colors.textMuted, fontSize: 11 },
+  trainingCost: { color: colors.success, fontSize: 14, fontWeight: '600' },
+
+  // Modal Marketing/Delivery
+  channelOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  channelActive: { backgroundColor: colors.success, borderColor: colors.success },
+  channelIcon: { fontSize: 24, marginRight: 12 },
+  channelInfo: { flex: 1 },
+  channelName: { color: colors.textPrimary, fontSize: 14 },
+  channelNameActive: { color: colors.textPrimary, fontWeight: '600' },
+  channelEffect: { color: colors.textMuted, fontSize: 11 },
+  channelCost: { color: colors.textSecondary, fontSize: 12 },
+  deliveryOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  deliveryActive: { backgroundColor: colors.info },
+  deliveryIcon: { fontSize: 24, marginRight: 12 },
+  deliveryInfo: { flex: 1 },
+  deliveryName: { color: colors.textPrimary, fontSize: 14 },
+  deliveryNameActive: { fontWeight: '600' },
+  deliveryCommission: { color: colors.textMuted, fontSize: 11 },
+  deliveryCost: { color: colors.textSecondary, fontSize: 12 },
+
+  // Modal Loan
+  loanOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  loanOptionInfo: { flex: 1 },
+  loanOptionName: { color: colors.textPrimary, fontSize: 14 },
+  loanOptionDetails: { color: colors.textMuted, fontSize: 11 },
+  loanEquity: { color: colors.accent, fontSize: 11, marginTop: 2 },
+  loanPayment: { color: colors.warning, fontSize: 14, fontWeight: '600' },
+
+  // Modal Analytics
+  analyticsSection: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+  analyticsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  analyticsStat: { width: '47%', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, alignItems: 'center' },
+  analyticsValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  analyticsLabel: { color: colors.textMuted, fontSize: 10, marginTop: 4 },
+
+  // Modal Expansion
+  inputLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 15, marginBottom: 8 },
+  locationTypeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  locationTypeSelected: { backgroundColor: colors.primary },
+  locationTypeIcon: { fontSize: 24, marginRight: 12 },
+  locationTypeInfo: { flex: 1 },
+  locationTypeName: { color: colors.textPrimary, fontSize: 14 },
+  locationTypeNameSelected: { fontWeight: '600' },
+  locationTypeDetails: { color: colors.textMuted, fontSize: 11 },
+  locationTypeCost: { color: colors.warning, fontSize: 12, fontWeight: '600' },
+  marketOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  marketSelected: { backgroundColor: colors.info },
+  marketIcon: { fontSize: 20, marginRight: 12 },
+  marketInfo: { flex: 1 },
+  marketName: { color: colors.textPrimary, fontSize: 14 },
+  marketNameSelected: { fontWeight: '600' },
+  marketDetails: { color: colors.textMuted, fontSize: 11 },
+  expansionSummary: { backgroundColor: colors.surface, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 20, marginBottom: 15 },
+  expansionSummaryTitle: { color: colors.textMuted, fontSize: 12 },
+  expansionSummaryValue: { color: colors.primary, fontSize: 28, fontWeight: '700', marginTop: 6 },
+  expansionSummaryNote: { color: colors.textMuted, fontSize: 11, marginTop: 6 },
+  expandButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  expandButtonDisabled: { backgroundColor: colors.surfaceLight },
+  expandButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // Modal Franchise
+  franchiseIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 15 },
+  franchiseTierOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 10 },
+  franchiseTierInfo: { flex: 1 },
+  franchiseTierName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  franchiseTierDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  franchiseTierRates: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  franchiseTierFee: { color: colors.success, fontSize: 20, fontWeight: '700' },
+  franchiseTierFeeLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Modal AI Chat
+  aiChatContainer: { flex: 1 },
+  aiResponse: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, minHeight: 150, marginBottom: 15 },
+  aiResponseText: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  aiInputRow: { flexDirection: 'row', gap: 10 },
+  aiInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
+  aiSendBtn: { backgroundColor: colors.primary, width: 48, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  aiSendBtnText: { color: colors.background, fontSize: 20, fontWeight: '700' },
+
+  // Modal Save
+  saveSlot: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 10 },
+  saveSlotTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  saveSlotInfo: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  saveSlotButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  loadBtn: { flex: 1, backgroundColor: colors.info, padding: 10, borderRadius: 6, alignItems: 'center' },
+  loadBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  overwriteBtn: { flex: 1, backgroundColor: colors.warning, padding: 10, borderRadius: 6, alignItems: 'center' },
+  overwriteBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  saveBtn: { backgroundColor: colors.success, padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 10 },
+  saveBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+
+  // Bottom Bar
+  bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
+  nextWeekButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  nextWeekButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
 });
