@@ -246,6 +246,160 @@ const FRANCHISE_TIERS = [
 ];
 
 // ============================================
+// COMPETITION SYSTEM (Phase 4)
+// ============================================
+const COMPETITOR_TYPES = [
+  { id: 'local_indie', name: 'Local Independent', icon: '🏠', threat: 0.1, priceCompetition: 0.05, qualityFocus: 0.8 },
+  { id: 'regional_chain', name: 'Regional Chain', icon: '🏪', threat: 0.2, priceCompetition: 0.15, qualityFocus: 0.6 },
+  { id: 'national_chain', name: 'National Chain', icon: '🏢', threat: 0.3, priceCompetition: 0.25, qualityFocus: 0.4 },
+  { id: 'ghost_kitchen', name: 'Ghost Kitchen', icon: '👻', threat: 0.15, priceCompetition: 0.2, qualityFocus: 0.5, deliveryOnly: true },
+  { id: 'fast_casual', name: 'Fast Casual', icon: '🚀', threat: 0.25, priceCompetition: 0.2, qualityFocus: 0.7 },
+  { id: 'fine_dining', name: 'Fine Dining', icon: '✨', threat: 0.1, priceCompetition: 0, qualityFocus: 0.95, priceUp: true },
+];
+
+const COMPETITOR_NAMES = {
+  burgers: ['Burger Barn', 'Patty Palace', 'Bun & Done', 'Stack Attack', 'Grillmasters'],
+  mexican: ['Casa Grande', 'Taco Town', 'El Sabor', 'Fiesta Fresh', 'Salsa Sisters'],
+  pizza: ['Slice Heaven', 'Dough Bros', 'Pie Perfect', 'Crust & Co', 'Pepperoni Pete'],
+  chinese: ['Golden Dragon', 'Wok This Way', 'Lucky Panda', 'Oriental Garden', 'Jade Palace'],
+  japanese: ['Sakura Sushi', 'Tokyo Table', 'Rising Sun', 'Wasabi House', 'Ninja Kitchen'],
+  default: ['The Competition', 'Rival Kitchen', 'Other Place', 'Next Door', 'Down the Street'],
+};
+
+const generateCompetitor = (cuisine, locationType) => {
+  const type = COMPETITOR_TYPES[Math.floor(Math.random() * COMPETITOR_TYPES.length)];
+  const names = COMPETITOR_NAMES[cuisine] || COMPETITOR_NAMES.default;
+  return {
+    id: Date.now() + Math.random(),
+    name: names[Math.floor(Math.random() * names.length)],
+    type: type.id,
+    icon: type.icon,
+    threat: type.threat * (0.8 + Math.random() * 0.4),
+    reputation: 50 + Math.floor(Math.random() * 40),
+    priceLevel: Math.floor(Math.random() * 3) + 1, // 1-3: $, $$, $$$
+    weeksOpen: Math.floor(Math.random() * 100),
+    aggressive: Math.random() > 0.7,
+    specialties: [],
+  };
+};
+
+// ============================================
+// VENDOR SYSTEM (Phase 4)
+// ============================================
+const VENDORS = [
+  { id: 'sysco', name: 'Sysco', icon: '🚛', type: 'broadline', priceLevel: 1.0, quality: 0.7, reliability: 0.9, minOrder: 500 },
+  { id: 'usfoods', name: 'US Foods', icon: '🚚', type: 'broadline', priceLevel: 0.98, quality: 0.72, reliability: 0.88, minOrder: 400 },
+  { id: 'pfg', name: 'Performance Food', icon: '📦', type: 'broadline', priceLevel: 0.95, quality: 0.68, reliability: 0.85, minOrder: 300 },
+  { id: 'local_farms', name: 'Local Farms Co-op', icon: '🌾', type: 'specialty', priceLevel: 1.15, quality: 0.95, reliability: 0.7, minOrder: 200, seasonal: true },
+  { id: 'premium_meats', name: 'Premium Meats Inc', icon: '🥩', type: 'protein', priceLevel: 1.25, quality: 0.92, reliability: 0.85, minOrder: 300 },
+  { id: 'ocean_fresh', name: 'Ocean Fresh Seafood', icon: '🦐', type: 'seafood', priceLevel: 1.3, quality: 0.9, reliability: 0.75, minOrder: 250 },
+  { id: 'bakery_direct', name: 'Artisan Bakery Direct', icon: '🥖', type: 'bakery', priceLevel: 1.1, quality: 0.88, reliability: 0.82, minOrder: 100 },
+  { id: 'beverage_kings', name: 'Beverage Kings', icon: '🥤', type: 'beverage', priceLevel: 0.9, quality: 0.75, reliability: 0.95, minOrder: 200 },
+];
+
+const VENDOR_DEALS = [
+  { id: 'volume_discount', name: 'Volume Discount', description: '10% off orders over $2K/week', discount: 0.1, minWeeklyOrder: 2000 },
+  { id: 'loyalty_program', name: 'Loyalty Program', description: '5% rebate after 6 months', discount: 0.05, minWeeks: 24 },
+  { id: 'exclusive_contract', name: 'Exclusive Contract', description: '15% off for 1-year commitment', discount: 0.15, commitment: 52, penalty: 10000 },
+  { id: 'early_pay', name: 'Early Payment', description: '2% off for payment within 10 days', discount: 0.02, requiresCash: true },
+];
+
+// ============================================
+// EVENTS CALENDAR (Phase 4)
+// ============================================
+const CALENDAR_EVENTS = [
+  { id: 'valentines', name: "Valentine's Day", icon: '💕', week: 7, revenueBoost: 0.4, type: 'romantic', tip: 'Offer special prix fixe menus' },
+  { id: 'mothers_day', name: "Mother's Day", icon: '💐', week: 19, revenueBoost: 0.5, type: 'family', tip: 'Book reservations early, add brunch' },
+  { id: 'fathers_day', name: "Father's Day", icon: '👔', week: 24, revenueBoost: 0.3, type: 'family', tip: 'Steak specials work well' },
+  { id: 'july_4th', name: 'Independence Day', icon: '🎆', week: 27, revenueBoost: 0.2, type: 'holiday', tip: 'BBQ themes, outdoor seating premium' },
+  { id: 'labor_day', name: 'Labor Day', icon: '⚒️', week: 36, revenueBoost: 0.1, type: 'holiday', tip: 'Last summer hurrah - end of season specials' },
+  { id: 'halloween', name: 'Halloween', icon: '🎃', week: 44, revenueBoost: 0.15, type: 'theme', tip: 'Themed cocktails and decor' },
+  { id: 'thanksgiving', name: 'Thanksgiving', icon: '🦃', week: 47, revenueBoost: -0.3, type: 'holiday', tip: 'Most dine at home - consider catering' },
+  { id: 'christmas_eve', name: 'Christmas Eve', icon: '🎄', week: 51, revenueBoost: 0.2, type: 'holiday', tip: 'Special hours, limited menu' },
+  { id: 'new_years', name: "New Year's Eve", icon: '🥂', week: 52, revenueBoost: 0.6, type: 'celebration', tip: 'Premium pricing accepted, require deposits' },
+  { id: 'super_bowl', name: 'Super Bowl', icon: '🏈', week: 6, revenueBoost: 0.35, type: 'sports', tip: 'Wings, nachos, delivery surge' },
+  { id: 'march_madness', name: 'March Madness Start', icon: '🏀', week: 11, revenueBoost: 0.15, type: 'sports', tip: 'Bar traffic up, add screens' },
+  { id: 'cinco_de_mayo', name: 'Cinco de Mayo', icon: '🇲🇽', week: 18, revenueBoost: 0.25, type: 'theme', tip: 'Margarita specials (if applicable)' },
+  { id: 'restaurant_week', name: 'Restaurant Week', icon: '🍽️', week: 30, revenueBoost: 0.2, type: 'industry', tip: 'Lower margins but great exposure' },
+];
+
+const SEASONAL_EFFECTS = {
+  winter: { weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 50, 51, 52], modifier: -0.1, heating: 500 },
+  spring: { weeks: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], modifier: 0.05, patioBoost: 0.15 },
+  summer: { weeks: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35], modifier: -0.05, acCost: 400 },
+  fall: { weeks: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], modifier: 0.1, peakSeason: true },
+};
+
+// ============================================
+// TUTORIAL SYSTEM (Phase 4)
+// ============================================
+const TUTORIAL_STEPS = [
+  {
+    id: 'welcome',
+    title: 'Welcome to 86\'d!',
+    message: 'Ready to build your restaurant empire? I\'m Chef Marcus, your mentor. I\'ve seen it all in 30 years - successes, failures, and everything in between. Let me show you around.',
+    highlight: null,
+    action: 'continue',
+  },
+  {
+    id: 'dashboard',
+    title: 'Your Command Center',
+    message: 'This is your dashboard. Every number tells a story. Green is good, red means trouble. Watch your cash like a hawk - it\'s the lifeblood of your business.',
+    highlight: 'quickStats',
+    action: 'continue',
+  },
+  {
+    id: 'week',
+    title: 'The Weekly Grind',
+    message: 'Time moves in weeks. Each week you\'ll face decisions, collect revenue, and pay bills. Hit "NEXT WEEK" when you\'re ready to advance.',
+    highlight: 'nextWeekButton',
+    action: 'nextWeek',
+  },
+  {
+    id: 'staff',
+    title: 'Your Team',
+    message: 'Staff is your biggest expense AND your biggest asset. Underpay and they leave. Overpay and you go broke. Find the balance. Happy staff = happy customers.',
+    highlight: 'staffTab',
+    action: 'goToStaff',
+  },
+  {
+    id: 'scenarios',
+    title: 'Crisis & Opportunity',
+    message: 'Random events will test you. No-shows, equipment failures, great reviews - they all happen. Your choices have real consequences. There are no undo buttons in this business.',
+    highlight: null,
+    action: 'continue',
+  },
+  {
+    id: 'mentor',
+    title: 'I\'m Here to Help',
+    message: 'Tap on my bar anytime to ask questions. I\'ll give you my honest take - not what you want to hear, but what you need to hear. Good luck, chef.',
+    highlight: 'aiBar',
+    action: 'complete',
+  },
+];
+
+// ============================================
+// STATISTICS & MILESTONES (Phase 4)
+// ============================================
+const MILESTONES = [
+  { id: 'first_profit', name: 'First Profit', description: 'Achieve positive weekly profit', icon: '💵', stat: 'weeklyProfit', threshold: 0, reward: 1000 },
+  { id: 'week_10k', name: '$10K Week', description: 'Hit $10,000 weekly revenue', icon: '📈', stat: 'weeklyRevenue', threshold: 10000, reward: 2500 },
+  { id: 'week_25k', name: '$25K Week', description: 'Hit $25,000 weekly revenue', icon: '🚀', stat: 'weeklyRevenue', threshold: 25000, reward: 5000 },
+  { id: 'week_50k', name: '$50K Week', description: 'Hit $50,000 weekly revenue', icon: '💎', stat: 'weeklyRevenue', threshold: 50000, reward: 10000 },
+  { id: 'staff_10', name: 'Growing Team', description: 'Employ 10+ staff members', icon: '👥', stat: 'totalStaff', threshold: 10, reward: 2000 },
+  { id: 'staff_25', name: 'Small Army', description: 'Employ 25+ staff members', icon: '🎖️', stat: 'totalStaff', threshold: 25, reward: 5000 },
+  { id: 'reputation_80', name: 'Well Regarded', description: 'Reach 80% reputation', icon: '⭐', stat: 'reputation', threshold: 80, reward: 3000 },
+  { id: 'reputation_95', name: 'Legendary', description: 'Reach 95% reputation', icon: '👑', stat: 'reputation', threshold: 95, reward: 10000 },
+  { id: 'survive_52', name: 'Year One', description: 'Survive 52 weeks', icon: '🎂', stat: 'weeks', threshold: 52, reward: 15000 },
+  { id: 'survive_104', name: 'Year Two', description: 'Survive 104 weeks', icon: '🎉', stat: 'weeks', threshold: 104, reward: 25000 },
+  { id: 'location_2', name: 'Expansion', description: 'Open a second location', icon: '🏪', stat: 'locations', threshold: 2, reward: 5000 },
+  { id: 'location_5', name: 'Mini Empire', description: 'Own 5 locations', icon: '🏛️', stat: 'locations', threshold: 5, reward: 20000 },
+  { id: 'franchise_1', name: 'Franchisor', description: 'Sell your first franchise', icon: '🤝', stat: 'franchises', threshold: 1, reward: 10000 },
+  { id: 'valuation_1m', name: 'Millionaire', description: 'Empire valued at $1M+', icon: '💰', stat: 'valuation', threshold: 1000000, reward: 25000 },
+  { id: 'valuation_5m', name: 'Mogul', description: 'Empire valued at $5M+', icon: '🏆', stat: 'valuation', threshold: 5000000, reward: 50000 },
+];
+
+// ============================================
 // EMPIRE SCENARIOS (Multi-location specific)
 // ============================================
 const EMPIRE_SCENARIOS = [
@@ -652,6 +806,16 @@ export default function App() {
   const [empireModal, setEmpireModal] = useState(false);
   const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city' });
   
+  // Phase 4: New modal states
+  const [tutorialModal, setTutorialModal] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [vendorModal, setVendorModal] = useState(false);
+  const [competitorModal, setCompetitorModal] = useState(false);
+  const [eventsModal, setEventsModal] = useState(false);
+  const [sellLocationModal, setSellLocationModal] = useState(false);
+  const [milestonesModal, setMilestonesModal] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
+  
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
@@ -711,6 +875,46 @@ export default function App() {
       franchiseEnabled: false,
       franchiseFee: 35000,
       royaltyRate: 0.05,
+      
+      // Phase 4: Competition
+      competitors: [generateCompetitor(setup.cuisine, setup.location)],
+      
+      // Phase 4: Vendors
+      vendors: [{
+        id: 'sysco',
+        name: 'Sysco',
+        weeksUsed: 0,
+        deal: null,
+        priceLevel: 1.0,
+        relationship: 50,
+      }],
+      
+      // Phase 4: Events & Calendar
+      currentSeason: 'fall',
+      upcomingEvents: [],
+      completedEvents: [],
+      
+      // Phase 4: Milestones
+      unlockedMilestones: [],
+      milestoneRewards: 0,
+      
+      // Phase 4: Tutorial
+      tutorialComplete: false,
+      tutorialProgress: 0,
+      
+      // Phase 4: Statistics
+      stats: {
+        peakWeeklyRevenue: 0,
+        peakWeeklyProfit: 0,
+        totalCustomersServed: 0,
+        employeesHired: 1,
+        employeesFired: 0,
+        scenariosWon: 0,
+        scenariosLost: 0,
+        locationsOpened: 1,
+        locationsClosed: 0,
+        franchisesSold: 0,
+      },
     };
     
     setGame(initialGame);
@@ -960,9 +1164,15 @@ export default function App() {
         const response = await getAIMentorResponse(context, game, setup);
         setAiMessage(response);
         setAiLoading(false);
+        
+        // Phase 4: Check milestones after week processing
+        checkMilestones();
+        
+        // Phase 4: Check competition
+        checkCompetition();
       }
     }, 800);
-  }, [game, setup, processLocationWeek]);
+  }, [game, setup, processLocationWeek, checkMilestones, checkCompetition]);
 
   // ============================================
   // ACTION HANDLERS
@@ -1290,6 +1500,237 @@ export default function App() {
     setFranchiseModal(false);
   };
 
+  // ============================================
+  // PHASE 4: VENDOR MANAGEMENT
+  // ============================================
+  const negotiateVendorDeal = (vendorId, dealId) => {
+    if (!game) return;
+    const vendor = VENDORS.find(v => v.id === vendorId);
+    const deal = VENDOR_DEALS.find(d => d.id === dealId);
+    if (!vendor || !deal) return;
+    
+    const currentVendor = game.vendors.find(v => v.id === vendorId);
+    const relationship = currentVendor?.relationship || 50;
+    const successChance = 0.5 + (relationship / 200);
+    const success = Math.random() < successChance;
+    
+    if (success) {
+      setGame(g => ({
+        ...g,
+        vendors: g.vendors.map(v => 
+          v.id === vendorId 
+            ? { ...v, deal: dealId, relationship: Math.min(100, v.relationship + 10) }
+            : v
+        ),
+      }));
+      setAiMessage(`Great news! ${vendor.name} agreed to the ${deal.name}. That\'s going to save you money.`);
+    } else {
+      setGame(g => ({
+        ...g,
+        vendors: g.vendors.map(v => 
+          v.id === vendorId 
+            ? { ...v, relationship: Math.max(0, v.relationship - 5) }
+            : v
+        ),
+      }));
+      setAiMessage(`${vendor.name} declined the ${deal.name}. Build more history with them and try again.`);
+    }
+  };
+
+  const addVendor = (vendorId) => {
+    if (!game) return;
+    const vendor = VENDORS.find(v => v.id === vendorId);
+    if (!vendor || game.vendors.find(v => v.id === vendorId)) return;
+    
+    setGame(g => ({
+      ...g,
+      vendors: [...g.vendors, {
+        id: vendorId,
+        name: vendor.name,
+        weeksUsed: 0,
+        deal: null,
+        priceLevel: vendor.priceLevel,
+        relationship: 30,
+      }],
+    }));
+  };
+
+  // ============================================
+  // PHASE 4: COMPETITION SYSTEM
+  // ============================================
+  const checkCompetition = useCallback(() => {
+    if (!game) return;
+    
+    // Randomly spawn new competitor every ~20 weeks
+    if (game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6) {
+      const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
+      setGame(g => ({
+        ...g,
+        competitors: [...g.competitors, newCompetitor],
+      }));
+      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
+    }
+    
+    // Update competitor strengths
+    setGame(g => ({
+      ...g,
+      competitors: g.competitors.map(c => ({
+        ...c,
+        reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
+        weeksOpen: c.weeksOpen + 1,
+      })).filter(c => c.reputation > 15 || Math.random() > 0.1), // Weak competitors might close
+    }));
+  }, [game, setup]);
+
+  // ============================================
+  // PHASE 4: CALENDAR EVENTS
+  // ============================================
+  const checkCalendarEvents = useCallback(() => {
+    if (!game) return { boost: 0, event: null };
+    
+    const weekOfYear = ((game.week - 1) % 52) + 1;
+    const currentEvent = CALENDAR_EVENTS.find(e => e.week === weekOfYear);
+    
+    // Determine season
+    let season = 'fall';
+    for (const [s, data] of Object.entries(SEASONAL_EFFECTS)) {
+      if (data.weeks.includes(weekOfYear)) {
+        season = s;
+        break;
+      }
+    }
+    
+    return {
+      boost: currentEvent?.revenueBoost || 0,
+      event: currentEvent,
+      season,
+      seasonalMod: SEASONAL_EFFECTS[season]?.modifier || 0,
+    };
+  }, [game]);
+
+  // ============================================
+  // PHASE 4: MILESTONES
+  // ============================================
+  const checkMilestones = useCallback(() => {
+    if (!game) return;
+    
+    const newMilestones = [];
+    const loc = getActiveLocation();
+    const totalStaff = game.locations.reduce((sum, l) => sum + l.staff.length, 0);
+    
+    MILESTONES.forEach(m => {
+      if (game.unlockedMilestones.includes(m.id)) return;
+      
+      let achieved = false;
+      switch (m.stat) {
+        case 'weeklyProfit': achieved = loc?.lastWeekProfit > m.threshold; break;
+        case 'weeklyRevenue': achieved = loc?.lastWeekRevenue > m.threshold; break;
+        case 'totalStaff': achieved = totalStaff >= m.threshold; break;
+        case 'reputation': achieved = loc?.reputation >= m.threshold; break;
+        case 'weeks': achieved = game.week >= m.threshold; break;
+        case 'locations': achieved = game.locations.length >= m.threshold; break;
+        case 'franchises': achieved = game.franchises.length >= m.threshold; break;
+        case 'valuation': achieved = game.empireValuation >= m.threshold; break;
+      }
+      
+      if (achieved) newMilestones.push(m);
+    });
+    
+    if (newMilestones.length > 0) {
+      const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
+      setGame(g => ({
+        ...g,
+        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
+        milestoneRewards: g.milestoneRewards + totalReward,
+        corporateCash: g.corporateCash + totalReward,
+      }));
+      
+      const milestoneNames = newMilestones.map(m => m.name).join(', ');
+      setAiMessage(`🎉 Milestone${newMilestones.length > 1 ? 's' : ''} unlocked: ${milestoneNames}! Bonus: ${formatCurrency(totalReward)}`);
+    }
+  }, [game, getActiveLocation]);
+
+  // ============================================
+  // PHASE 4: SELL/CLOSE LOCATION
+  // ============================================
+  const sellLocation = (locationId) => {
+    if (!game || game.locations.length <= 1) {
+      alert('Cannot sell your last location!');
+      return;
+    }
+    
+    const location = game.locations.find(l => l.id === locationId);
+    if (!location) return;
+    
+    // Valuation: 2-3x annual profit + assets
+    const annualProfit = (location.totalProfit / Math.max(1, location.weeksOpen)) * 52;
+    const assetValue = location.equipment.length * 5000 + location.upgrades.length * 15000;
+    const salePrice = Math.max(25000, Math.floor(annualProfit * (2 + Math.random()) + assetValue));
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.filter(l => l.id !== locationId),
+      corporateCash: g.corporateCash + salePrice,
+      stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
+    }));
+    
+    // Switch to another location
+    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    if (remainingLocations.length > 0) {
+      setActiveLocationId(remainingLocations[0].id);
+    }
+    
+    setSellLocationModal(false);
+    setAiMessage(`Sold ${location.name} for ${formatCurrency(salePrice)}. Sometimes knowing when to exit is the smartest move.`);
+  };
+
+  const closeLocation = (locationId) => {
+    if (!game || game.locations.length <= 1) {
+      alert('Cannot close your last location!');
+      return;
+    }
+    
+    const location = game.locations.find(l => l.id === locationId);
+    if (!location) return;
+    
+    // Closing costs: severance, lease break, etc.
+    const closingCost = location.staff.length * 1000 + location.rent * 3;
+    
+    setGame(g => ({
+      ...g,
+      locations: g.locations.filter(l => l.id !== locationId),
+      corporateCash: g.corporateCash - closingCost,
+      stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
+    }));
+    
+    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    if (remainingLocations.length > 0) {
+      setActiveLocationId(remainingLocations[0].id);
+    }
+    
+    setSellLocationModal(false);
+    setAiMessage(`Closed ${location.name}. Closing costs: ${formatCurrency(closingCost)}. Not every location works out - that\'s business.`);
+  };
+
+  // ============================================
+  // PHASE 4: TUTORIAL
+  // ============================================
+  const advanceTutorial = () => {
+    const nextStep = tutorialStep + 1;
+    if (nextStep >= TUTORIAL_STEPS.length) {
+      setShowTutorial(false);
+      setGame(g => ({ ...g, tutorialComplete: true }));
+      setAiMessage('Tutorial complete! You\'ve got the basics. Now the real learning begins. Good luck, chef!');
+    } else {
+      setTutorialStep(nextStep);
+    }
+  };
+
+  const skipTutorial = () => {
+    setShowTutorial(false);
+    setGame(g => g ? { ...g, tutorialComplete: true } : g);
+  };
+
   const handleScenarioChoice = async (option) => {
     const success = Math.random() <= option.successChance;
     const outcome = success ? option.success : option.fail;
@@ -1430,7 +1871,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v5.0.0 • Phase 3 • Empire Building</Text>
+          <Text style={styles.versionText}>v6.0.0 • Phase 4 • Polish & Advanced</Text>
         </View>
       </SafeAreaView>
     );
@@ -1875,6 +2316,22 @@ export default function App() {
                     <Text style={styles.quickActionIcon}>💾</Text>
                     <Text style={styles.quickActionText}>Save</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setVendorModal(true)}>
+                    <Text style={styles.quickActionIcon}>🚛</Text>
+                    <Text style={styles.quickActionText}>Vendors</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setCompetitorModal(true)}>
+                    <Text style={styles.quickActionIcon}>👀</Text>
+                    <Text style={styles.quickActionText}>Competition</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setEventsModal(true)}>
+                    <Text style={styles.quickActionIcon}>📅</Text>
+                    <Text style={styles.quickActionText}>Events</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setMilestonesModal(true)}>
+                    <Text style={styles.quickActionIcon}>🏆</Text>
+                    <Text style={styles.quickActionText}>Milestones</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Active Systems Badges */}
@@ -2129,6 +2586,20 @@ export default function App() {
                         </View>
                       </View>
                     ))}
+                  </>
+                )}
+
+                {/* Exit Strategy */}
+                {game.locations.length > 1 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Exit Strategy</Text>
+                    <TouchableOpacity style={styles.expansionButton} onPress={() => setSellLocationModal(true)}>
+                      <Text style={styles.expansionButtonIcon}>💼</Text>
+                      <View>
+                        <Text style={styles.expansionButtonTitle}>Sell or Close Location</Text>
+                        <Text style={styles.expansionButtonDesc}>Exit underperforming locations strategically</Text>
+                      </View>
+                    </TouchableOpacity>
                   </>
                 )}
 
@@ -2473,6 +2944,256 @@ export default function App() {
             </View>
           </View>
         </Modal>
+
+        {/* Phase 4: Vendor Modal */}
+        <Modal visible={vendorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🚛 Vendor Management</Text>
+                <TouchableOpacity onPress={() => setVendorModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.sectionTitle}>Your Vendors</Text>
+                {game?.vendors?.map(v => {
+                  const vendorData = VENDORS.find(vd => vd.id === v.id);
+                  const activeDeal = VENDOR_DEALS.find(d => d.id === v.deal);
+                  return (
+                    <View key={v.id} style={styles.vendorCard}>
+                      <View style={styles.vendorHeader}>
+                        <Text style={styles.vendorIcon}>{vendorData?.icon}</Text>
+                        <View style={styles.vendorInfo}>
+                          <Text style={styles.vendorName}>{v.name}</Text>
+                          <Text style={styles.vendorType}>{vendorData?.type} • {v.weeksUsed} weeks</Text>
+                        </View>
+                        <View>
+                          <Text style={styles.vendorRelationship}>Rel: {v.relationship}%</Text>
+                          {activeDeal && <Text style={styles.vendorDeal}>✓ {activeDeal.name}</Text>}
+                        </View>
+                      </View>
+                      {!activeDeal && (
+                        <View style={styles.dealOptions}>
+                          <Text style={styles.dealLabel}>Negotiate Deal:</Text>
+                          {VENDOR_DEALS.map(deal => (
+                            <TouchableOpacity 
+                              key={deal.id} 
+                              style={styles.dealOption}
+                              onPress={() => negotiateVendorDeal(v.id, deal.id)}
+                            >
+                              <Text style={styles.dealName}>{deal.name}</Text>
+                              <Text style={styles.dealDesc}>{deal.description}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+
+                <Text style={styles.sectionTitle}>Available Vendors</Text>
+                {VENDORS.filter(v => !game?.vendors?.find(gv => gv.id === v.id)).map(vendor => (
+                  <TouchableOpacity key={vendor.id} style={styles.addVendorCard} onPress={() => addVendor(vendor.id)}>
+                    <Text style={styles.vendorIcon}>{vendor.icon}</Text>
+                    <View style={styles.vendorInfo}>
+                      <Text style={styles.vendorName}>{vendor.name}</Text>
+                      <Text style={styles.vendorType}>{vendor.type} • Min order: {formatCurrency(vendor.minOrder)}</Text>
+                      <Text style={styles.vendorStats}>Quality: {Math.round(vendor.quality * 100)}% • Reliability: {Math.round(vendor.reliability * 100)}%</Text>
+                    </View>
+                    <Text style={styles.addVendorBtn}>+ Add</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Competition Modal */}
+        <Modal visible={competitorModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👀 Competition</Text>
+                <TouchableOpacity onPress={() => setCompetitorModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.competitionIntro}>Know your competition. Watch their moves. Learn from them.</Text>
+                {game?.competitors?.map(c => {
+                  const typeData = COMPETITOR_TYPES.find(t => t.id === c.type);
+                  return (
+                    <View key={c.id} style={styles.competitorCard}>
+                      <Text style={styles.competitorIcon}>{c.icon}</Text>
+                      <View style={styles.competitorInfo}>
+                        <Text style={styles.competitorName}>{c.name}</Text>
+                        <Text style={styles.competitorType}>{typeData?.name} • {c.weeksOpen} weeks old</Text>
+                        <View style={styles.competitorStats}>
+                          <Text style={styles.competitorStat}>Rep: {c.reputation}%</Text>
+                          <Text style={styles.competitorStat}>Price: {'$'.repeat(c.priceLevel)}</Text>
+                          {c.aggressive && <Text style={[styles.competitorStat, { color: colors.accent }]}>⚡ Aggressive</Text>}
+                        </View>
+                      </View>
+                      <View style={styles.threatLevel}>
+                        <Text style={styles.threatLabel}>Threat</Text>
+                        <Text style={[styles.threatValue, { color: c.threat > 0.2 ? colors.accent : colors.warning }]}>{Math.round(c.threat * 100)}%</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {(!game?.competitors || game.competitors.length === 0) && (
+                  <Text style={styles.noCompetitors}>No direct competitors yet. Enjoy it while it lasts!</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Events Calendar Modal */}
+        <Modal visible={eventsModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📅 Events Calendar</Text>
+                <TouchableOpacity onPress={() => setEventsModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Text style={styles.calendarIntro}>Plan ahead for these key dates that affect restaurant traffic.</Text>
+                <Text style={styles.currentWeekLabel}>Current: Week {game?.week} of Year {Math.floor((game?.week || 0) / 52) + 1}</Text>
+                
+                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                {CALENDAR_EVENTS.filter(e => e.week > ((game?.week - 1) % 52) + 1).slice(0, 6).map(event => (
+                  <View key={event.id} style={styles.eventCard}>
+                    <Text style={styles.eventIcon}>{event.icon}</Text>
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventName}>{event.name}</Text>
+                      <Text style={styles.eventWeek}>Week {event.week}</Text>
+                      <Text style={styles.eventTip}>💡 {event.tip}</Text>
+                    </View>
+                    <View style={styles.eventBoost}>
+                      <Text style={[styles.eventBoostValue, { color: event.revenueBoost >= 0 ? colors.success : colors.accent }]}>
+                        {event.revenueBoost >= 0 ? '+' : ''}{Math.round(event.revenueBoost * 100)}%
+                      </Text>
+                      <Text style={styles.eventBoostLabel}>Revenue</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Milestones Modal */}
+        <Modal visible={milestonesModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏆 Milestones</Text>
+                <TouchableOpacity onPress={() => setMilestonesModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                <View style={styles.milestoneSummary}>
+                  <Text style={styles.milestoneCount}>{game?.unlockedMilestones?.length || 0}/{MILESTONES.length}</Text>
+                  <Text style={styles.milestoneLabel}>Milestones Unlocked</Text>
+                  <Text style={styles.milestoneRewards}>Total Rewards: {formatCurrency(game?.milestoneRewards || 0)}</Text>
+                </View>
+                
+                {MILESTONES.map(m => {
+                  const unlocked = game?.unlockedMilestones?.includes(m.id);
+                  return (
+                    <View key={m.id} style={[styles.milestoneCard, unlocked && styles.milestoneUnlocked]}>
+                      <Text style={styles.milestoneIcon}>{unlocked ? m.icon : '🔒'}</Text>
+                      <View style={styles.milestoneInfo}>
+                        <Text style={[styles.milestoneName, unlocked && styles.milestoneNameUnlocked]}>{m.name}</Text>
+                        <Text style={styles.milestoneDesc}>{m.description}</Text>
+                      </View>
+                      <Text style={[styles.milestoneReward, unlocked && styles.milestoneRewardUnlocked]}>
+                        {unlocked ? '✓' : formatCurrency(m.reward)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Sell/Close Location Modal */}
+        <Modal visible={sellLocationModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>💼 Exit Strategy</Text>
+                <TouchableOpacity onPress={() => setSellLocationModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView>
+                {game?.locations?.length > 1 ? (
+                  <>
+                    <Text style={styles.exitIntro}>Sometimes the best move is knowing when to exit. Select a location:</Text>
+                    {game.locations.map(l => {
+                      const annualProfit = (l.totalProfit / Math.max(1, l.weeksOpen)) * 52;
+                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + l.equipment.length * 5000));
+                      const closingCost = l.staff.length * 1000 + l.rent * 3;
+                      return (
+                        <View key={l.id} style={styles.exitLocationCard}>
+                          <View style={styles.exitLocationHeader}>
+                            <Text style={styles.exitLocationName}>{l.name}</Text>
+                            <Text style={styles.exitLocationWeeks}>{l.weeksOpen} weeks</Text>
+                          </View>
+                          <View style={styles.exitLocationStats}>
+                            <Text style={styles.exitStat}>Cash: {formatCurrency(l.cash)}</Text>
+                            <Text style={styles.exitStat}>Staff: {l.staff.length}</Text>
+                            <Text style={styles.exitStat}>Rep: {l.reputation}%</Text>
+                          </View>
+                          <View style={styles.exitActions}>
+                            <TouchableOpacity 
+                              style={styles.sellButton}
+                              onPress={() => sellLocation(l.id)}
+                            >
+                              <Text style={styles.sellButtonText}>SELL</Text>
+                              <Text style={styles.sellButtonValue}>~{formatCurrency(estimatedValue)}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                              style={styles.closeButton}
+                              onPress={() => closeLocation(l.id)}
+                            >
+                              <Text style={styles.closeButtonText}>CLOSE</Text>
+                              <Text style={styles.closeButtonValue}>-{formatCurrency(closingCost)}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <Text style={styles.exitWarning}>You only have one location. Can't exit your last restaurant!</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Phase 4: Tutorial Overlay */}
+        {showTutorial && !game?.tutorialComplete && game && (
+          <View style={styles.tutorialOverlay}>
+            <View style={styles.tutorialCard}>
+              <Text style={styles.tutorialTitle}>{TUTORIAL_STEPS[tutorialStep]?.title}</Text>
+              <Text style={styles.tutorialMessage}>{TUTORIAL_STEPS[tutorialStep]?.message}</Text>
+              <View style={styles.tutorialProgress}>
+                {TUTORIAL_STEPS.map((_, i) => (
+                  <View key={i} style={[styles.tutorialDot, i <= tutorialStep && styles.tutorialDotActive]} />
+                ))}
+              </View>
+              <View style={styles.tutorialActions}>
+                <TouchableOpacity style={styles.tutorialSkip} onPress={skipTutorial}>
+                  <Text style={styles.tutorialSkipText}>Skip Tutorial</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.tutorialNext} onPress={advanceTutorial}>
+                  <Text style={styles.tutorialNextText}>
+                    {tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Start Playing' : 'Next →'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
       </SafeAreaView>
     );
@@ -2868,5 +3589,100 @@ const styles = StyleSheet.create({
   bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
   nextWeekButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
   nextWeekButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // ============================================
+  // PHASE 4 STYLES
+  // ============================================
+  
+  // Vendor Modal
+  vendorCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 12 },
+  vendorHeader: { flexDirection: 'row', alignItems: 'center' },
+  vendorIcon: { fontSize: 28, marginRight: 12 },
+  vendorInfo: { flex: 1 },
+  vendorName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  vendorType: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  vendorStats: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  vendorRelationship: { color: colors.info, fontSize: 12, fontWeight: '600' },
+  vendorDeal: { color: colors.success, fontSize: 10, marginTop: 2 },
+  dealOptions: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
+  dealLabel: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
+  dealOption: { backgroundColor: colors.surface, padding: 10, borderRadius: 6, marginBottom: 6 },
+  dealName: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  dealDesc: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  addVendorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+  addVendorBtn: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+
+  // Competition Modal
+  competitionIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 16 },
+  competitorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 14, borderRadius: 8, marginBottom: 10 },
+  competitorIcon: { fontSize: 32, marginRight: 12 },
+  competitorInfo: { flex: 1 },
+  competitorName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  competitorType: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  competitorStats: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  competitorStat: { color: colors.textSecondary, fontSize: 11 },
+  threatLevel: { alignItems: 'center' },
+  threatLabel: { color: colors.textMuted, fontSize: 10 },
+  threatValue: { fontSize: 18, fontWeight: '700' },
+  noCompetitors: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+
+  // Events Calendar Modal
+  calendarIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 12 },
+  currentWeekLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: 16 },
+  eventCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 14, borderRadius: 8, marginBottom: 10 },
+  eventIcon: { fontSize: 28, marginRight: 12 },
+  eventInfo: { flex: 1 },
+  eventName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  eventWeek: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  eventTip: { color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' },
+  eventBoost: { alignItems: 'center' },
+  eventBoostValue: { fontSize: 18, fontWeight: '700' },
+  eventBoostLabel: { color: colors.textMuted, fontSize: 10 },
+
+  // Milestones Modal
+  milestoneSummary: { backgroundColor: colors.surfaceLight, padding: 20, borderRadius: 8, alignItems: 'center', marginBottom: 20 },
+  milestoneCount: { color: colors.primary, fontSize: 36, fontWeight: '700' },
+  milestoneLabel: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
+  milestoneRewards: { color: colors.success, fontSize: 12, marginTop: 8 },
+  milestoneCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 8, marginBottom: 8, opacity: 0.6 },
+  milestoneUnlocked: { backgroundColor: colors.surfaceLight, opacity: 1, borderLeftWidth: 3, borderLeftColor: colors.success },
+  milestoneIcon: { fontSize: 24, marginRight: 12 },
+  milestoneInfo: { flex: 1 },
+  milestoneName: { color: colors.textMuted, fontSize: 14 },
+  milestoneNameUnlocked: { color: colors.textPrimary, fontWeight: '600' },
+  milestoneDesc: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  milestoneReward: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  milestoneRewardUnlocked: { color: colors.success },
+
+  // Exit Strategy Modal
+  exitIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 16 },
+  exitLocationCard: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 8, marginBottom: 12 },
+  exitLocationHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  exitLocationName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  exitLocationWeeks: { color: colors.textMuted, fontSize: 12 },
+  exitLocationStats: { flexDirection: 'row', gap: 15, marginBottom: 12 },
+  exitStat: { color: colors.textSecondary, fontSize: 12 },
+  exitActions: { flexDirection: 'row', gap: 10 },
+  sellButton: { flex: 1, backgroundColor: colors.success, padding: 12, borderRadius: 6, alignItems: 'center' },
+  sellButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  sellButtonValue: { color: colors.background, fontSize: 11, marginTop: 2 },
+  closeButton: { flex: 1, backgroundColor: colors.accent, padding: 12, borderRadius: 6, alignItems: 'center' },
+  closeButtonText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  closeButtonValue: { color: colors.textPrimary, fontSize: 11, marginTop: 2 },
+  exitWarning: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
+
+  // Tutorial Overlay
+  tutorialOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 1000 },
+  tutorialCard: { backgroundColor: colors.surface, padding: 25, borderRadius: 12, maxWidth: 360, width: '100%', borderWidth: 2, borderColor: colors.primary },
+  tutorialTitle: { color: colors.primary, fontSize: 22, fontWeight: '700', marginBottom: 15, textAlign: 'center' },
+  tutorialMessage: { color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 20, textAlign: 'center' },
+  tutorialProgress: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 20 },
+  tutorialDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.surfaceLight },
+  tutorialDotActive: { backgroundColor: colors.primary },
+  tutorialActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  tutorialSkip: { padding: 12 },
+  tutorialSkipText: { color: colors.textMuted, fontSize: 14 },
+  tutorialNext: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 6 },
+  tutorialNextText: { color: colors.background, fontSize: 14, fontWeight: '700' },
 });
 
