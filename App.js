@@ -768,6 +768,128 @@ const PHASE_9_ACHIEVEMENTS = [
 ];
 
 // ============================================
+// PHASE 10: ENDGAME & LEGACY SYSTEMS
+// ============================================
+
+// LEGACY SYSTEM - Persists across playthroughs
+const LEGACY_PERKS = [
+  { id: 'seed_capital', name: 'Family Money', icon: '💰', desc: '+$5K starting capital per level', levels: 5, effect: { startingCapital: 5000 }, cost: 50 },
+  { id: 'industry_contacts', name: 'Industry Contacts', icon: '📞', desc: '+5% vendor discounts per level', levels: 5, effect: { vendorDiscount: 0.05 }, cost: 75 },
+  { id: 'reputation_head_start', name: 'Word of Mouth', icon: '⭐', desc: '+3 starting reputation per level', levels: 5, effect: { startingRep: 3 }, cost: 60 },
+  { id: 'staff_network', name: 'Talent Pipeline', icon: '👥', desc: '+1 starting staff skill per level', levels: 3, effect: { staffSkillBonus: 1 }, cost: 100 },
+  { id: 'real_estate_savvy', name: 'Real Estate Savvy', icon: '🏠', desc: '-3% rent per level', levels: 5, effect: { rentDiscount: 0.03 }, cost: 80 },
+  { id: 'business_acumen', name: 'Business Acumen', icon: '📊', desc: '+2% profit margin per level', levels: 5, effect: { profitBonus: 0.02 }, cost: 90 },
+  { id: 'crisis_management', name: 'Crisis Management', icon: '🛡️', desc: 'Reduce crisis severity by 10% per level', levels: 3, effect: { crisisReduction: 0.10 }, cost: 120 },
+  { id: 'media_presence', name: 'Media Presence', icon: '📺', desc: '+10% marketing effectiveness per level', levels: 4, effect: { marketingBoost: 0.10 }, cost: 85 },
+];
+
+// GLOBAL EXPANSION - International markets
+const INTERNATIONAL_MARKETS = [
+  { id: 'canada', name: 'Canada', icon: '🇨🇦', currency: 'CAD', exchangeRate: 1.35, difficulty: 1.0, laborCost: 1.1, regulations: 'moderate', taxRate: 0.26, tip: 'Similar to US but stricter labor laws' },
+  { id: 'uk', name: 'United Kingdom', icon: '🇬🇧', currency: 'GBP', exchangeRate: 0.79, difficulty: 1.2, laborCost: 1.2, regulations: 'strict', taxRate: 0.19, tip: 'Strong pub/cafe culture, Brexit import rules' },
+  { id: 'mexico', name: 'Mexico', icon: '🇲🇽', currency: 'MXN', exchangeRate: 17.5, difficulty: 0.8, laborCost: 0.4, regulations: 'moderate', taxRate: 0.30, tip: 'Lower costs but supply chain challenges' },
+  { id: 'japan', name: 'Japan', icon: '🇯🇵', currency: 'JPY', exchangeRate: 149, difficulty: 1.5, laborCost: 0.9, regulations: 'strict', taxRate: 0.23, tip: 'High standards, small portions, service culture' },
+  { id: 'uae', name: 'UAE', icon: '🇦🇪', currency: 'AED', exchangeRate: 3.67, difficulty: 1.3, laborCost: 0.6, regulations: 'strict', taxRate: 0, tip: 'No income tax, strict halal requirements' },
+  { id: 'australia', name: 'Australia', icon: '🇦🇺', currency: 'AUD', exchangeRate: 1.55, difficulty: 1.1, laborCost: 1.4, regulations: 'strict', taxRate: 0.30, tip: 'Highest minimum wage, brunch capital' },
+  { id: 'singapore', name: 'Singapore', icon: '🇸🇬', currency: 'SGD', exchangeRate: 1.35, difficulty: 1.4, laborCost: 0.8, regulations: 'strict', taxRate: 0.17, tip: 'Hawker culture, high rent, food-obsessed' },
+  { id: 'germany', name: 'Germany', icon: '🇩🇪', currency: 'EUR', exchangeRate: 0.92, difficulty: 1.2, laborCost: 1.3, regulations: 'strict', taxRate: 0.30, tip: 'Strong regulations, quality focus' },
+];
+
+// MENTORSHIP NETWORK - Train protégés
+const PROTEGE_TYPES = [
+  { id: 'aspiring_chef', name: 'Aspiring Chef', icon: '👨‍🍳', trainTime: 26, cost: 15000, weeklyBenefit: 500, specialization: 'kitchen', desc: 'A passionate cook looking to learn' },
+  { id: 'future_owner', name: 'Future Owner', icon: '🏪', trainTime: 52, cost: 50000, weeklyBenefit: 2000, specialization: 'management', desc: 'Entrepreneur wanting your secrets' },
+  { id: 'culinary_student', name: 'Culinary Student', icon: '📚', trainTime: 13, cost: 5000, weeklyBenefit: 200, specialization: 'all', desc: 'Eager student from culinary school' },
+  { id: 'career_changer', name: 'Career Changer', icon: '🔄', trainTime: 39, cost: 25000, weeklyBenefit: 1000, specialization: 'operations', desc: 'Professional switching to hospitality' },
+  { id: 'family_member', name: 'Family Member', icon: '👨‍👩‍👧', trainTime: 52, cost: 10000, weeklyBenefit: 1500, specialization: 'loyalty', desc: 'Keep it in the family', loyaltyBonus: true },
+];
+
+// INDUSTRY INFLUENCE - Shape the market
+const INDUSTRY_ACTIONS = [
+  { id: 'lobby_health', name: 'Health Code Lobbying', icon: '📋', cost: 50000, duration: 12, effect: { inspectionLeniency: 0.2 }, desc: 'Influence health inspection standards' },
+  { id: 'wage_coalition', name: 'Wage Coalition', icon: '💵', cost: 75000, duration: 26, effect: { wageFreeze: true }, desc: 'Coalition to stabilize minimum wage' },
+  { id: 'delivery_fee_cap', name: 'Delivery Fee Campaign', icon: '🛵', cost: 30000, duration: 8, effect: { deliveryFeeCap: 0.15 }, desc: 'Advocate for delivery fee caps' },
+  { id: 'rent_control', name: 'Commercial Rent Control', icon: '🏠', cost: 100000, duration: 52, effect: { rentIncreaseCap: 0.03 }, desc: 'Support commercial rent control' },
+  { id: 'tourism_boost', name: 'Tourism Campaign', icon: '✈️', cost: 40000, duration: 16, effect: { trafficBoost: 0.15 }, desc: 'Fund local tourism marketing' },
+  { id: 'culinary_award', name: 'Create Local Award', icon: '🏆', cost: 200000, duration: 0, effect: { awardCreated: true, reputationBoost: 10 }, desc: 'Establish a prestigious culinary award' },
+];
+
+// M&A OPPORTUNITIES - Mergers & Acquisitions
+const MA_OPPORTUNITIES = [
+  { id: 'struggling_competitor', name: 'Acquire Struggling Competitor', icon: '🏪', basePrice: 150000, valuationType: 'revenue', multiple: 0.8, desc: 'Buy out a competitor at a discount' },
+  { id: 'supply_chain', name: 'Vertical Integration', icon: '🚛', basePrice: 300000, valuationType: 'fixed', desc: 'Acquire your primary supplier', benefits: { foodCostReduction: 0.10 } },
+  { id: 'tech_startup', name: 'Tech Acquisition', icon: '💻', basePrice: 500000, valuationType: 'fixed', desc: 'Buy a restaurant tech startup', benefits: { operationsBoost: 0.15 } },
+  { id: 'real_estate_portfolio', name: 'Real Estate Portfolio', icon: '🏢', basePrice: 2000000, valuationType: 'fixed', desc: 'Acquire commercial property portfolio', benefits: { rentEliminated: true } },
+  { id: 'competitor_chain', name: 'Competitor Chain Buyout', icon: '🏛️', basePrice: 1000000, valuationType: 'locations', multiple: 200000, desc: 'Acquire a small regional chain' },
+];
+
+// DEBT RESTRUCTURING OPTIONS
+const DEBT_OPTIONS = [
+  { id: 'refinance', name: 'Refinance Existing Loans', icon: '🔄', requirement: { loans: 1 }, benefit: 'Lower interest rate by 1.5%', fee: 0.02 },
+  { id: 'consolidate', name: 'Debt Consolidation', icon: '📦', requirement: { loans: 2 }, benefit: 'Combine all loans into one', fee: 0.03 },
+  { id: 'negotiate', name: 'Negotiate with Creditors', icon: '🤝', requirement: { cashFlowIssue: true }, benefit: 'Reduce principal by 15%', fee: 0 },
+  { id: 'convert_equity', name: 'Convert to Equity', icon: '📊', requirement: { investors: true }, benefit: 'Trade debt for equity stake', equityDilution: 0.15 },
+  { id: 'sale_leaseback', name: 'Sale-Leaseback', icon: '🏠', requirement: { ownsProperty: true }, benefit: 'Cash out property, lease back', rentIncrease: 0.20 },
+];
+
+// COMPLEX BRANCHING SCENARIOS
+const BRANCHING_SCENARIOS = [
+  {
+    id: 'celebrity_investment',
+    title: '🌟 Celebrity Investment Offer',
+    description: 'A famous celebrity wants to invest $500K for 20% equity and put their name on your restaurant.',
+    branches: [
+      { id: 'accept', text: 'Accept the deal', effects: { cash: 500000, equity: -0.20, fame: 0.5, risk: 'celebrity_drama' } },
+      { id: 'negotiate', text: 'Counter with 10%', effects: { cash: 250000, equity: -0.10, fame: 0.25 }, successChance: 0.4 },
+      { id: 'decline', text: 'Politely decline', effects: { reputation: 5 } },
+    ]
+  },
+  {
+    id: 'franchise_scandal',
+    title: '📰 Franchisee Scandal',
+    description: 'One of your franchisees is in the news for health violations. Your brand is at risk.',
+    branches: [
+      { id: 'terminate', text: 'Terminate franchise immediately', effects: { franchiseLoss: 1, reputation: -5, cash: -50000 } },
+      { id: 'support', text: 'Support & help them recover', effects: { cash: -25000, franchiseRep: -10 }, futureEffect: 'loyalty_bonus' },
+      { id: 'distance', text: 'Issue statement distancing', effects: { reputation: -10, franchiseRep: -20 } },
+    ]
+  },
+  {
+    id: 'union_organizing',
+    title: '✊ Union Organizing',
+    description: 'Your staff is considering forming a union. How do you respond?',
+    branches: [
+      { id: 'embrace', text: 'Welcome unionization', effects: { morale: 25, laborCost: 0.15, turnover: -0.50, pr: 10 } },
+      { id: 'neutral', text: 'Remain neutral', effects: { morale: 5 }, futureEffect: 'union_vote' },
+      { id: 'resist', text: 'Discourage (legally)', effects: { morale: -15, laborCost: 0, pr: -10, risk: 'legal_challenge' } },
+    ]
+  },
+  {
+    id: 'expansion_crossroads',
+    title: '🔀 Expansion Crossroads',
+    description: 'You have resources for ONE major move. Which path will define your empire?',
+    branches: [
+      { id: 'franchise', text: 'Franchise aggressively', effects: { franchiseBoost: 3, controlLoss: 0.15, cash: 150000 } },
+      { id: 'corporate', text: 'Build corporate locations', effects: { locationBoost: 2, cash: -300000, control: 0.10 } },
+      { id: 'virtual', text: 'Virtual brand empire', effects: { virtualBrands: 5, cash: -50000, flexibility: 0.20 } },
+      { id: 'international', text: 'Go international', effects: { internationalUnlock: true, cash: -200000, prestige: 25 } },
+    ]
+  },
+];
+
+// ULTIMATE ACHIEVEMENTS
+const ULTIMATE_ACHIEVEMENTS = [
+  { id: 'true_empire', name: 'True Empire', desc: '$50M+ valuation across 50+ locations', icon: '👑', reward: 500000, legendary: true },
+  { id: 'global_brand', name: 'Global Brand', desc: 'Operate in 5+ countries', icon: '🌍', reward: 250000, legendary: true },
+  { id: 'industry_titan', name: 'Industry Titan', desc: 'Complete all industry influence actions', icon: '🏛️', reward: 300000, legendary: true },
+  { id: 'mentor_legend', name: 'Mentor Legend', desc: 'Train 10+ successful protégés', icon: '👨‍🏫', reward: 150000, legendary: true },
+  { id: 'legacy_master', name: 'Legacy Master', desc: 'Max out all legacy perks', icon: '📜', reward: 200000, legendary: true },
+  { id: 'acquisition_king', name: 'Acquisition King', desc: 'Complete 5 M&A deals', icon: '🦈', reward: 400000, legendary: true },
+  { id: 'perfect_run', name: 'Perfect Run', desc: 'Reach $10M without any crisis', icon: '✨', reward: 1000000, legendary: true },
+  { id: 'speedrun_legend', name: 'Speedrun Legend', desc: 'Reach $1M in under 20 weeks', icon: '⚡', reward: 100000, legendary: true },
+];
+
+// ============================================
 // PHASE 7: MULTIPLAYER & SOCIAL SYSTEMS
 // ============================================
 
@@ -2256,6 +2378,20 @@ export default function App() {
   const [socialMediaModal, setSocialMediaModal] = useState(false);
   const [customerSegmentModal, setCustomerSegmentModal] = useState(false);
 
+  // Phase 10: Endgame & Legacy Systems states
+  const [legacyModal, setLegacyModal] = useState(false);
+  const [globalExpansionModal, setGlobalExpansionModal] = useState(false);
+  const [mentorshipModal, setMentorshipModal] = useState(false);
+  const [industryInfluenceModal, setIndustryInfluenceModal] = useState(false);
+  const [maModal, setMaModal] = useState(false);
+  const [debtModal, setDebtModal] = useState(false);
+  const [legacyPerks, setLegacyPerks] = useState({});
+  const [legacyPoints, setLegacyPoints] = useState(0);
+  const [proteges, setProteges] = useState([]);
+  const [internationalLocations, setInternationalLocations] = useState([]);
+  const [activeIndustryActions, setActiveIndustryActions] = useState([]);
+  const [completedAcquisitions, setCompletedAcquisitions] = useState([]);
+  const [branchingScenario, setBranchingScenario] = useState(null);
   
   // Save State
   const [savedGames, setSavedGames] = useState([]);
@@ -3667,7 +3803,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v11.0.0 • Phase 9 • Realism & Advanced Analytics</Text>
+          <Text style={styles.versionText}>v12.0.0 • Phase 10 • Endgame & Legacy Systems</Text>
         </View>
       </SafeAreaView>
     );
