@@ -546,6 +546,295 @@ const HALL_OF_FAME_CATEGORIES = [
 ];
 
 // ============================================
+// PHASE 7: MULTIPLAYER & SOCIAL SYSTEMS
+// ============================================
+
+// LEADERBOARD CATEGORIES
+const LEADERBOARD_CATEGORIES = [
+  { id: 'weekly_revenue', name: 'Weekly Revenue', icon: '💰', stat: 'peakWeeklyRevenue', format: (v) => `$${v.toLocaleString()}` },
+  { id: 'empire_value', name: 'Empire Value', icon: '🏛️', stat: 'empireValuation', format: (v) => `$${(v/1000000).toFixed(2)}M` },
+  { id: 'survival_weeks', name: 'Longest Survival', icon: '📅', stat: 'week', format: (v) => `${v} weeks` },
+  { id: 'total_locations', name: 'Most Locations', icon: '🏪', stat: 'totalLocations', format: (v) => `${v} locations` },
+  { id: 'franchise_empire', name: 'Franchise Empire', icon: '🤝', stat: 'franchises', format: (v) => `${v} franchises` },
+  { id: 'reputation_master', name: 'Reputation Master', icon: '⭐', stat: 'avgReputation', format: (v) => `${v.toFixed(1)}%` },
+  { id: 'speedrun_millionaire', name: 'Fastest to $1M', icon: '⚡', stat: 'weeksTo1M', format: (v) => v ? `${v} weeks` : 'N/A', lowerBetter: true },
+  { id: 'nightmare_king', name: 'Nightmare Mode', icon: '💀', stat: 'nightmareWeeks', format: (v) => `${v} weeks survived` },
+];
+
+// SEASONAL CHALLENGES
+const SEASONAL_CHALLENGES = [
+  {
+    id: 'winter_2025', season: 'Winter 2025', icon: '❄️', name: 'Frostbite Challenge',
+    description: 'Survive the winter rush while managing heating costs and holiday staff',
+    startDate: '2025-12-01', endDate: '2025-02-28',
+    objectives: [
+      { id: 'holiday_rush', name: 'Holiday Rush', description: 'Process 5,000+ covers in December', target: 5000, stat: 'decemberCovers', reward: 25000 },
+      { id: 'staff_retention', name: 'Holiday Spirit', description: 'Keep morale above 70% all season', target: 70, stat: 'minMorale', reward: 15000 },
+      { id: 'profit_margins', name: 'Winter Profits', description: 'Maintain 15%+ profit margins', target: 15, stat: 'profitMargin', reward: 20000 },
+    ],
+    globalReward: { title: 'Frostbite Survivor', badge: '❄️', cash: 50000 },
+  },
+  {
+    id: 'spring_2026', season: 'Spring 2026', icon: '🌸', name: 'Spring Awakening',
+    description: 'Capitalize on outdoor dining season and lighter menu trends',
+    startDate: '2026-03-01', endDate: '2026-05-31',
+    objectives: [
+      { id: 'patio_profit', name: 'Patio Paradise', description: 'Generate $50K from outdoor seating', target: 50000, stat: 'patioRevenue', reward: 20000 },
+      { id: 'new_menu', name: 'Fresh Start', description: 'Launch 5 new menu items', target: 5, stat: 'newItems', reward: 10000 },
+      { id: 'expansion', name: 'Growth Season', description: 'Open 2 new locations', target: 2, stat: 'newLocations', reward: 35000 },
+    ],
+    globalReward: { title: 'Spring Champion', badge: '🌸', cash: 50000 },
+  },
+  {
+    id: 'summer_2026', season: 'Summer 2026', icon: '☀️', name: 'Summer Sizzle',
+    description: 'Master the tourist season and outdoor events',
+    startDate: '2026-06-01', endDate: '2026-08-31',
+    objectives: [
+      { id: 'food_truck', name: 'Festival Circuit', description: 'Earn $100K from food truck events', target: 100000, stat: 'truckRevenue', reward: 30000 },
+      { id: 'catering', name: 'Summer Parties', description: 'Complete 10 catering events', target: 10, stat: 'cateringEvents', reward: 25000 },
+      { id: 'peak_week', name: 'Peak Performance', description: 'Hit $100K in a single week', target: 100000, stat: 'peakWeeklyRevenue', reward: 40000 },
+    ],
+    globalReward: { title: 'Summer King/Queen', badge: '☀️', cash: 75000 },
+  },
+  {
+    id: 'fall_2026', season: 'Fall 2026', icon: '🍂', name: 'Harvest Hustle',
+    description: 'Prepare for the holiday season while maximizing fall flavors',
+    startDate: '2026-09-01', endDate: '2026-11-30',
+    objectives: [
+      { id: 'virtual_brand', name: 'Ghost Kitchen Master', description: 'Launch 3 virtual brands', target: 3, stat: 'virtualBrands', reward: 20000 },
+      { id: 'investor', name: 'Fundraising Season', description: 'Secure $500K in investment', target: 500000, stat: 'investmentRaised', reward: 35000 },
+      { id: 'training', name: 'Team Building', description: 'Train 10 staff members', target: 10, stat: 'staffTrained', reward: 15000 },
+    ],
+    globalReward: { title: 'Harvest Hero', badge: '🍂', cash: 60000 },
+  },
+];
+
+// WEEKLY TOURNAMENTS
+const WEEKLY_TOURNAMENTS = [
+  { id: 'revenue_rush', name: 'Revenue Rush', icon: '💵', description: 'Highest weekly revenue wins', stat: 'weeklyRevenue', duration: 7, prizes: [100000, 50000, 25000, 10000, 5000] },
+  { id: 'efficiency_expert', name: 'Efficiency Expert', icon: '📊', description: 'Best profit margin wins', stat: 'profitMargin', duration: 7, prizes: [75000, 35000, 15000, 7500, 3000] },
+  { id: 'expansion_expedition', name: 'Expansion Expedition', icon: '🚀', description: 'Most locations opened wins', stat: 'newLocations', duration: 14, prizes: [150000, 75000, 35000, 15000, 7500] },
+  { id: 'customer_champion', name: 'Customer Champion', icon: '⭐', description: 'Highest average rating wins', stat: 'avgReputation', duration: 7, prizes: [50000, 25000, 12500, 6000, 3000] },
+  { id: 'survival_sprint', name: 'Survival Sprint', icon: '🏃', description: 'Longest survival on Hard+ mode', stat: 'hardModeSurvival', duration: 30, prizes: [200000, 100000, 50000, 25000, 10000] },
+];
+
+// PLAYER PROFILE SYSTEM
+const PROFILE_BADGES = [
+  { id: 'first_profit', name: 'First Blood', icon: '💵', description: 'Made your first profit', rarity: 'common' },
+  { id: 'week_survivor', name: 'Week One', icon: '📅', description: 'Survived your first week', rarity: 'common' },
+  { id: 'year_one', name: 'Veteran', icon: '🎖️', description: 'Survived 52 weeks', rarity: 'rare' },
+  { id: 'millionaire', name: 'Millionaire', icon: '💰', description: 'Reached $1M valuation', rarity: 'epic' },
+  { id: 'multi_mogul', name: 'Multi-Location Mogul', icon: '🏛️', description: 'Own 5+ locations', rarity: 'epic' },
+  { id: 'franchise_king', name: 'Franchise King', icon: '👑', description: 'Have 10+ franchises', rarity: 'legendary' },
+  { id: 'nightmare_survivor', name: 'Nightmare Survivor', icon: '💀', description: 'Survived 52 weeks on Nightmare', rarity: 'legendary' },
+  { id: 'ipo_master', name: 'Wall Street', icon: '📈', description: 'Completed an IPO', rarity: 'mythic' },
+  { id: 'exit_strategy', name: 'Exit Master', icon: '🎯', description: 'Successfully sold your empire', rarity: 'mythic' },
+  { id: 'seasonal_champion', name: 'Seasonal Champion', icon: '🏆', description: 'Won a seasonal challenge', rarity: 'legendary' },
+  { id: 'tournament_winner', name: 'Tournament Winner', icon: '🥇', description: 'Won a weekly tournament', rarity: 'epic' },
+  { id: 'speed_demon', name: 'Speed Demon', icon: '⚡', description: 'Reached $1M in under 26 weeks', rarity: 'mythic' },
+];
+
+const PROFILE_TITLES = [
+  { id: 'rookie', name: 'Rookie Owner', requirement: { runs: 1 }, color: '#A3A3A3' },
+  { id: 'experienced', name: 'Experienced Owner', requirement: { runs: 5 }, color: '#10B981' },
+  { id: 'veteran', name: 'Restaurant Veteran', requirement: { runs: 10, totalWeeks: 500 }, color: '#3B82F6' },
+  { id: 'expert', name: 'Industry Expert', requirement: { runs: 25, millionaire: true }, color: '#8B5CF6' },
+  { id: 'master', name: 'Restaurant Master', requirement: { runs: 50, totalWeeks: 2000, nightmareWin: true }, color: '#F59E0B' },
+  { id: 'legend', name: 'Culinary Legend', requirement: { runs: 100, ipoComplete: true }, color: '#EC4899' },
+  { id: 'titan', name: 'Restaurant Titan', requirement: { tournamentWins: 10, seasonalWins: 4 }, color: '#DC2626' },
+];
+
+// RECIPE MARKETPLACE
+const RECIPE_MARKETPLACE = {
+  categories: ['appetizers', 'mains', 'desserts', 'drinks', 'specials'],
+  rarities: [
+    { id: 'common', name: 'Common', color: '#A3A3A3', priceMultiplier: 1 },
+    { id: 'uncommon', name: 'Uncommon', color: '#10B981', priceMultiplier: 2 },
+    { id: 'rare', name: 'Rare', color: '#3B82F6', priceMultiplier: 5 },
+    { id: 'epic', name: 'Epic', color: '#8B5CF6', priceMultiplier: 15 },
+    { id: 'legendary', name: 'Legendary', color: '#F59E0B', priceMultiplier: 50 },
+  ],
+  sampleRecipes: [
+    { id: 'truffle_fries', name: 'Truffle Parmesan Fries', category: 'appetizers', rarity: 'rare', basePrice: 5000, profit: 14, creator: 'ChefMaster99' },
+    { id: 'wagyu_burger', name: 'A5 Wagyu Smash Burger', category: 'mains', rarity: 'legendary', basePrice: 25000, profit: 22, creator: 'BurgerKing2025' },
+    { id: 'lavender_lemonade', name: 'Lavender Honey Lemonade', category: 'drinks', rarity: 'uncommon', basePrice: 2500, profit: 18, creator: 'DrinkWizard' },
+    { id: 'molten_cake', name: 'Molten Lava Cake', category: 'desserts', rarity: 'epic', basePrice: 12000, profit: 16, creator: 'SweetTooth' },
+    { id: 'korean_wings', name: 'Gochujang Glazed Wings', category: 'appetizers', rarity: 'rare', basePrice: 6000, profit: 15, creator: 'WingMaster' },
+  ],
+};
+
+// STAFF MARKETPLACE (Trade System)
+const STAFF_MARKETPLACE = {
+  rarities: [
+    { id: 'standard', name: 'Standard', color: '#A3A3A3', skillRange: [3, 5] },
+    { id: 'skilled', name: 'Skilled', color: '#10B981', skillRange: [5, 7] },
+    { id: 'expert', name: 'Expert', color: '#3B82F6', skillRange: [7, 8] },
+    { id: 'elite', name: 'Elite', color: '#8B5CF6', skillRange: [8, 9] },
+    { id: 'legendary', name: 'Legendary', color: '#F59E0B', skillRange: [9, 10] },
+  ],
+  sampleStaff: [
+    { id: 'chef_marco', name: 'Chef Marco', role: 'Executive Chef', skill: 9.5, specialty: 'Italian', price: 75000, wage: 45 },
+    { id: 'gm_sarah', name: 'Sarah Thompson', role: 'General Manager', skill: 9, specialty: 'Operations', price: 50000, wage: 35 },
+    { id: 'sous_chen', name: 'Chen Wei', role: 'Sous Chef', skill: 8.5, specialty: 'Asian Fusion', price: 35000, wage: 28 },
+    { id: 'bar_james', name: 'James Miller', role: 'Bar Manager', skill: 8, specialty: 'Craft Cocktails', price: 25000, wage: 24 },
+    { id: 'host_maria', name: 'Maria Garcia', role: 'Host Manager', skill: 7.5, specialty: 'Customer Service', price: 15000, wage: 18 },
+  ],
+};
+
+// COOPERATIVE MODE
+const COOP_PARTNERSHIP_TYPES = [
+  { 
+    id: 'supply_chain', name: 'Supply Chain Alliance', icon: '📦',
+    description: 'Share vendor contracts for bulk discounts',
+    benefits: { foodCostReduction: 0.05, sharedDelivery: true },
+    requirements: { minLocations: 2, minReputation: 60 },
+  },
+  { 
+    id: 'marketing', name: 'Marketing Collective', icon: '📢',
+    description: 'Joint marketing campaigns for wider reach',
+    benefits: { marketingBoost: 0.3, sharedFollowers: true },
+    requirements: { minWeeks: 26, minReputation: 50 },
+  },
+  { 
+    id: 'staff_sharing', name: 'Staff Exchange Program', icon: '👥',
+    description: 'Borrow staff during busy periods',
+    benefits: { emergencyStaff: true, trainingSharing: true },
+    requirements: { minStaff: 10, minMorale: 65 },
+  },
+  { 
+    id: 'investment_group', name: 'Investment Syndicate', icon: '💰',
+    description: 'Pool resources for larger investments',
+    benefits: { investmentPooling: true, sharedRisk: 0.5 },
+    requirements: { minValuation: 500000, minLocations: 3 },
+  },
+  { 
+    id: 'franchise_network', name: 'Franchise Network', icon: '🤝',
+    description: 'Cross-promote franchise opportunities',
+    benefits: { franchiseBonus: 0.2, sharedTraining: true },
+    requirements: { franchiseEnabled: true, minFranchises: 2 },
+  },
+];
+
+// DYNASTY MODE
+const DYNASTY_GENERATIONS = [
+  { 
+    id: 'founder', generation: 1, title: 'Founder',
+    bonuses: { startingCash: 1.0, reputation: 1.0, staffLoyalty: 1.0 },
+    challenges: ['No legacy advantages', 'Must build from scratch'],
+  },
+  { 
+    id: 'heir', generation: 2, title: 'Second Generation',
+    bonuses: { startingCash: 1.25, reputation: 1.1, staffLoyalty: 1.15, inheritedStaff: 2 },
+    challenges: ['Live up to expectations', 'Existing reputation to maintain'],
+  },
+  { 
+    id: 'successor', generation: 3, title: 'Third Generation',
+    bonuses: { startingCash: 1.5, reputation: 1.2, staffLoyalty: 1.25, inheritedStaff: 4, brandRecognition: 0.1 },
+    challenges: ['Family pressure', 'Modernize or maintain tradition'],
+  },
+  { 
+    id: 'legacy', generation: 4, title: 'Legacy Heir',
+    bonuses: { startingCash: 2.0, reputation: 1.3, staffLoyalty: 1.4, inheritedStaff: 6, brandRecognition: 0.2, mediaConnections: true },
+    challenges: ['Dynasty expectations', 'Industry is watching'],
+  },
+  { 
+    id: 'dynasty', generation: 5, title: 'Dynasty Leader',
+    bonuses: { startingCash: 3.0, reputation: 1.5, staffLoyalty: 1.5, inheritedStaff: 10, brandRecognition: 0.3, mediaConnections: true, investorInterest: true },
+    challenges: ['Multi-generational legacy', 'Empire management'],
+  },
+];
+
+// SOCIAL SHARING TEMPLATES
+const SOCIAL_SHARE_TEMPLATES = [
+  { id: 'milestone', title: 'Milestone Reached!', template: '🎉 Just hit {milestone} in 86\'d! {restaurant} is thriving after {weeks} weeks! #86dGame #RestaurantSim' },
+  { id: 'expansion', title: 'New Location!', template: '🏪 Expanded my empire! {restaurant} just opened location #{locations}! #86dGame #RestaurantEmpire' },
+  { id: 'valuation', title: 'Empire Valuation', template: '📈 My restaurant empire in 86\'d is now worth {valuation}! From food truck to franchise! #86dGame' },
+  { id: 'survival', title: 'Survival Streak', template: '💪 {weeks} weeks and still going strong! {restaurant} refuses to be 86\'d! #86dGame #Survivor' },
+  { id: 'tournament', title: 'Tournament Win', template: '🏆 Just won the {tournament} tournament in 86\'d! {prize} prize! #86dGame #Champion' },
+  { id: 'franchise', title: 'Franchise Empire', template: '🤝 Now running {franchises} franchises! The {restaurant} brand is taking over! #86dGame #Franchising' },
+  { id: 'ipo', title: 'IPO Complete', template: '📈 WE\'RE PUBLIC! {restaurant} just completed its IPO! Worth {valuation}! #86dGame #WallStreet' },
+];
+
+// PHASE 7 ACHIEVEMENTS
+const PHASE7_ACHIEVEMENTS = [
+  { id: 'social_butterfly', name: 'Social Butterfly', description: 'Share 10 milestones to social media', icon: '🦋', reward: 5000 },
+  { id: 'tournament_champion', name: 'Tournament Champion', description: 'Win your first weekly tournament', icon: '🏆', reward: 25000 },
+  { id: 'seasonal_master', name: 'Seasonal Master', description: 'Complete all objectives in a seasonal challenge', icon: '🌟', reward: 50000 },
+  { id: 'leaderboard_climber', name: 'Leaderboard Climber', description: 'Reach top 100 in any leaderboard', icon: '📊', reward: 15000 },
+  { id: 'recipe_creator', name: 'Recipe Creator', description: 'List a recipe on the marketplace', icon: '📝', reward: 10000 },
+  { id: 'staff_trader', name: 'Staff Trader', description: 'Buy or sell staff on the marketplace', icon: '🤝', reward: 10000 },
+  { id: 'partnership_pioneer', name: 'Partnership Pioneer', description: 'Join your first co-op partnership', icon: '🤜🤛', reward: 20000 },
+  { id: 'dynasty_founder', name: 'Dynasty Founder', description: 'Pass your restaurant to the next generation', icon: '👴', reward: 75000 },
+  { id: 'badge_collector', name: 'Badge Collector', description: 'Collect 20 profile badges', icon: '🎖️', reward: 30000 },
+  { id: 'title_upgrade', name: 'Title Upgrade', description: 'Earn a new profile title', icon: '📛', reward: 15000 },
+  { id: 'marketplace_mogul', name: 'Marketplace Mogul', description: 'Complete 50 marketplace transactions', icon: '💼', reward: 40000 },
+  { id: 'global_top_10', name: 'Global Elite', description: 'Reach top 10 globally in any category', icon: '🌍', reward: 100000 },
+];
+
+// Generate mock leaderboard data
+const generateMockLeaderboard = (category, count = 100) => {
+  const names = ['ChefMaster', 'RestaurantKing', 'FoodieEmpire', 'CulinaryGenius', 'KitchenBoss', 
+                 'DiningDynasty', 'TableMaster', 'ServicePro', 'MealMogul', 'FeastLord',
+                 'BistroBarron', 'CaffeineKing', 'GrillMaster', 'SauceBoss', 'SpiceLord'];
+  const entries = [];
+  for (let i = 0; i < count; i++) {
+    const baseName = names[Math.floor(Math.random() * names.length)];
+    const suffix = Math.floor(Math.random() * 9999);
+    let value;
+    switch(category.stat) {
+      case 'peakWeeklyRevenue': value = Math.floor(50000 + Math.random() * 450000) * (1 - i * 0.008); break;
+      case 'empireValuation': value = Math.floor(500000 + Math.random() * 9500000) * (1 - i * 0.008); break;
+      case 'week': value = Math.floor(200 - i * 1.5 + Math.random() * 20); break;
+      case 'totalLocations': value = Math.floor(30 - i * 0.25 + Math.random() * 3); break;
+      case 'franchises': value = Math.floor(25 - i * 0.2 + Math.random() * 3); break;
+      case 'avgReputation': value = Math.max(50, 98 - i * 0.4 + Math.random() * 2); break;
+      case 'weeksTo1M': value = Math.max(8, 8 + i * 0.3 + Math.random() * 5); break;
+      case 'nightmareWeeks': value = Math.floor(150 - i * 1.2 + Math.random() * 10); break;
+      default: value = Math.floor(100000 - i * 800);
+    }
+    entries.push({
+      rank: i + 1,
+      username: `${baseName}${suffix}`,
+      value: Math.max(1, Math.floor(value)),
+      badge: i < 3 ? ['🥇', '🥈', '🥉'][i] : null,
+    });
+  }
+  return entries;
+};
+
+// Generate mock tournaments
+const generateActiveTournament = () => {
+  const tournament = WEEKLY_TOURNAMENTS[Math.floor(Math.random() * WEEKLY_TOURNAMENTS.length)];
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 5));
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + tournament.duration);
+  
+  return {
+    ...tournament,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    participants: Math.floor(500 + Math.random() * 2000),
+    yourRank: Math.floor(50 + Math.random() * 200),
+    yourScore: Math.floor(10000 + Math.random() * 50000),
+    topScores: generateMockLeaderboard({ stat: tournament.stat }, 10),
+  };
+};
+
+// Generate current seasonal challenge
+const getCurrentSeasonalChallenge = () => {
+  const now = new Date();
+  const month = now.getMonth();
+  let season;
+  if (month >= 11 || month <= 1) season = SEASONAL_CHALLENGES.find(s => s.season.includes('Winter'));
+  else if (month >= 2 && month <= 4) season = SEASONAL_CHALLENGES.find(s => s.season.includes('Spring'));
+  else if (month >= 5 && month <= 7) season = SEASONAL_CHALLENGES.find(s => s.season.includes('Summer'));
+  else season = SEASONAL_CHALLENGES.find(s => s.season.includes('Fall'));
+  
+  return season || SEASONAL_CHALLENGES[0];
+};
+
+// ============================================
 // PHASE 6: ADVANCED BUSINESS & ENDGAME SYSTEMS
 // ============================================
 
@@ -1208,6 +1497,96 @@ const calculateEmpireValuation = (game, setup) => {
   return Math.round(total * brandMultiplier);
 };
 
+// Phase 7: Helper Functions for Multiplayer & Social
+const generateMockLeaderboard = (category, count = 100) => {
+  const names = ['ChefMaster', 'RestaurantKing', 'FoodieEmpire', 'CulinaryGenius', 'KitchenBoss', 
+                 'DiningDynasty', 'TableMaster', 'ServicePro', 'MealMogul', 'FeastLord',
+                 'BistroBarron', 'CaffeineKing', 'GrillMaster', 'SauceBoss', 'SpiceLord'];
+  const entries = [];
+  for (let i = 0; i < count; i++) {
+    const baseName = names[Math.floor(Math.random() * names.length)];
+    const suffix = Math.floor(Math.random() * 9999);
+    let value;
+    switch(category?.stat) {
+      case 'peakWeeklyRevenue': value = Math.floor(50000 + Math.random() * 450000) * (1 - i * 0.008); break;
+      case 'empireValuation': value = Math.floor(500000 + Math.random() * 9500000) * (1 - i * 0.008); break;
+      case 'week': value = Math.floor(200 - i * 1.5 + Math.random() * 20); break;
+      case 'totalLocations': value = Math.floor(30 - i * 0.25 + Math.random() * 3); break;
+      case 'franchises': value = Math.floor(25 - i * 0.2 + Math.random() * 3); break;
+      case 'avgReputation': value = Math.max(50, 98 - i * 0.4 + Math.random() * 2); break;
+      case 'weeksTo1M': value = Math.max(8, 8 + i * 0.3 + Math.random() * 5); break;
+      case 'nightmareWeeks': value = Math.floor(150 - i * 1.2 + Math.random() * 10); break;
+      default: value = Math.floor(100000 - i * 800);
+    }
+    entries.push({
+      rank: i + 1,
+      username: `${baseName}${suffix}`,
+      value: Math.max(1, Math.floor(value)),
+      badge: i < 3 ? ['🥇', '🥈', '🥉'][i] : null,
+    });
+  }
+  return entries;
+};
+
+const generateActiveTournament = () => {
+  const tournament = WEEKLY_TOURNAMENTS[Math.floor(Math.random() * WEEKLY_TOURNAMENTS.length)];
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 5));
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + tournament.duration);
+  
+  return {
+    ...tournament,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    participants: Math.floor(500 + Math.random() * 2000),
+    yourRank: Math.floor(50 + Math.random() * 200),
+    yourScore: Math.floor(10000 + Math.random() * 50000),
+    topScores: generateMockLeaderboard({ stat: tournament.stat }, 10),
+  };
+};
+
+const getCurrentSeasonalChallenge = () => {
+  const now = new Date();
+  const month = now.getMonth();
+  let season;
+  if (month >= 11 || month <= 1) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Winter'));
+  else if (month >= 2 && month <= 4) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Spring'));
+  else if (month >= 5 && month <= 7) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Summer'));
+  else season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Fall'));
+  
+  return season || SEASONAL_CHALLENGES[0];
+};
+
+const calculatePlayerRank = (game, category) => {
+  if (!game || !category) return 999;
+  let playerScore = 0;
+  switch(category.stat) {
+    case 'peakWeeklyRevenue': playerScore = game.stats?.peakWeeklyRevenue || 0; break;
+    case 'empireValuation': playerScore = game.empireValuation || 0; break;
+    case 'week': playerScore = game.week || 0; break;
+    case 'totalLocations': playerScore = game.locations?.length || 0; break;
+    case 'franchises': playerScore = game.franchises?.length || 0; break;
+    case 'avgReputation': playerScore = game.locations?.reduce((sum, l) => sum + l.reputation, 0) / (game.locations?.length || 1) || 0; break;
+    default: playerScore = 0;
+  }
+  const mockLeaderboard = generateMockLeaderboard(category);
+  const rank = mockLeaderboard.filter(e => category.lowerBetter ? e.value < playerScore : e.value > playerScore).length + 1;
+  return rank;
+};
+
+const getShareText = (template, game, setup) => {
+  return template.template
+    .replace('{restaurant}', setup?.name || 'My Restaurant')
+    .replace('{weeks}', game?.week || 0)
+    .replace('{milestone}', '$100K Revenue')
+    .replace('{locations}', game?.locations?.length || 1)
+    .replace('{valuation}', `$${((game?.empireValuation || 0) / 1000000).toFixed(2)}M`)
+    .replace('{franchises}', game?.franchises?.length || 0)
+    .replace('{tournament}', 'Revenue Rush')
+    .replace('{prize}', '$100K');
+};
+
 // Mini Chart Component
 const MiniChart = ({ data, color, height = 40 }) => {
   if (!data || data.length < 2) return null;
@@ -1364,6 +1743,31 @@ export default function App() {
   const [currentEconomy, setCurrentEconomy] = useState('stable');
   const [economyWeeksRemaining, setEconomyWeeksRemaining] = useState(0);
   
+  // Phase 7: Multiplayer & Social states
+  const [socialModal, setSocialModal] = useState(false);
+  const [leaderboardModal, setLeaderboardModal] = useState(false);
+  const [tournamentModal, setTournamentModal] = useState(false);
+  const [seasonalModal, setSeasonalModal] = useState(false);
+  const [profileModal, setProfileModal] = useState(false);
+  const [marketplaceModal, setMarketplaceModal] = useState(false);
+  const [coopModal, setCoopModal] = useState(false);
+  const [dynastyModal, setDynastyModal] = useState(false);
+  const [activeLeaderboard, setActiveLeaderboard] = useState('weekly_revenue');
+  const [marketplaceTab, setMarketplaceTab] = useState('recipes');
+  const [playerProfile, setPlayerProfile] = useState({ 
+    badges: ['first_profit', 'week_survivor'], 
+    title: 'rookie', 
+    totalRuns: 0, 
+    totalWeeks: 0, 
+    tournamentWins: 0, 
+    seasonalWins: 0 
+  });
+  const [socialShares, setSocialShares] = useState(0);
+  const [dynastyGeneration, setDynastyGeneration] = useState(1);
+  const [partnerships, setPartnerships] = useState([]);
+  const [activeTournament, setActiveTournament] = useState(null);
+  const [seasonalProgress, setSeasonalProgress] = useState({});
+  
   // Save State
   const [savedGames, setSavedGames] = useState([]);
 
@@ -1501,6 +1905,17 @@ export default function App() {
       exitStrategy: null,
       exitProgress: 0,
       ipoReady: false,
+      
+      // Phase 7: Multiplayer & Social
+      leaderboardRanks: {},
+      tournamentParticipation: [],
+      seasonalChallengeProgress: {},
+      purchasedRecipes: [],
+      purchasedStaff: [],
+      coopPartnerships: [],
+      dynastyHistory: [],
+      socialShareCount: 0,
+      marketplaceTransactions: 0,
     };
     
     setGame(initialGame);
@@ -2748,7 +3163,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v8.5.0 • Phase 6 • Advanced Business</Text>
+          <Text style={styles.versionText}>v9.0.0 • Phase 7 • Multiplayer & Social</Text>
         </View>
       </SafeAreaView>
     );
