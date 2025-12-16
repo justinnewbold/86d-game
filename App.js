@@ -1497,67 +1497,7 @@ const calculateEmpireValuation = (game, setup) => {
   return Math.round(total * brandMultiplier);
 };
 
-// Phase 7: Helper Functions for Multiplayer & Social
-const generateMockLeaderboard = (category, count = 100) => {
-  const names = ['ChefMaster', 'RestaurantKing', 'FoodieEmpire', 'CulinaryGenius', 'KitchenBoss', 
-                 'DiningDynasty', 'TableMaster', 'ServicePro', 'MealMogul', 'FeastLord',
-                 'BistroBarron', 'CaffeineKing', 'GrillMaster', 'SauceBoss', 'SpiceLord'];
-  const entries = [];
-  for (let i = 0; i < count; i++) {
-    const baseName = names[Math.floor(Math.random() * names.length)];
-    const suffix = Math.floor(Math.random() * 9999);
-    let value;
-    switch(category?.stat) {
-      case 'peakWeeklyRevenue': value = Math.floor(50000 + Math.random() * 450000) * (1 - i * 0.008); break;
-      case 'empireValuation': value = Math.floor(500000 + Math.random() * 9500000) * (1 - i * 0.008); break;
-      case 'week': value = Math.floor(200 - i * 1.5 + Math.random() * 20); break;
-      case 'totalLocations': value = Math.floor(30 - i * 0.25 + Math.random() * 3); break;
-      case 'franchises': value = Math.floor(25 - i * 0.2 + Math.random() * 3); break;
-      case 'avgReputation': value = Math.max(50, 98 - i * 0.4 + Math.random() * 2); break;
-      case 'weeksTo1M': value = Math.max(8, 8 + i * 0.3 + Math.random() * 5); break;
-      case 'nightmareWeeks': value = Math.floor(150 - i * 1.2 + Math.random() * 10); break;
-      default: value = Math.floor(100000 - i * 800);
-    }
-    entries.push({
-      rank: i + 1,
-      username: `${baseName}${suffix}`,
-      value: Math.max(1, Math.floor(value)),
-      badge: i < 3 ? ['🥇', '🥈', '🥉'][i] : null,
-    });
-  }
-  return entries;
-};
-
-const generateActiveTournament = () => {
-  const tournament = WEEKLY_TOURNAMENTS[Math.floor(Math.random() * WEEKLY_TOURNAMENTS.length)];
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 5));
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + tournament.duration);
-  
-  return {
-    ...tournament,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    participants: Math.floor(500 + Math.random() * 2000),
-    yourRank: Math.floor(50 + Math.random() * 200),
-    yourScore: Math.floor(10000 + Math.random() * 50000),
-    topScores: generateMockLeaderboard({ stat: tournament.stat }, 10),
-  };
-};
-
-const getCurrentSeasonalChallenge = () => {
-  const now = new Date();
-  const month = now.getMonth();
-  let season;
-  if (month >= 11 || month <= 1) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Winter'));
-  else if (month >= 2 && month <= 4) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Spring'));
-  else if (month >= 5 && month <= 7) season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Summer'));
-  else season = SEASONAL_CHALLENGES.find(s => s.season?.includes('Fall'));
-  
-  return season || SEASONAL_CHALLENGES[0];
-};
-
+// Phase 7: Additional Helper Functions
 const calculatePlayerRank = (game, category) => {
   if (!game || !category) return 999;
   let playerScore = 0;
