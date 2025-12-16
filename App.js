@@ -641,6 +641,132 @@ const PHASE_8_ACHIEVEMENTS = [
   { id: 'prestige_master', name: 'Prestige Master', desc: 'Unlock all prestige upgrades', icon: '👑', reward: 50000 },
 ];
 
+
+// ============================================
+// PHASE 9: REALISM & ADVANCED ANALYTICS
+// ============================================
+
+// WEATHER SYSTEM - Affects daily/weekly sales
+const WEATHER_CONDITIONS = [
+  { id: 'sunny', name: 'Sunny', icon: '☀️', revenueModifier: 1.05, customerMod: 1.08, description: 'Perfect dining weather' },
+  { id: 'partly_cloudy', name: 'Partly Cloudy', icon: '⛅', revenueModifier: 1.0, customerMod: 1.0, description: 'Normal conditions' },
+  { id: 'cloudy', name: 'Cloudy', icon: '☁️', revenueModifier: 0.97, customerMod: 0.95, description: 'Slightly fewer walk-ins' },
+  { id: 'rainy', name: 'Rainy', icon: '🌧️', revenueModifier: 0.85, customerMod: 0.75, description: 'Delivery orders up, dine-in down' },
+  { id: 'stormy', name: 'Storm', icon: '⛈️', revenueModifier: 0.65, customerMod: 0.50, description: 'Major sales impact' },
+  { id: 'snow', name: 'Snow', icon: '❄️', revenueModifier: 0.70, customerMod: 0.55, description: 'Staff may call out' },
+  { id: 'heatwave', name: 'Heat Wave', icon: '🔥', revenueModifier: 0.90, customerMod: 0.85, description: 'AC costs up, patio closed' },
+  { id: 'perfect', name: 'Perfect Day', icon: '🌈', revenueModifier: 1.15, customerMod: 1.20, description: 'Ideal conditions boost sales' },
+];
+
+// CUSTOMER SEGMENTS - Different customer types with preferences
+const CUSTOMER_SEGMENTS = [
+  { id: 'regulars', name: 'Regulars', icon: '🏠', percentage: 35, avgSpend: 28, visitFreq: 'weekly', loyalty: 0.9, priceS: 0.7 },
+  { id: 'families', name: 'Families', icon: '👨‍👩‍👧‍👦', percentage: 20, avgSpend: 65, visitFreq: 'bi-weekly', loyalty: 0.6, priceS: 0.8 },
+  { id: 'business', name: 'Business Diners', icon: '💼', percentage: 15, avgSpend: 85, visitFreq: 'weekly', loyalty: 0.5, priceS: 0.3 },
+  { id: 'date_night', name: 'Date Night', icon: '💑', percentage: 10, avgSpend: 95, visitFreq: 'monthly', loyalty: 0.4, priceS: 0.5 },
+  { id: 'foodies', name: 'Foodies', icon: '📸', percentage: 8, avgSpend: 55, visitFreq: 'monthly', loyalty: 0.3, priceS: 0.4 },
+  { id: 'tourists', name: 'Tourists', icon: '🧳', percentage: 7, avgSpend: 48, visitFreq: 'once', loyalty: 0.1, priceS: 0.6 },
+  { id: 'delivery_only', name: 'Delivery Only', icon: '📦', percentage: 5, avgSpend: 32, visitFreq: 'weekly', loyalty: 0.7, priceS: 0.9 },
+];
+
+// REVIEW PLATFORMS - Yelp, Google, etc.
+const REVIEW_PLATFORMS = [
+  { id: 'yelp', name: 'Yelp', icon: '🔴', weight: 0.35, minReviews: 10, description: 'Critical for new customers' },
+  { id: 'google', name: 'Google', icon: '🟢', weight: 0.35, minReviews: 20, description: 'Affects search visibility' },
+  { id: 'tripadvisor', name: 'TripAdvisor', icon: '🟡', weight: 0.15, minReviews: 5, description: 'Tourist traffic driver' },
+  { id: 'opentable', name: 'OpenTable', icon: '🔵', weight: 0.10, minReviews: 15, description: 'Reservation quality' },
+  { id: 'facebook', name: 'Facebook', icon: '🔷', weight: 0.05, minReviews: 8, description: 'Local community' },
+];
+
+// SOCIAL MEDIA EVENTS - Viral moments, influencer visits
+const SOCIAL_EVENTS = [
+  { id: 'viral_video', name: 'Viral TikTok', icon: '📱', chance: 0.02, reputationBoost: 15, revenueBoost: 0.35, duration: 3 },
+  { id: 'influencer_visit', name: 'Influencer Visit', icon: '⭐', chance: 0.05, reputationBoost: 8, revenueBoost: 0.20, duration: 2 },
+  { id: 'food_blogger', name: 'Food Blog Feature', icon: '📝', chance: 0.08, reputationBoost: 5, revenueBoost: 0.12, duration: 4 },
+  { id: 'local_news', name: 'Local News Spot', icon: '📺', chance: 0.03, reputationBoost: 10, revenueBoost: 0.25, duration: 2 },
+  { id: 'negative_review', name: 'Negative Viral Review', icon: '😡', chance: 0.01, reputationBoost: -20, revenueBoost: -0.30, duration: 4 },
+  { id: 'celebrity_sighting', name: 'Celebrity Sighting', icon: '🌟', chance: 0.01, reputationBoost: 25, revenueBoost: 0.50, duration: 2 },
+];
+
+// HEALTH INSPECTION SYSTEM
+const INSPECTION_GRADES = [
+  { grade: 'A', score: 90, icon: '🅰️', reputationBonus: 5, customerMod: 1.05 },
+  { grade: 'B', score: 80, icon: '🅱️', reputationBonus: 0, customerMod: 1.0 },
+  { grade: 'C', score: 70, icon: '©️', reputationBonus: -10, customerMod: 0.85 },
+  { grade: 'Closed', score: 0, icon: '🚫', reputationBonus: -30, customerMod: 0 },
+];
+
+const HEALTH_VIOLATIONS = [
+  { id: 'temp_control', name: 'Temperature Control', severity: 'critical', points: -15, fixCost: 500 },
+  { id: 'cross_contam', name: 'Cross Contamination Risk', severity: 'critical', points: -12, fixCost: 300 },
+  { id: 'hand_washing', name: 'Hand Washing Station', severity: 'major', points: -8, fixCost: 200 },
+  { id: 'pest_evidence', name: 'Pest Evidence', severity: 'critical', points: -20, fixCost: 1500 },
+  { id: 'food_storage', name: 'Improper Food Storage', severity: 'major', points: -6, fixCost: 150 },
+  { id: 'cleaning', name: 'Cleaning Deficiency', severity: 'minor', points: -3, fixCost: 100 },
+  { id: 'labeling', name: 'Missing Date Labels', severity: 'minor', points: -2, fixCost: 50 },
+  { id: 'employee_health', name: 'Employee Health Policy', severity: 'major', points: -5, fixCost: 0 },
+];
+
+// EMPLOYEE BENEFITS SYSTEM
+const EMPLOYEE_BENEFITS = [
+  { id: 'health_basic', name: 'Basic Health', icon: '🏥', cost: 150, moralBoost: 5, retentionBoost: 0.10, desc: 'Basic health coverage' },
+  { id: 'health_premium', name: 'Premium Health', icon: '💎', cost: 350, moralBoost: 12, retentionBoost: 0.20, desc: 'Full health + dental + vision' },
+  { id: '401k_match', name: '401k Match', icon: '🏦', cost: 200, moralBoost: 8, retentionBoost: 0.15, desc: '3% company match' },
+  { id: 'paid_vacation', name: 'Paid Vacation', icon: '🏖️', cost: 100, moralBoost: 10, retentionBoost: 0.12, desc: '2 weeks PTO' },
+  { id: 'meal_plan', name: 'Free Meals', icon: '🍽️', cost: 75, moralBoost: 6, retentionBoost: 0.08, desc: 'One free meal per shift' },
+  { id: 'training_stipend', name: 'Training Budget', icon: '📚', cost: 50, moralBoost: 4, retentionBoost: 0.05, desc: '$500/year for courses' },
+  { id: 'bonus_program', name: 'Performance Bonus', icon: '🎯', cost: 250, moralBoost: 15, retentionBoost: 0.18, desc: 'Quarterly profit sharing' },
+  { id: 'childcare', name: 'Childcare Stipend', icon: '👶', cost: 300, moralBoost: 20, retentionBoost: 0.25, desc: '$500/month childcare help' },
+];
+
+// EQUIPMENT MAINTENANCE SYSTEM
+const EQUIPMENT_MAINTENANCE = [
+  { id: 'fryer', name: 'Deep Fryer', icon: '🍟', maintenanceCost: 150, breakdownChance: 0.08, repairCost: 2500, downtime: 2 },
+  { id: 'grill', name: 'Commercial Grill', icon: '🔥', maintenanceCost: 200, breakdownChance: 0.05, repairCost: 4000, downtime: 3 },
+  { id: 'oven', name: 'Commercial Oven', icon: '♨️', maintenanceCost: 175, breakdownChance: 0.04, repairCost: 5000, downtime: 4 },
+  { id: 'refrigeration', name: 'Walk-In Cooler', icon: '❄️', maintenanceCost: 250, breakdownChance: 0.03, repairCost: 8000, downtime: 1 },
+  { id: 'dishwasher', name: 'Dishwasher', icon: '🍽️', maintenanceCost: 100, breakdownChance: 0.10, repairCost: 1500, downtime: 1 },
+  { id: 'hvac', name: 'HVAC System', icon: '🌡️', maintenanceCost: 300, breakdownChance: 0.02, repairCost: 10000, downtime: 2 },
+  { id: 'pos', name: 'POS System', icon: '💻', maintenanceCost: 50, breakdownChance: 0.06, repairCost: 800, downtime: 1 },
+  { id: 'hood', name: 'Exhaust Hood', icon: '💨', maintenanceCost: 125, breakdownChance: 0.03, repairCost: 3000, downtime: 3 },
+];
+
+// ANALYTICS METRICS - Key Performance Indicators
+const KPI_METRICS = [
+  { id: 'covers_per_hour', name: 'Covers/Hour', icon: '👥', target: 25, format: (v) => v.toFixed(1), category: 'operations' },
+  { id: 'table_turn', name: 'Table Turn Time', icon: '⏱️', target: 45, format: (v) => `${v}min`, category: 'operations' },
+  { id: 'avg_check', name: 'Avg Check Size', icon: '💵', target: 35, format: (v) => `$${v.toFixed(2)}`, category: 'revenue' },
+  { id: 'food_cost_pct', name: 'Food Cost %', icon: '🥗', target: 28, format: (v) => `${v.toFixed(1)}%`, category: 'costs' },
+  { id: 'labor_cost_pct', name: 'Labor Cost %', icon: '👷', target: 30, format: (v) => `${v.toFixed(1)}%`, category: 'costs' },
+  { id: 'prime_cost', name: 'Prime Cost %', icon: '📊', target: 60, format: (v) => `${v.toFixed(1)}%`, category: 'costs' },
+  { id: 'profit_margin', name: 'Profit Margin', icon: '📈', target: 15, format: (v) => `${v.toFixed(1)}%`, category: 'profitability' },
+  { id: 'rev_per_sqft', name: 'Rev/Sq Ft', icon: '📐', target: 500, format: (v) => `$${v.toFixed(0)}`, category: 'efficiency' },
+  { id: 'rev_per_seat', name: 'Rev/Seat', icon: '🪑', target: 150, format: (v) => `$${v.toFixed(0)}`, category: 'efficiency' },
+  { id: 'employee_turnover', name: 'Turnover Rate', icon: '🔄', target: 75, format: (v) => `${v.toFixed(0)}%`, category: 'hr' },
+  { id: 'customer_retention', name: 'Retention Rate', icon: '🔁', target: 60, format: (v) => `${v.toFixed(1)}%`, category: 'customers' },
+  { id: 'online_rating', name: 'Online Rating', icon: '⭐', target: 4.5, format: (v) => v.toFixed(2), category: 'reputation' },
+];
+
+// SUPPLY CHAIN DISRUPTIONS
+const SUPPLY_DISRUPTIONS = [
+  { id: 'protein_shortage', name: 'Protein Shortage', icon: '🥩', chance: 0.03, foodCostIncrease: 0.15, duration: 2 },
+  { id: 'produce_recall', name: 'Produce Recall', icon: '🥬', chance: 0.02, foodCostIncrease: 0.10, duration: 1 },
+  { id: 'shipping_delay', name: 'Shipping Delays', icon: '🚚', chance: 0.05, foodCostIncrease: 0.08, duration: 2 },
+  { id: 'supplier_closure', name: 'Supplier Closed', icon: '🏭', chance: 0.01, foodCostIncrease: 0.25, duration: 4 },
+];
+
+// Phase 9 Achievements
+const PHASE_9_ACHIEVEMENTS = [
+  { id: 'perfect_inspection', name: 'Perfect Score', desc: 'Get an A grade on health inspection', icon: '🅰️', reward: 5000 },
+  { id: 'five_stars', name: 'Five Star Fame', desc: 'Reach 4.8+ rating on all platforms', icon: '⭐', reward: 15000 },
+  { id: 'viral_sensation', name: 'Viral Sensation', desc: 'Have a social media post go viral', icon: '📱', reward: 10000 },
+  { id: 'weather_warrior', name: 'Weather Warrior', desc: 'Profit during 10 bad weather weeks', icon: '⛈️', reward: 8000 },
+  { id: 'benefits_king', name: 'Best Employer', desc: 'Offer all employee benefits', icon: '👑', reward: 20000 },
+  { id: 'zero_breakdowns', name: 'Well Oiled Machine', desc: 'Go 52 weeks without equipment breakdown', icon: '🔧', reward: 12000 },
+  { id: 'regular_army', name: 'Regular Army', desc: 'Have 100+ regular customers', icon: '🏠', reward: 7500 },
+  { id: 'analytics_master', name: 'Data Driven', desc: 'Beat all KPI targets for 4 weeks', icon: '📊', reward: 10000 },
+];
+
 // ============================================
 // PHASE 7: MULTIPLAYER & SOCIAL SYSTEMS
 // ============================================
@@ -1814,6 +1940,183 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
 // ============================================
 // MAIN APP COMPONENT
 // ============================================
+
+// ============================================
+// PHASE 9: HELPER FUNCTIONS
+// ============================================
+
+// Weather System Functions
+const getWeeklyWeather = () => {
+  const weights = [0.15, 0.30, 0.20, 0.15, 0.08, 0.05, 0.05, 0.02]; // Match WEATHER_CONDITIONS order
+  const rand = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < WEATHER_CONDITIONS.length; i++) {
+    cumulative += weights[i];
+    if (rand < cumulative) return WEATHER_CONDITIONS[i];
+  }
+  return WEATHER_CONDITIONS[1]; // Default partly cloudy
+};
+
+// Review System Functions
+const calculateOverallRating = (reviews) => {
+  if (!reviews || Object.keys(reviews).length === 0) return 4.0;
+  let totalWeight = 0;
+  let weightedSum = 0;
+  REVIEW_PLATFORMS.forEach(platform => {
+    const review = reviews[platform.id];
+    if (review && review.count >= platform.minReviews) {
+      weightedSum += review.rating * platform.weight;
+      totalWeight += platform.weight;
+    }
+  });
+  return totalWeight > 0 ? weightedSum / totalWeight : 4.0;
+};
+
+const generateWeeklyReviews = (reputation, serviceQuality, foodQuality) => {
+  const newReviews = {};
+  REVIEW_PLATFORMS.forEach(platform => {
+    const baseRating = (reputation / 20) + (serviceQuality * 0.3) + (foodQuality * 0.3);
+    const variance = (Math.random() - 0.5) * 0.6;
+    const rating = Math.min(5, Math.max(1, baseRating + variance));
+    const count = Math.floor(Math.random() * 5) + 1;
+    newReviews[platform.id] = { rating: parseFloat(rating.toFixed(1)), count };
+  });
+  return newReviews;
+};
+
+// Health Inspection Functions
+const conductHealthInspection = (location) => {
+  let score = 100;
+  const violations = [];
+  
+  // Check for violations based on staff quality and equipment maintenance
+  const staffQuality = location.staff?.reduce((sum, s) => sum + s.skill, 0) / (location.staff?.length || 1) || 50;
+  const maintenanceLevel = location.maintenanceLevel || 0.5;
+  
+  HEALTH_VIOLATIONS.forEach(violation => {
+    const baseChance = violation.severity === 'critical' ? 0.08 : violation.severity === 'major' ? 0.15 : 0.25;
+    const adjustedChance = baseChance * (1 - staffQuality / 200) * (1 - maintenanceLevel);
+    if (Math.random() < adjustedChance) {
+      score += violation.points;
+      violations.push(violation);
+    }
+  });
+  
+  const grade = INSPECTION_GRADES.find(g => score >= g.score) || INSPECTION_GRADES[3];
+  return { score: Math.max(0, score), grade, violations, date: new Date().toISOString() };
+};
+
+// Social Media Functions
+const checkSocialEvents = (reputation, weeklyCovers) => {
+  const events = [];
+  SOCIAL_EVENTS.forEach(event => {
+    const adjustedChance = event.chance * (reputation / 80) * (weeklyCovers > 500 ? 1.5 : 1);
+    if (Math.random() < adjustedChance) {
+      events.push({ ...event, weeksRemaining: event.duration });
+    }
+  });
+  return events;
+};
+
+// Equipment Maintenance Functions
+const checkEquipmentBreakdowns = (equipment, maintenanceLevel) => {
+  const breakdowns = [];
+  EQUIPMENT_MAINTENANCE.forEach(eq => {
+    if (equipment?.includes(eq.id)) {
+      const adjustedChance = eq.breakdownChance * (1 - maintenanceLevel * 0.7);
+      if (Math.random() < adjustedChance) {
+        breakdowns.push({ ...eq, repairNeeded: true });
+      }
+    }
+  });
+  return breakdowns;
+};
+
+const calculateMaintenanceCost = (equipment) => {
+  let total = 0;
+  EQUIPMENT_MAINTENANCE.forEach(eq => {
+    if (equipment?.includes(eq.id)) {
+      total += eq.maintenanceCost;
+    }
+  });
+  return total;
+};
+
+// Employee Benefits Functions
+const calculateBenefitsCost = (benefits, staffCount) => {
+  let total = 0;
+  benefits?.forEach(benefitId => {
+    const benefit = EMPLOYEE_BENEFITS.find(b => b.id === benefitId);
+    if (benefit) total += benefit.cost * staffCount;
+  });
+  return total;
+};
+
+const calculateBenefitsBonus = (benefits) => {
+  let moraleBoost = 0;
+  let retentionBoost = 0;
+  benefits?.forEach(benefitId => {
+    const benefit = EMPLOYEE_BENEFITS.find(b => b.id === benefitId);
+    if (benefit) {
+      moraleBoost += benefit.moralBoost;
+      retentionBoost += benefit.retentionBoost;
+    }
+  });
+  return { moraleBoost, retentionBoost };
+};
+
+// Customer Segment Functions
+const getCustomerMix = (reputation, locationType, daypart) => {
+  const mix = {};
+  CUSTOMER_SEGMENTS.forEach(segment => {
+    let pct = segment.percentage;
+    // Adjust based on factors
+    if (locationType === 'downtown' && segment.id === 'business') pct *= 1.5;
+    if (locationType === 'tourist_area' && segment.id === 'tourists') pct *= 2.0;
+    if (reputation > 85 && segment.id === 'foodies') pct *= 1.3;
+    mix[segment.id] = Math.round(pct);
+  });
+  return mix;
+};
+
+// KPI Calculation Functions
+const calculateKPIs = (location, game) => {
+  const kpis = {};
+  const revenue = location.lastWeekRevenue || 0;
+  const foodCost = location.lastWeekFoodCost || revenue * 0.28;
+  const laborCost = location.lastWeekLaborCost || revenue * 0.30;
+  const covers = location.lastWeekCovers || 500;
+  const hoursOpen = 70; // Average weekly hours
+  const sqft = location.sqft || 2000;
+  const seats = location.seats || 50;
+  
+  kpis.covers_per_hour = covers / hoursOpen;
+  kpis.table_turn = 45 + Math.random() * 15;
+  kpis.avg_check = revenue / covers;
+  kpis.food_cost_pct = (foodCost / revenue) * 100;
+  kpis.labor_cost_pct = (laborCost / revenue) * 100;
+  kpis.prime_cost = kpis.food_cost_pct + kpis.labor_cost_pct;
+  kpis.profit_margin = ((revenue - foodCost - laborCost - (location.rent || 0)) / revenue) * 100;
+  kpis.rev_per_sqft = (revenue * 52) / sqft; // Annualized
+  kpis.rev_per_seat = revenue / seats;
+  kpis.employee_turnover = 100 - (location.staff?.filter(s => s.weeksEmployed > 12).length / (location.staff?.length || 1) * 100);
+  kpis.customer_retention = 40 + (location.reputation || 50) * 0.4;
+  kpis.online_rating = calculateOverallRating(location.reviews);
+  
+  return kpis;
+};
+
+// Supply Chain Functions
+const checkSupplyDisruptions = () => {
+  const disruptions = [];
+  SUPPLY_DISRUPTIONS.forEach(disruption => {
+    if (Math.random() < disruption.chance) {
+      disruptions.push({ ...disruption, weeksRemaining: disruption.duration });
+    }
+  });
+  return disruptions;
+};
+
 export default function App() {
   // Screen State
   const [screen, setScreen] = useState('welcome');
@@ -1942,6 +2245,17 @@ export default function App() {
   const [prestigePoints, setPrestigePoints] = useState(0);
   const [unlockedPrestige, setUnlockedPrestige] = useState([]);
   const [selectedStaffForPromotion, setSelectedStaffForPromotion] = useState(null);
+
+  // Phase 9: Realism & Advanced Analytics states
+  const [weatherModal, setWeatherModal] = useState(false);
+  const [reviewsModal, setReviewsModal] = useState(false);
+  const [inspectionModal, setInspectionModal] = useState(false);
+  const [benefitsModal, setBenefitsModal] = useState(false);
+  const [maintenanceModal, setMaintenanceModal] = useState(false);
+  const [kpiModal, setKpiModal] = useState(false);
+  const [socialMediaModal, setSocialMediaModal] = useState(false);
+  const [customerSegmentModal, setCustomerSegmentModal] = useState(false);
+
   
   // Save State
   const [savedGames, setSavedGames] = useState([]);
@@ -2091,6 +2405,21 @@ export default function App() {
       dynastyHistory: [],
       socialShareCount: 0,
       marketplaceTransactions: 0,
+      
+      // Phase 9: Realism & Advanced Analytics
+      weather: { current: 'partly_cloudy', forecast: [], weeksOfBadWeather: 0 },
+      reviews: {},
+      healthInspection: { lastGrade: 'A', lastScore: 95, lastDate: null, violations: [] },
+      socialMediaEvents: [],
+      employeeBenefits: [],
+      maintenanceLevel: 0.5, // 0-1 scale
+      equipmentStatus: {},
+      supplyDisruptions: [],
+      customerSegments: {},
+      kpiHistory: [],
+      regularCustomers: 0,
+      weeksWithoutBreakdown: 0,
+      weeksMeetingKPIs: 0,
     };
     
     setGame(initialGame);
@@ -3338,7 +3667,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v10.0.0 • Phase 8 • Mastery & Deep Simulation</Text>
+          <Text style={styles.versionText}>v11.0.0 • Phase 9 • Realism & Advanced Analytics</Text>
         </View>
       </SafeAreaView>
     );
