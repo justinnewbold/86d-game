@@ -545,6 +545,102 @@ const HALL_OF_FAME_CATEGORIES = [
   { id: 'most_staff', name: 'Most Staff', icon: '👥', stat: 'maxStaff', format: (v) => `${v} employees` },
 ];
 
+
+// ============================================
+// PHASE 8: MASTERY & DEEP SIMULATION DATA
+// ============================================
+
+// Career Paths for Staff
+const CAREER_PATHS = {
+  kitchen: [
+    { level: 1, title: 'Line Cook', minSkill: 1, wage: 15, icon: '👨‍🍳' },
+    { level: 2, title: 'Station Chef', minSkill: 4, wage: 18, icon: '👨‍🍳' },
+    { level: 3, title: 'Sous Chef', minSkill: 6, wage: 22, icon: '👨‍🍳' },
+    { level: 4, title: 'Head Chef', minSkill: 8, wage: 28, icon: '👨‍🍳' },
+    { level: 5, title: 'Executive Chef', minSkill: 10, wage: 40, icon: '⭐👨‍🍳' },
+  ],
+  front: [
+    { level: 1, title: 'Server', minSkill: 1, wage: 12, icon: '🍽️' },
+    { level: 2, title: 'Senior Server', minSkill: 4, wage: 14, icon: '🍽️' },
+    { level: 3, title: 'Captain', minSkill: 6, wage: 17, icon: '🍽️' },
+    { level: 4, title: 'Floor Manager', minSkill: 8, wage: 22, icon: '📋' },
+    { level: 5, title: 'GM', minSkill: 10, wage: 35, icon: '⭐📋' },
+  ],
+  bar: [
+    { level: 1, title: 'Barback', minSkill: 1, wage: 13, icon: '🍸' },
+    { level: 2, title: 'Bartender', minSkill: 4, wage: 16, icon: '🍸' },
+    { level: 3, title: 'Lead Bartender', minSkill: 6, wage: 20, icon: '🍸' },
+    { level: 4, title: 'Bar Manager', minSkill: 8, wage: 26, icon: '🍸' },
+    { level: 5, title: 'Beverage Director', minSkill: 10, wage: 38, icon: '⭐🍸' },
+  ],
+};
+
+// Food Competition Types
+const COMPETITIONS = [
+  { id: 'local_best', name: 'Best Local Restaurant', icon: '🏆', entryFee: 500, prize: 5000, reputationBonus: 15, difficulty: 'easy', judgeCount: 3 },
+  { id: 'cuisine_championship', name: 'Cuisine Championship', icon: '🥇', entryFee: 1500, prize: 15000, reputationBonus: 25, difficulty: 'medium', judgeCount: 5 },
+  { id: 'iron_chef', name: 'Iron Chef Challenge', icon: '⚔️', entryFee: 3000, prize: 30000, reputationBonus: 40, difficulty: 'hard', judgeCount: 7 },
+  { id: 'michelin_contender', name: 'Michelin Contender', icon: '⭐', entryFee: 10000, prize: 100000, reputationBonus: 100, difficulty: 'legendary', judgeCount: 3 },
+  { id: 'peoples_choice', name: "People's Choice Award", icon: '🗳️', entryFee: 0, prize: 2500, reputationBonus: 20, difficulty: 'community', judgeCount: 1000 },
+  { id: 'sustainability', name: 'Green Restaurant Award', icon: '🌿', entryFee: 750, prize: 7500, reputationBonus: 18, difficulty: 'medium', judgeCount: 5 },
+];
+
+// Recipe Development Categories
+const RECIPE_CATEGORIES = [
+  { id: 'signature', name: 'Signature Dish', icon: '⭐', devTime: 4, cost: 2000, bonusMultiplier: 1.3 },
+  { id: 'seasonal', name: 'Seasonal Special', icon: '🍂', devTime: 2, cost: 500, bonusMultiplier: 1.15 },
+  { id: 'fusion', name: 'Fusion Creation', icon: '🔀', devTime: 3, cost: 1200, bonusMultiplier: 1.2 },
+  { id: 'health', name: 'Healthy Option', icon: '🥗', devTime: 2, cost: 800, bonusMultiplier: 1.1 },
+  { id: 'indulgent', name: 'Indulgent Treat', icon: '🍰', devTime: 2, cost: 1000, bonusMultiplier: 1.25 },
+  { id: 'quick', name: 'Quick Bite', icon: '⚡', devTime: 1, cost: 300, bonusMultiplier: 1.05 },
+];
+
+// Special Events Types
+const SPECIAL_EVENTS = [
+  { id: 'private_dinner', name: 'Private Dining', icon: '🕯️', minCapacity: 20, revenue: 5000, prepTime: 1, reputationBonus: 5 },
+  { id: 'wine_pairing', name: 'Wine Pairing Dinner', icon: '🍷', minCapacity: 30, revenue: 8000, prepTime: 2, reputationBonus: 8 },
+  { id: 'chef_table', name: "Chef's Table Experience", icon: '👨‍🍳', minCapacity: 8, revenue: 3000, prepTime: 1, reputationBonus: 10 },
+  { id: 'pop_up', name: 'Pop-Up Event', icon: '🎪', minCapacity: 50, revenue: 12000, prepTime: 3, reputationBonus: 15 },
+  { id: 'collab', name: 'Chef Collaboration', icon: '🤝', minCapacity: 40, revenue: 15000, prepTime: 4, reputationBonus: 20 },
+  { id: 'cooking_class', name: 'Cooking Class', icon: '📚', minCapacity: 12, revenue: 2500, prepTime: 1, reputationBonus: 7 },
+  { id: 'tasting_menu', name: 'Tasting Menu Night', icon: '🍽️', minCapacity: 25, revenue: 6000, prepTime: 2, reputationBonus: 12 },
+  { id: 'holiday_feast', name: 'Holiday Feast', icon: '🎄', minCapacity: 60, revenue: 20000, prepTime: 4, reputationBonus: 18 },
+];
+
+// Market Research Topics
+const RESEARCH_TOPICS = [
+  { id: 'customer_prefs', name: 'Customer Preferences', icon: '👥', cost: 1500, weeks: 2, insight: 'menu_optimization' },
+  { id: 'competitor_analysis', name: 'Competitor Analysis', icon: '🔍', cost: 2500, weeks: 3, insight: 'pricing_strategy' },
+  { id: 'location_study', name: 'Location Study', icon: '📍', cost: 3000, weeks: 4, insight: 'expansion_locations' },
+  { id: 'trend_forecast', name: 'Trend Forecasting', icon: '📈', cost: 4000, weeks: 4, insight: 'future_trends' },
+  { id: 'demographic', name: 'Demographic Study', icon: '📊', cost: 2000, weeks: 2, insight: 'target_audience' },
+  { id: 'supply_chain', name: 'Supply Chain Analysis', icon: '🚚', cost: 3500, weeks: 3, insight: 'vendor_optimization' },
+];
+
+// Prestige Upgrades (New Game+ bonuses)
+const PRESTIGE_UPGRADES = [
+  { id: 'golden_spoon', name: 'Golden Spoon', icon: '🥄', cost: 1, effect: 'Start with +10% reputation', bonus: { reputationMultiplier: 1.1 } },
+  { id: 'veteran_network', name: 'Veteran Network', icon: '🤝', cost: 1, effect: 'Start with 2 trained staff', bonus: { startingStaff: 2 } },
+  { id: 'seed_funding', name: 'Seed Funding', icon: '💰', cost: 2, effect: 'Start with +$25K capital', bonus: { startingCapital: 25000 } },
+  { id: 'industry_cred', name: 'Industry Credibility', icon: '⭐', cost: 2, effect: '+5% to all revenue', bonus: { revenueMultiplier: 1.05 } },
+  { id: 'mentor_hotline', name: 'Mentor Hotline', icon: '📞', cost: 3, effect: 'AI mentor gives better advice', bonus: { mentorBonus: true } },
+  { id: 'supplier_deals', name: 'Supplier Deals', icon: '📦', cost: 3, effect: '-5% food costs', bonus: { foodCostReduction: 0.05 } },
+  { id: 'media_darling', name: 'Media Darling', icon: '📺', cost: 4, effect: '+20% marketing effectiveness', bonus: { marketingMultiplier: 1.2 } },
+  { id: 'real_estate_mogul', name: 'Real Estate Mogul', icon: '🏠', cost: 5, effect: '-10% rent costs', bonus: { rentReduction: 0.1 } },
+];
+
+// Phase 8 Achievements
+const PHASE_8_ACHIEVEMENTS = [
+  { id: 'career_builder', name: 'Career Builder', desc: 'Promote a staff member to max level', icon: '📈', reward: 3000 },
+  { id: 'competition_winner', name: 'Competition Winner', desc: 'Win your first food competition', icon: '🏆', reward: 7500 },
+  { id: 'iron_chef', name: 'Iron Chef', desc: 'Win the Iron Chef Challenge', icon: '⚔️', reward: 25000 },
+  { id: 'michelin_star', name: 'Michelin Contender', desc: 'Complete the Michelin Contender competition', icon: '⭐', reward: 100000 },
+  { id: 'recipe_innovator', name: 'Recipe Innovator', desc: 'Develop 10 custom recipes', icon: '📝', reward: 10000 },
+  { id: 'event_specialist', name: 'Event Specialist', desc: 'Host 25 special events', icon: '🎪', reward: 15000 },
+  { id: 'market_researcher', name: 'Market Researcher', desc: 'Complete all research topics', icon: '🔍', reward: 20000 },
+  { id: 'prestige_master', name: 'Prestige Master', desc: 'Unlock all prestige upgrades', icon: '👑', reward: 50000 },
+];
+
 // ============================================
 // PHASE 7: MULTIPLAYER & SOCIAL SYSTEMS
 // ============================================
@@ -1497,6 +1593,129 @@ const calculateEmpireValuation = (game, setup) => {
   return Math.round(total * brandMultiplier);
 };
 
+// ============================================
+// PHASE 8 HELPER FUNCTIONS
+// ============================================
+
+// Calculate staff promotion eligibility
+const getPromotionPath = (staff) => {
+  const path = CAREER_PATHS[staff.department] || CAREER_PATHS.front;
+  const currentLevel = path.findIndex(p => p.title === staff.role);
+  const nextLevel = path[currentLevel + 1];
+  if (!nextLevel) return null;
+  return {
+    current: path[currentLevel],
+    next: nextLevel,
+    eligible: staff.skill >= nextLevel.minSkill && staff.weeks >= 12,
+    weeksNeeded: Math.max(0, 12 - staff.weeks),
+    skillNeeded: Math.max(0, nextLevel.minSkill - staff.skill),
+  };
+};
+
+// Calculate competition success chance
+const calculateCompetitionChance = (location, competition, customRecipes = []) => {
+  let baseChance = 0.3;
+  baseChance += location.reputation / 500;
+  const avgSkill = location.staff.reduce((sum, s) => sum + s.skill, 0) / (location.staff.length || 1);
+  baseChance += avgSkill / 20;
+  baseChance += Math.min(customRecipes.length * 0.02, 0.15);
+  if (location.upgrades?.fullRenovation) baseChance += 0.1;
+  if (location.upgrades?.bar) baseChance += 0.05;
+  const difficultyMod = { easy: 1.3, medium: 1.0, hard: 0.7, legendary: 0.4, community: 1.2 };
+  baseChance *= difficultyMod[competition.difficulty] || 1.0;
+  return Math.min(Math.max(baseChance, 0.05), 0.95);
+};
+
+// Run competition and get results
+const runCompetition = (location, competition, customRecipes = []) => {
+  const chance = calculateCompetitionChance(location, competition, customRecipes);
+  const roll = Math.random();
+  const won = roll < chance;
+  return {
+    won, chance: Math.round(chance * 100), roll: Math.round(roll * 100),
+    prize: won ? competition.prize : 0,
+    reputationChange: won ? competition.reputationBonus : -5,
+    commentary: won 
+      ? `Congratulations! Your restaurant impressed the judges and won ${competition.name}!`
+      : `You didn't win this time, but the exposure still helped. Keep improving!`,
+  };
+};
+
+// Generate recipe names
+const generateRecipeName = (category) => {
+  const adjectives = ['Golden', 'Secret', 'Heritage', 'Modern', 'Classic', 'Bold', 'Rustic', 'Elegant', 'Wild', 'Smoked'];
+  const bases = {
+    signature: ['Wellington', 'Risotto', 'Tartare', 'Ragu', 'Terrine'],
+    seasonal: ['Harvest Bowl', 'Garden Plate', 'Farm Special', 'Market Fresh'],
+    fusion: ['East-West Fusion', 'Mediterranean Mix', 'Pan-Asian Plate'],
+    health: ['Power Bowl', 'Clean Plate', 'Zen Garden', 'Vitality Special'],
+    indulgent: ['Decadence', 'Truffle Dream', 'Rich Reward'],
+    quick: ['Express', 'Quick Bite', 'Snack Attack'],
+  };
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const base = (bases[category.id] || bases.signature)[Math.floor(Math.random() * (bases[category.id] || bases.signature).length)];
+  return `${adj} ${base}`;
+};
+
+// Develop recipe with success chance
+const developRecipe = (location, category, investment = 1) => {
+  const baseSuccess = 0.6;
+  const kitchenStaff = location.staff.filter(s => s.department === 'kitchen');
+  const avgSkill = kitchenStaff.reduce((sum, s) => sum + s.skill, 0) / (kitchenStaff.length || 1);
+  const successChance = Math.min(baseSuccess + (avgSkill / 20) + (investment * 0.1), 0.95);
+  const success = Math.random() < successChance;
+  if (success) {
+    return {
+      success: true,
+      recipe: {
+        id: `custom_${Date.now()}`, name: generateRecipeName(category),
+        category: category.id, icon: category.icon,
+        bonusMultiplier: category.bonusMultiplier,
+        popularity: Math.floor(Math.random() * 30) + 70, createdWeek: 0,
+      },
+      message: `Successfully developed a new ${category.name}!`,
+    };
+  }
+  return { success: false, recipe: null, message: `Recipe development failed. Try again with more investment.` };
+};
+
+// Calculate special event revenue
+const calculateEventRevenue = (event, location, reputation) => {
+  const baseRevenue = event.revenue;
+  const repMultiplier = 1 + (reputation / 200);
+  const capacityBonus = location.seating >= event.minCapacity * 1.5 ? 1.2 : 1;
+  return Math.round(baseRevenue * repMultiplier * capacityBonus);
+};
+
+// Process market research completion
+const completeResearch = (topic) => {
+  const insights = {
+    menu_optimization: { title: 'Menu Optimization Insights', bonus: { menuEfficiency: 1.08 } },
+    pricing_strategy: { title: 'Pricing Strategy Analysis', bonus: { pricingPower: 1.05 } },
+    expansion_locations: { title: 'Expansion Location Report', bonus: { expansionBonus: true } },
+    future_trends: { title: 'Industry Trend Forecast', bonus: { trendAwareness: true } },
+    target_audience: { title: 'Demographic Analysis', bonus: { customerInsight: 1.1 } },
+    vendor_optimization: { title: 'Supply Chain Report', bonus: { vendorDiscount: 0.03 } },
+  };
+  return insights[topic.insight] || insights.menu_optimization;
+};
+
+// Apply prestige bonuses
+const applyPrestigeBonuses = (unlockedUpgrades) => {
+  const bonuses = { startingCapital: 0, reputationMultiplier: 1, revenueMultiplier: 1, foodCostReduction: 0, marketingMultiplier: 1, rentReduction: 0, startingStaff: 0, mentorBonus: false };
+  unlockedUpgrades.forEach(upgradeId => {
+    const upgrade = PRESTIGE_UPGRADES.find(u => u.id === upgradeId);
+    if (upgrade) {
+      Object.keys(upgrade.bonus).forEach(key => {
+        if (typeof bonuses[key] === 'boolean') bonuses[key] = upgrade.bonus[key];
+        else if (key.includes('Multiplier')) bonuses[key] *= upgrade.bonus[key];
+        else bonuses[key] += upgrade.bonus[key];
+      });
+    }
+  });
+  return bonuses;
+};
+
 // Phase 7: Additional Helper Functions
 const calculatePlayerRank = (game, category) => {
   if (!game || !category) return 999;
@@ -1707,6 +1926,22 @@ export default function App() {
   const [partnerships, setPartnerships] = useState([]);
   const [activeTournament, setActiveTournament] = useState(null);
   const [seasonalProgress, setSeasonalProgress] = useState({});
+  
+  // Phase 8: Mastery & Deep Simulation states
+  const [competitionModal, setCompetitionModal] = useState(false);
+  const [recipeDevelopmentModal, setRecipeDevelopmentModal] = useState(false);
+  const [specialEventModal, setSpecialEventModal] = useState(false);
+  const [researchModal, setResearchModal] = useState(false);
+  const [careerModal, setCareerModal] = useState(false);
+  const [prestigeModal, setPrestigeModal] = useState(false);
+  const [customRecipes, setCustomRecipes] = useState([]);
+  const [activeResearch, setActiveResearch] = useState(null);
+  const [completedResearch, setCompletedResearch] = useState([]);
+  const [competitionHistory, setCompetitionHistory] = useState([]);
+  const [specialEventsHosted, setSpecialEventsHosted] = useState(0);
+  const [prestigePoints, setPrestigePoints] = useState(0);
+  const [unlockedPrestige, setUnlockedPrestige] = useState([]);
+  const [selectedStaffForPromotion, setSelectedStaffForPromotion] = useState(null);
   
   // Save State
   const [savedGames, setSavedGames] = useState([]);
@@ -3103,7 +3338,7 @@ export default function App() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v9.0.0 • Phase 7 • Multiplayer & Social</Text>
+          <Text style={styles.versionText}>v10.0.0 • Phase 8 • Mastery & Deep Simulation</Text>
         </View>
       </SafeAreaView>
     );
