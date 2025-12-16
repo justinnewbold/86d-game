@@ -2681,6 +2681,80 @@ export default function App() {
     };
   }, []);
 
+  // Notification System (moved before processWeek to avoid temporal dead zone)
+  const addNotification = useCallback((type, message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  }, []);
+
+  // PHASE 4: COMPETITION SYSTEM (moved before processWeek)
+  const checkCompetition = useCallback(() => {
+    if (!game) return;
+
+    // Randomly spawn new competitor every ~20 weeks
+    if (game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6) {
+      const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
+      setGame(g => ({
+        ...g,
+        competitors: [...g.competitors, newCompetitor],
+      }));
+      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
+    }
+
+    // Update competitor strengths
+    setGame(g => ({
+      ...g,
+      competitors: g.competitors.map(c => ({
+        ...c,
+        reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
+        weeksOpen: c.weeksOpen + 1,
+      })).filter(c => c.reputation > 15 || Math.random() > 0.1), // Weak competitors might close
+    }));
+  }, [game, setup]);
+
+  // PHASE 4: MILESTONES (moved before processWeek)
+  const checkMilestones = useCallback(() => {
+    if (!game) return;
+
+    const newMilestones = [];
+    const loc = getActiveLocation();
+    const totalStaff = game.locations.reduce((sum, l) => sum + l.staff.length, 0);
+
+    MILESTONES.forEach(m => {
+      if (game.unlockedMilestones.includes(m.id)) return;
+
+      let achieved = false;
+      switch (m.stat) {
+        case 'weeklyProfit': achieved = loc?.lastWeekProfit > m.threshold; break;
+        case 'weeklyRevenue': achieved = loc?.lastWeekRevenue > m.threshold; break;
+        case 'totalStaff': achieved = totalStaff >= m.threshold; break;
+        case 'reputation': achieved = loc?.reputation >= m.threshold; break;
+        case 'weeks': achieved = game.week >= m.threshold; break;
+        case 'locations': achieved = game.locations.length >= m.threshold; break;
+        case 'franchises': achieved = game.franchises.length >= m.threshold; break;
+        case 'valuation': achieved = game.empireValuation >= m.threshold; break;
+      }
+
+      if (achieved) newMilestones.push(m);
+    });
+
+    if (newMilestones.length > 0) {
+      const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
+      setGame(g => ({
+        ...g,
+        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
+        milestoneRewards: g.milestoneRewards + totalReward,
+        corporateCash: g.corporateCash + totalReward,
+      }));
+
+      const milestoneNames = newMilestones.map(m => m.name).join(', ');
+      setAiMessage(`🎉 Milestone${newMilestones.length > 1 ? 's' : ''} unlocked: ${milestoneNames}! Bonus: ${formatCurrency(totalReward)}`);
+    }
+  }, [game, getActiveLocation]);
+
   // ============================================
   // MAIN WEEK PROCESSING
   // ============================================
@@ -3321,33 +3395,6 @@ export default function App() {
   };
 
   // ============================================
-  // PHASE 4: COMPETITION SYSTEM
-  // ============================================
-  const checkCompetition = useCallback(() => {
-    if (!game) return;
-    
-    // Randomly spawn new competitor every ~20 weeks
-    if (game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6) {
-      const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
-      setGame(g => ({
-        ...g,
-        competitors: [...g.competitors, newCompetitor],
-      }));
-      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
-    }
-    
-    // Update competitor strengths
-    setGame(g => ({
-      ...g,
-      competitors: g.competitors.map(c => ({
-        ...c,
-        reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
-        weeksOpen: c.weeksOpen + 1,
-      })).filter(c => c.reputation > 15 || Math.random() > 0.1), // Weak competitors might close
-    }));
-  }, [game, setup]);
-
-  // ============================================
   // PHASE 4: CALENDAR EVENTS
   // ============================================
   const checkCalendarEvents = useCallback(() => {
@@ -3372,48 +3419,6 @@ export default function App() {
       seasonalMod: SEASONAL_EFFECTS[season]?.modifier || 0,
     };
   }, [game]);
-
-  // ============================================
-  // PHASE 4: MILESTONES
-  // ============================================
-  const checkMilestones = useCallback(() => {
-    if (!game) return;
-    
-    const newMilestones = [];
-    const loc = getActiveLocation();
-    const totalStaff = game.locations.reduce((sum, l) => sum + l.staff.length, 0);
-    
-    MILESTONES.forEach(m => {
-      if (game.unlockedMilestones.includes(m.id)) return;
-      
-      let achieved = false;
-      switch (m.stat) {
-        case 'weeklyProfit': achieved = loc?.lastWeekProfit > m.threshold; break;
-        case 'weeklyRevenue': achieved = loc?.lastWeekRevenue > m.threshold; break;
-        case 'totalStaff': achieved = totalStaff >= m.threshold; break;
-        case 'reputation': achieved = loc?.reputation >= m.threshold; break;
-        case 'weeks': achieved = game.week >= m.threshold; break;
-        case 'locations': achieved = game.locations.length >= m.threshold; break;
-        case 'franchises': achieved = game.franchises.length >= m.threshold; break;
-        case 'valuation': achieved = game.empireValuation >= m.threshold; break;
-      }
-      
-      if (achieved) newMilestones.push(m);
-    });
-    
-    if (newMilestones.length > 0) {
-      const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
-      setGame(g => ({
-        ...g,
-        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
-        milestoneRewards: g.milestoneRewards + totalReward,
-        corporateCash: g.corporateCash + totalReward,
-      }));
-      
-      const milestoneNames = newMilestones.map(m => m.name).join(', ');
-      setAiMessage(`🎉 Milestone${newMilestones.length > 1 ? 's' : ''} unlocked: ${milestoneNames}! Bonus: ${formatCurrency(totalReward)}`);
-    }
-  }, [game, getActiveLocation]);
 
   // ============================================
   // PHASE 4: SELL/CLOSE LOCATION
@@ -3518,16 +3523,7 @@ export default function App() {
       localStorage.setItem('86d_theme', themeId);
     } catch (e) {}
   };
-  
-  // Notification System
-  const addNotification = useCallback((type, message) => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4000);
-  }, []);
-  
+
   // Auto-Advance System
   useEffect(() => {
     if (autoAdvanceRef.current) {
