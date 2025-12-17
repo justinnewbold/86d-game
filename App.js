@@ -1870,21 +1870,21 @@ const MiniChart = ({ data, color, height = 40 }) => {
 const createLocation = (id, name, locationType, market, cuisine, startingCash) => {
   const type = LOCATION_TYPES.find(t => t.id === locationType);
   const mkt = MARKETS.find(m => m.id === market);
-  const cuisineData = CUISINES.find(c => c.id === cuisine);
-  
+  const cuisineData = CUISINES.find(c => c.id === cuisine) || CUISINES[0]; // Fallback to first cuisine
+
   return {
     id,
     name,
     locationType,
     market,
     isGhostKitchen: type?.deliveryOnly || false,
-    
+
     // Financials
     cash: startingCash,
     totalRevenue: 0,
     totalProfit: 0,
     weeklyHistory: [],
-    
+
     // Operations
     staff: [],
     menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: cuisineData.avgTicket, cost: cuisineData.avgTicket * cuisineData.foodCost, popular: true, is86d: false }],
@@ -1893,17 +1893,17 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
     marketing: { channels: ['social_organic'], socialFollowers: 50 },
     delivery: { platforms: [], orders: 0 },
     virtualBrands: [],
-    
+
     // Metrics
     reputation: 50,
     morale: 70,
     covers: Math.floor(30 * (type?.trafficMod || 1)),
     weeksOpen: 0,
-    
+
     // Manager
     manager: null,
     managerAutonomy: 0.5, // 0-1, how much AI decides for this location
-    
+
     // Costs
     rent: Math.floor(3000 * (type?.rentMod || 1)),
     avgTicket: cuisineData.avgTicket,
@@ -2061,27 +2061,27 @@ const getCustomerMix = (reputation, locationType, daypart) => {
 // KPI Calculation Functions
 const calculateKPIs = (location, game) => {
   const kpis = {};
-  const revenue = location.lastWeekRevenue || 0;
+  const revenue = location.lastWeekRevenue || 1; // Minimum 1 to prevent division by zero
   const foodCost = location.lastWeekFoodCost || revenue * 0.28;
   const laborCost = location.lastWeekLaborCost || revenue * 0.30;
   const covers = location.lastWeekCovers || 500;
   const hoursOpen = 70; // Average weekly hours
   const sqft = location.sqft || 2000;
   const seats = location.seats || 50;
-  
+
   kpis.covers_per_hour = covers / hoursOpen;
   kpis.table_turn = 45 + Math.random() * 15;
-  kpis.avg_check = revenue / covers;
+  kpis.avg_check = revenue / Math.max(1, covers);
   kpis.food_cost_pct = (foodCost / revenue) * 100;
   kpis.labor_cost_pct = (laborCost / revenue) * 100;
   kpis.prime_cost = kpis.food_cost_pct + kpis.labor_cost_pct;
   kpis.profit_margin = ((revenue - foodCost - laborCost - (location.rent || 0)) / revenue) * 100;
   kpis.rev_per_sqft = (revenue * 52) / sqft; // Annualized
   kpis.rev_per_seat = revenue / seats;
-  kpis.employee_turnover = 100 - (location.staff?.filter(s => s.weeksEmployed > 12).length / (location.staff?.length || 1) * 100);
+  kpis.employee_turnover = 100 - (location.staff?.filter(s => s.weeksEmployed > 12).length / Math.max(1, location.staff?.length || 1) * 100);
   kpis.customer_retention = 40 + (location.reputation || 50) * 0.4;
   kpis.online_rating = calculateOverallRating(location.reviews);
-  
+
   return kpis;
 };
 
@@ -2266,9 +2266,9 @@ function AppContent() {
 
   // Initialize Game
   const initGame = useCallback(() => {
-    const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    const cuisine = CUISINES.find(c => c.id === setup.cuisine) || CUISINES[0];
     const locationType = LOCATION_TYPES.find(t => t.id === setup.location);
-    
+
     const firstLocation = createLocation(
       1,
       setup.name || `${cuisine.name} - Original`,
@@ -2583,7 +2583,7 @@ function AppContent() {
 
     const newMilestones = [];
     const loc = getActiveLocation();
-    const totalStaff = game.locations.reduce((sum, l) => sum + l.staff.length, 0);
+    const totalStaff = game.locations.reduce((sum, l) => sum + (l.staff?.length || 0), 0);
 
     MILESTONES.forEach(m => {
       if (game.unlockedMilestones.includes(m.id)) return;
@@ -3179,7 +3179,7 @@ function AppContent() {
     const franchiseTier = FRANCHISE_TIERS.find(t => t.id === tier);
     if (!franchiseTier || !game || !game.franchiseEnabled) return;
     
-    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / game.locations.length;
+    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, game.locations.length);
     const weeklyRoyalty = avgLocationRevenue * franchiseTier.royalty;
     
     const newFranchise = {
