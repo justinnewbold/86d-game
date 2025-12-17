@@ -2126,6 +2126,10 @@ function AppContent() {
   const [aiMessage, setAiMessage] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   
+  // Custom capital input
+  const [customCapitalMode, setCustomCapitalMode] = useState(false);
+  const [customCapitalInput, setCustomCapitalInput] = useState('');
+
   // Modal State
   const [cuisineModal, setCuisineModal] = useState(false);
   const [cuisineSearch, setCuisineSearch] = useState('');
@@ -3718,19 +3722,152 @@ function AppContent() {
             {step.key === 'capital' && (
               <>
                 <View style={styles.capitalDisplay}>
-                  <Text style={[styles.capitalAmount, { color: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : colors.success }]}>{formatCurrency(setup.capital)}</Text>
-                  <View style={[styles.tierBadge, { backgroundColor: setup.capital < 75000 ? colors.accent : setup.capital < 150000 ? colors.warning : setup.capital < 300000 ? colors.success : colors.purple }]}>
-                    <Text style={styles.tierText}>{setup.capital < 75000 ? 'BOOTSTRAP' : setup.capital < 150000 ? 'STANDARD' : setup.capital < 300000 ? 'WELL-FUNDED' : 'EMPIRE READY'}</Text>
-                  </View>
-                  <Text style={styles.tierDesc}>
-                    {setup.capital < 75000 && "Tight. One location, no safety net."}
-                    {setup.capital >= 75000 && setup.capital < 150000 && "Solid start. Room to breathe."}
-                    {setup.capital >= 150000 && setup.capital < 300000 && "Good runway for location #1 + reserve for #2."}
-                    {setup.capital >= 300000 && "Ready to scale fast if you execute."}
-                  </Text>
+                  {customCapitalMode ? (
+                    <View style={{ width: '100%', alignItems: 'center' }}>
+                      <Text style={styles.customCapitalLabel}>Enter Custom Amount</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+                        <Text style={{ color: colors.textPrimary, fontSize: 24, marginRight: 5 }}>$</Text>
+                        <TextInput
+                          style={[styles.textInput, { width: 180, fontSize: 24, textAlign: 'center' }]}
+                          placeholder="1,000,000"
+                          placeholderTextColor={colors.textMuted}
+                          value={customCapitalInput}
+                          onChangeText={(t) => setCustomCapitalInput(t.replace(/[^0-9]/g, ''))}
+                          keyboardType="numeric"
+                          autoFocus
+                        />
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
+                          onPress={() => { setCustomCapitalMode(false); setCustomCapitalInput(''); }}
+                        >
+                          <Text style={{ color: colors.textSecondary }}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
+                          onPress={() => {
+                            const amount = parseInt(customCapitalInput) || 50000;
+                            setSetup(s => ({ ...s, capital: Math.max(50000, Math.min(100000000, amount)) }));
+                            setCustomCapitalMode(false);
+                            setCustomCapitalInput('');
+                          }}
+                        >
+                          <Text style={{ color: colors.background, fontWeight: '600' }}>Apply</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={[styles.capitalAmount, {
+                        color: setup.capital < 75000 ? colors.accent :
+                               setup.capital < 250000 ? colors.warning :
+                               setup.capital < 1000000 ? colors.success :
+                               setup.capital < 5000000 ? colors.purple : '#FFD700'
+                      }]}>
+                        {setup.capital >= 1000000 ? `$${(setup.capital / 1000000).toFixed(1)}M` : formatCurrency(setup.capital)}
+                      </Text>
+                      <View style={[styles.tierBadge, {
+                        backgroundColor: setup.capital < 75000 ? colors.accent :
+                                        setup.capital < 250000 ? colors.warning :
+                                        setup.capital < 500000 ? colors.success :
+                                        setup.capital < 1000000 ? colors.purple :
+                                        setup.capital < 5000000 ? '#FFD700' : '#E5E4E2'
+                      }]}>
+                        <Text style={[styles.tierText, { color: setup.capital >= 5000000 ? '#333' : '#fff' }]}>
+                          {setup.capital < 75000 ? 'BOOTSTRAP' :
+                           setup.capital < 250000 ? 'STANDARD' :
+                           setup.capital < 500000 ? 'WELL-FUNDED' :
+                           setup.capital < 1000000 ? 'EMPIRE READY' :
+                           setup.capital < 5000000 ? 'TYCOON' : 'UNLIMITED'}
+                        </Text>
+                      </View>
+                      <Text style={styles.tierDesc}>
+                        {setup.capital < 75000 && "Tight. One location, no safety net. True bootstrap mode."}
+                        {setup.capital >= 75000 && setup.capital < 250000 && "Solid start. Room to breathe and handle surprises."}
+                        {setup.capital >= 250000 && setup.capital < 500000 && "Good runway for location #1 + reserve for expansion."}
+                        {setup.capital >= 500000 && setup.capital < 1000000 && "Ready to scale fast. Multiple locations from day one."}
+                        {setup.capital >= 1000000 && setup.capital < 5000000 && "Serious investor money. Build a regional chain immediately."}
+                        {setup.capital >= 5000000 && "Unlimited mode. Focus on strategy, not survival."}
+                      </Text>
+                      <TouchableOpacity
+                        style={{ marginTop: 10, padding: 8 }}
+                        onPress={() => setCustomCapitalMode(true)}
+                      >
+                        <Text style={{ color: colors.primary, fontSize: 14 }}>Enter custom amount →</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}><TouchableOpacity style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.max(50000, s.capital - 25000) }))}><Text style={{ color: colors.textPrimary, fontSize: 16 }}>- $25K</Text></TouchableOpacity><TouchableOpacity style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }} onPress={() => setSetup(s => ({ ...s, capital: Math.min(500000, s.capital + 25000) }))}><Text style={{ color: colors.textPrimary, fontSize: 16 }}>+ $25K</Text></TouchableOpacity></View>
-                <View style={styles.sliderLabels}><Text style={styles.sliderLabel}>$50K</Text><Text style={styles.sliderLabel}>$500K</Text></View>
+
+                {!customCapitalMode && (
+                  <>
+                    {/* Quick preset buttons */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginVertical: 15 }}>
+                      {[
+                        { label: '$50K', value: 50000 },
+                        { label: '$100K', value: 100000 },
+                        { label: '$250K', value: 250000 },
+                        { label: '$500K', value: 500000 },
+                        { label: '$1M', value: 1000000 },
+                        { label: '$2.5M', value: 2500000 },
+                        { label: '$5M', value: 5000000 },
+                        { label: '$10M', value: 10000000 },
+                      ].map(preset => (
+                        <TouchableOpacity
+                          key={preset.value}
+                          style={[
+                            {
+                              backgroundColor: setup.capital === preset.value ? colors.primary : colors.surface,
+                              paddingVertical: 10,
+                              paddingHorizontal: 14,
+                              borderRadius: 8,
+                              minWidth: 70,
+                              alignItems: 'center'
+                            }
+                          ]}
+                          onPress={() => setSetup(s => ({ ...s, capital: preset.value }))}
+                        >
+                          <Text style={{
+                            color: setup.capital === preset.value ? colors.background : colors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: setup.capital === preset.value ? '700' : '500'
+                          }}>{preset.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Increment/Decrement buttons with dynamic step */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 10 }}>
+                      <TouchableOpacity
+                        style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }}
+                        onPress={() => {
+                          const step = setup.capital > 1000000 ? 500000 : setup.capital > 250000 ? 100000 : 25000;
+                          setSetup(s => ({ ...s, capital: Math.max(50000, s.capital - step) }));
+                        }}
+                      >
+                        <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
+                          - {setup.capital > 1000000 ? '$500K' : setup.capital > 250000 ? '$100K' : '$25K'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ backgroundColor: colors.surface, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 }}
+                        onPress={() => {
+                          const step = setup.capital >= 1000000 ? 500000 : setup.capital >= 250000 ? 100000 : 25000;
+                          setSetup(s => ({ ...s, capital: Math.min(100000000, s.capital + step) }));
+                        }}
+                      >
+                        <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
+                          + {setup.capital >= 1000000 ? '$500K' : setup.capital >= 250000 ? '$100K' : '$25K'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.sliderLabels}>
+                      <Text style={styles.sliderLabel}>$50K</Text>
+                      <Text style={styles.sliderLabel}>$100M</Text>
+                    </View>
+                  </>
+                )}
               </>
             )}
 
@@ -5919,6 +6056,7 @@ const styles = StyleSheet.create({
   tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginTop: 8 },
   tierText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
   tierDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 8, textAlign: 'center' },
+  customCapitalLabel: { color: colors.textSecondary, fontSize: 16, marginBottom: 10 },
   slider: { width: '100%', height: 40 },
   sliderLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   sliderLabel: { color: colors.textMuted, fontSize: 12 },
@@ -5942,7 +6080,7 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
   modalSubtitle: { color: colors.textSecondary, fontSize: 13, marginBottom: 15 },
-  modalClose: { color: colors.textMuted, fontSize: 24 },
+  modalClose: { color: colors.textMuted, fontSize: 24, padding: 8, marginRight: -8 },
   searchInput: { backgroundColor: colors.surfaceLight, color: colors.textPrimary, padding: 12, borderRadius: 8, marginBottom: 15 },
   cuisineList: { maxHeight: 400 },
   cuisineOption: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 8 },
@@ -6034,13 +6172,13 @@ const styles = StyleSheet.create({
   chartContainer: { backgroundColor: colors.surface, margin: 10, padding: 15, borderRadius: 8 },
   chartTitle: { color: colors.textMuted, fontSize: 11, marginBottom: 5, marginTop: 10 },
 
-  // Tabs
+  // Tabs - Mobile optimized touch targets
   tabBar: { flexDirection: 'row', backgroundColor: colors.surface, marginHorizontal: 10, borderRadius: 8, padding: 4 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 6, minHeight: 44 },
   tabActive: { backgroundColor: colors.primary },
-  tabText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
+  tabText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   tabTextActive: { color: colors.background },
-  tabContent: { padding: 10 },
+  tabContent: { padding: 12 },
   sectionTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 10 },
 
   // Health Meters
@@ -6077,8 +6215,8 @@ const styles = StyleSheet.create({
 
   // Staff
   staffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  hireButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  hireButtonText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  hireButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 6, minHeight: 40 },
+  hireButtonText: { color: colors.background, fontSize: 13, fontWeight: '600' },
   emptyText: { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
   staffCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
   staffIcon: { fontSize: 24, marginRight: 10 },
@@ -6088,16 +6226,16 @@ const styles = StyleSheet.create({
   staffMoraleBar: { height: 3, backgroundColor: colors.surfaceLight, borderRadius: 2, marginTop: 6, width: 80 },
   staffMoraleFill: { height: 3, borderRadius: 2 },
   staffActions: { flexDirection: 'row', gap: 8 },
-  promoteBtn: { backgroundColor: colors.success, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  promoteBtnText: { fontSize: 12 },
-  trainBtn: { backgroundColor: colors.info, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  trainBtnText: { fontSize: 12 },
-  fireBtn: { backgroundColor: colors.accent, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  promoteBtn: { backgroundColor: colors.success, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  promoteBtnText: { fontSize: 14 },
+  trainBtn: { backgroundColor: colors.info, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  trainBtnText: { fontSize: 14 },
+  fireBtn: { backgroundColor: colors.accent, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   fireBtnText: { color: colors.textPrimary, fontSize: 14 },
 
   // Menu
   menuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  addMenuBtn: { backgroundColor: colors.info, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  addMenuBtn: { backgroundColor: colors.info, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 6, minHeight: 40 },
   addMenuBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 6 },
   menuItem86d: { opacity: 0.5 },
@@ -6123,8 +6261,8 @@ const styles = StyleSheet.create({
 
   // Loans
   loanHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  loanBtn: { backgroundColor: colors.warning, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  loanBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
+  loanBtn: { backgroundColor: colors.warning, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 6, minHeight: 40 },
+  loanBtnText: { color: colors.background, fontSize: 13, fontWeight: '600' },
   loanCard: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
   loanName: { color: colors.textPrimary, fontSize: 14 },
   loanDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
