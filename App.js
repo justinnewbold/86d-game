@@ -237,7 +237,257 @@ const THEMES = {
   },
 };
 
-// Food Competition Types (not in modules)
+// ============================================
+// EXPANDED DATA SETS
+// ============================================
+const CUISINES = [
+  { id: 'burgers', name: 'Burgers & American', icon: '🍔', foodCost: 0.28, avgTicket: 14, difficulty: 'Easy' },
+  { id: 'mexican', name: 'Mexican', icon: '🌮', foodCost: 0.26, avgTicket: 12, difficulty: 'Easy' },
+  { id: 'pizza', name: 'Pizza & Italian-American', icon: '🍕', foodCost: 0.24, avgTicket: 18, difficulty: 'Easy' },
+  { id: 'chinese', name: 'Chinese', icon: '🥡', foodCost: 0.27, avgTicket: 13, difficulty: 'Medium' },
+  { id: 'japanese', name: 'Japanese', icon: '🍣', foodCost: 0.32, avgTicket: 22, difficulty: 'Hard' },
+  { id: 'thai', name: 'Thai', icon: '🍜', foodCost: 0.28, avgTicket: 15, difficulty: 'Medium' },
+  { id: 'indian', name: 'Indian', icon: '🍛', foodCost: 0.26, avgTicket: 16, difficulty: 'Medium' },
+  { id: 'korean', name: 'Korean', icon: '🥘', foodCost: 0.29, avgTicket: 18, difficulty: 'Medium' },
+  { id: 'vietnamese', name: 'Vietnamese', icon: '🍲', foodCost: 0.27, avgTicket: 14, difficulty: 'Medium' },
+  { id: 'mediterranean', name: 'Mediterranean', icon: '🥙', foodCost: 0.30, avgTicket: 15, difficulty: 'Medium' },
+  { id: 'seafood', name: 'Seafood', icon: '🦞', foodCost: 0.35, avgTicket: 45, difficulty: 'Hard' },
+  { id: 'steakhouse', name: 'Steakhouse', icon: '🥩', foodCost: 0.38, avgTicket: 95, difficulty: 'Hard' },
+  { id: 'bbq', name: 'BBQ & Smokehouse', icon: '🍖', foodCost: 0.30, avgTicket: 18, difficulty: 'Medium' },
+  { id: 'cafe', name: 'Café & Coffee Shop', icon: '☕', foodCost: 0.22, avgTicket: 9, difficulty: 'Easy' },
+  { id: 'vegan', name: 'Vegan & Plant-Based', icon: '🥗', foodCost: 0.32, avgTicket: 16, difficulty: 'Medium' },
+  { id: 'ramen', name: 'Ramen Shop', icon: '🍜', foodCost: 0.26, avgTicket: 15, difficulty: 'Medium' },
+  { id: 'sushi', name: 'Sushi Bar', icon: '🍱', foodCost: 0.34, avgTicket: 55, difficulty: 'Hard' },
+  { id: 'tapas', name: 'Tapas & Small Plates', icon: '🫒', foodCost: 0.29, avgTicket: 24, difficulty: 'Medium' },
+  { id: 'pub', name: 'Gastropub', icon: '🍺', foodCost: 0.28, avgTicket: 22, difficulty: 'Medium' },
+  { id: 'brunch', name: 'Brunch Spot', icon: '🥞', foodCost: 0.26, avgTicket: 18, difficulty: 'Easy' },
+  { id: 'foodtruck', name: 'Food Truck', icon: '🚚', foodCost: 0.26, avgTicket: 12, difficulty: 'Easy' },
+  { id: 'finedining', name: 'Fine Dining', icon: '✨', foodCost: 0.30, avgTicket: 175, difficulty: 'Expert' },
+];
+
+const STAFF_TEMPLATES = [
+  { role: 'Line Cook', wage: 16, icon: '👨‍🍳', department: 'kitchen', skillCap: 8 },
+  { role: 'Prep Cook', wage: 14, icon: '🔪', department: 'kitchen', skillCap: 6 },
+  { role: 'Server', wage: 8, icon: '🍽️', department: 'foh', skillCap: 8 },
+  { role: 'Host', wage: 12, icon: '📋', department: 'foh', skillCap: 6 },
+  { role: 'Dishwasher', wage: 13, icon: '🧽', department: 'kitchen', skillCap: 5 },
+  { role: 'Bartender', wage: 10, icon: '🍸', department: 'bar', skillCap: 8 },
+  { role: 'Sous Chef', wage: 24, icon: '👨‍🍳', department: 'kitchen', skillCap: 9 },
+  { role: 'Executive Chef', wage: 35, icon: '👨‍🍳', department: 'kitchen', skillCap: 10 },
+  { role: 'General Manager', wage: 28, icon: '👔', department: 'management', skillCap: 10, canManage: true },
+  { role: 'Assistant Manager', wage: 20, icon: '📊', department: 'management', skillCap: 8 },
+  { role: 'Expeditor', wage: 15, icon: '📢', department: 'kitchen', skillCap: 7 },
+  { role: 'Busser', wage: 11, icon: '🧹', department: 'foh', skillCap: 5 },
+  { role: 'District Manager', wage: 45, icon: '🏢', department: 'corporate', skillCap: 10, canManageMultiple: true },
+  { role: 'Operations Director', wage: 55, icon: '📈', department: 'corporate', skillCap: 10, canManageMultiple: true },
+];
+
+const TRAINING_PROGRAMS = [
+  { id: 'food_safety', name: 'Food Safety Cert', icon: '🛡️', cost: 200, weeks: 1, skillBoost: 1, cert: 'ServSafe', morale: 5 },
+  { id: 'wine_101', name: 'Wine Fundamentals', icon: '🍷', cost: 350, weeks: 2, skillBoost: 2, cert: 'Wine 101', morale: 10 },
+  { id: 'leadership', name: 'Leadership Training', icon: '⭐', cost: 500, weeks: 3, skillBoost: 2, cert: 'Team Lead', morale: 15 },
+  { id: 'mixology', name: 'Advanced Mixology', icon: '🍹', cost: 400, weeks: 2, skillBoost: 2, cert: 'Mixologist', morale: 10 },
+  { id: 'customer_service', name: 'Service Excellence', icon: '🎯', cost: 250, weeks: 1, skillBoost: 1, cert: 'Service Pro', morale: 10 },
+  { id: 'management', name: 'Management Bootcamp', icon: '📈', cost: 800, weeks: 4, skillBoost: 3, cert: 'Manager Cert', morale: 20 },
+  { id: 'multi_unit', name: 'Multi-Unit Management', icon: '🏢', cost: 1500, weeks: 6, skillBoost: 4, cert: 'Multi-Unit', morale: 25 },
+  { id: 'franchise_ops', name: 'Franchise Operations', icon: '🌐', cost: 2000, weeks: 8, skillBoost: 5, cert: 'Franchise Pro', morale: 30 },
+];
+
+const EQUIPMENT = [
+  { id: 'fryer', name: 'Commercial Fryer', icon: '🍟', cost: 3500, maintenance: 50, effect: { capacity: 0.05, speed: 0.05 } },
+  { id: 'oven', name: 'Convection Oven', icon: '🔥', cost: 8000, maintenance: 75, effect: { capacity: 0.08, quality: 0.05 } },
+  { id: 'walkin', name: 'Walk-In Cooler', icon: '❄️', cost: 12000, maintenance: 100, effect: { spoilage: -0.5, capacity: 0.05 } },
+  { id: 'pos', name: 'Modern POS System', icon: '💻', cost: 5000, maintenance: 150, effect: { speed: 0.15, accuracy: 0.1 } },
+  { id: 'dishwasher', name: 'Commercial Dishwasher', icon: '🧽', cost: 6000, maintenance: 60, effect: { labor: -0.05, speed: 0.05 } },
+  { id: 'espresso', name: 'Espresso Machine', icon: '☕', cost: 8000, maintenance: 80, effect: { revenue: 0.05, ticket: 0.03 } },
+  { id: 'grill', name: 'Flat Top Grill', icon: '🥓', cost: 4500, maintenance: 40, effect: { capacity: 0.06, speed: 0.04 } },
+  { id: 'hood', name: 'Ventilation Hood', icon: '💨', cost: 15000, maintenance: 200, effect: { safety: 0.2, comfort: 0.1 } },
+  { id: 'ice_machine', name: 'Ice Machine', icon: '🧊', cost: 3000, maintenance: 45, effect: { bar_revenue: 0.08 } },
+  { id: 'mixer', name: 'Stand Mixer', icon: '🎂', cost: 2000, maintenance: 20, effect: { prep_speed: 0.1 } },
+];
+
+const UPGRADES = [
+  { id: 'patio', name: 'Outdoor Patio', icon: '☀️', cost: 25000, effect: { capacity: 0.25, seasonal: true } },
+  { id: 'bar', name: 'Full Bar License', icon: '🍸', cost: 40000, effect: { revenue: 0.15, ticket: 0.2 } },
+  { id: 'private_room', name: 'Private Dining Room', icon: '🚪', cost: 35000, effect: { events: true, ticket: 0.1 } },
+  { id: 'renovation', name: 'Full Renovation', icon: '🎨', cost: 50000, effect: { satisfaction: 0.2, reputation: 10 } },
+  { id: 'kitchen_expand', name: 'Kitchen Expansion', icon: '👨‍🍳', cost: 75000, effect: { capacity: 0.3, speed: 0.15 } },
+  { id: 'signage', name: 'Premium Signage', icon: '💡', cost: 15000, effect: { visibility: 0.15, reputation: 5 } },
+  { id: 'parking', name: 'Valet Parking', icon: '🚗', cost: 20000, effect: { premium_customers: 0.2 } },
+  { id: 'sound', name: 'Sound System', icon: '🔊', cost: 8000, effect: { ambiance: 0.1, satisfaction: 0.05 } },
+];
+
+const MARKETING_CHANNELS = [
+  { id: 'social_organic', name: 'Social Media (Organic)', icon: '📱', costPerWeek: 0, effect: { reach: 0.02, followers: 10 } },
+  { id: 'social_paid', name: 'Social Media Ads', icon: '📣', costPerWeek: 500, effect: { reach: 0.08, followers: 50 } },
+  { id: 'google_ads', name: 'Google Ads', icon: '🔍', costPerWeek: 750, effect: { reach: 0.1, newCustomers: 0.15 } },
+  { id: 'influencer', name: 'Influencer Partnership', icon: '⭐', costPerWeek: 1000, effect: { reach: 0.12, reputation: 2 } },
+  { id: 'email', name: 'Email Marketing', icon: '📧', costPerWeek: 100, effect: { retention: 0.1, regulars: 0.05 } },
+  { id: 'local_pr', name: 'Local PR/Press', icon: '📰', costPerWeek: 300, effect: { reputation: 3, reach: 0.05 } },
+  { id: 'loyalty', name: 'Loyalty Program', icon: '💳', costPerWeek: 200, effect: { retention: 0.2, regulars: 0.1 } },
+  { id: 'events', name: 'Community Events', icon: '🎉', costPerWeek: 400, effect: { reputation: 2, reach: 0.06 } },
+];
+
+const DELIVERY_PLATFORMS = [
+  { id: 'doordash', name: 'DoorDash', icon: '🚪', commission: 0.25, setup: 500, reach: 0.3 },
+  { id: 'ubereats', name: 'Uber Eats', icon: '🚗', commission: 0.30, setup: 0, reach: 0.35 },
+  { id: 'grubhub', name: 'Grubhub', icon: '🍽️', commission: 0.28, setup: 250, reach: 0.25 },
+  { id: 'postmates', name: 'Postmates', icon: '📦', commission: 0.27, setup: 200, reach: 0.15 },
+  { id: 'direct', name: 'Direct Delivery', icon: '🏠', commission: 0.05, setup: 2000, reach: 0.1 },
+];
+
+const VIRTUAL_BRANDS = [
+  { id: 'wings', name: 'Wing Boss', icon: '🍗', avgTicket: 22, setupCost: 2000 },
+  { id: 'burgers', name: 'Smash Stack', icon: '🍔', avgTicket: 18, setupCost: 1500 },
+  { id: 'healthy', name: 'Green Machine', icon: '🥗', avgTicket: 16, setupCost: 1800 },
+  { id: 'tacos', name: 'Taco Libre', icon: '🌮', avgTicket: 15, setupCost: 1500 },
+  { id: 'pizza', name: 'Slice Society', icon: '🍕', avgTicket: 20, setupCost: 2000 },
+  { id: 'asian', name: 'Wok This Way', icon: '🥡', avgTicket: 17, setupCost: 1800 },
+  { id: 'breakfast', name: 'Morning Glory', icon: '🥞', avgTicket: 14, setupCost: 1200 },
+  { id: 'dessert', name: 'Sweet Tooth', icon: '🧁', avgTicket: 12, setupCost: 1000 },
+];
+
+const LOANS = [
+  { id: 'bank_small', name: 'Bank Loan (Small)', amount: 25000, rate: 0.08, term: 52, weeklyPayment: 520 },
+  { id: 'bank_medium', name: 'Bank Loan (Medium)', amount: 50000, rate: 0.09, term: 104, weeklyPayment: 550 },
+  { id: 'bank_large', name: 'Bank Loan (Large)', amount: 100000, rate: 0.10, term: 156, weeklyPayment: 750 },
+  { id: 'sba', name: 'SBA Loan', amount: 75000, rate: 0.065, term: 260, weeklyPayment: 350 },
+  { id: 'expansion', name: 'Expansion Loan', amount: 200000, rate: 0.085, term: 260, weeklyPayment: 950 },
+  { id: 'investor', name: 'Angel Investor', amount: 50000, rate: 0.15, term: 104, weeklyPayment: 625, equity: 0.1 },
+  { id: 'family', name: 'Family Loan', amount: 20000, rate: 0.03, term: 104, weeklyPayment: 200 },
+  { id: 'predatory', name: 'Quick Cash Advance', amount: 15000, rate: 0.35, term: 26, weeklyPayment: 750 },
+];
+
+// ============================================
+// LOCATION & EXPANSION SYSTEM
+// ============================================
+const LOCATION_TYPES = [
+  { id: 'urban_downtown', name: 'Urban Downtown', icon: '🏙️', rentMod: 1.5, trafficMod: 1.4, competitionMod: 1.3, buildoutCost: 150000 },
+  { id: 'urban_neighborhood', name: 'Urban Neighborhood', icon: '🏘️', rentMod: 1.2, trafficMod: 1.2, competitionMod: 1.1, buildoutCost: 120000 },
+  { id: 'suburban_strip', name: 'Suburban Strip Mall', icon: '🛒', rentMod: 0.9, trafficMod: 1.0, competitionMod: 1.0, buildoutCost: 100000 },
+  { id: 'suburban_standalone', name: 'Suburban Standalone', icon: '🏠', rentMod: 1.0, trafficMod: 0.9, competitionMod: 0.8, buildoutCost: 130000 },
+  { id: 'mall_food_court', name: 'Mall Food Court', icon: '🏬', rentMod: 1.3, trafficMod: 1.5, competitionMod: 1.4, buildoutCost: 80000 },
+  { id: 'airport', name: 'Airport Terminal', icon: '✈️', rentMod: 2.0, trafficMod: 1.8, competitionMod: 0.7, buildoutCost: 200000 },
+  { id: 'rural', name: 'Rural Main Street', icon: '🌾', rentMod: 0.6, trafficMod: 0.7, competitionMod: 0.5, buildoutCost: 70000 },
+  { id: 'ghost_kitchen', name: 'Ghost Kitchen', icon: '👻', rentMod: 0.4, trafficMod: 0, competitionMod: 0.3, buildoutCost: 40000, deliveryOnly: true },
+];
+
+const MARKETS = [
+  { id: 'same_city', name: 'Same City', icon: '📍', distanceMod: 1.0, brandBonus: 0.2, managementCost: 0 },
+  { id: 'nearby_city', name: 'Nearby City (50mi)', icon: '🚗', distanceMod: 0.9, brandBonus: 0.1, managementCost: 500 },
+  { id: 'regional', name: 'Regional (200mi)', icon: '🗺️', distanceMod: 0.7, brandBonus: 0.05, managementCost: 1500 },
+  { id: 'new_state', name: 'New State', icon: '🏛️', distanceMod: 0.5, brandBonus: 0, managementCost: 3000, requiresManager: true },
+  { id: 'national', name: 'National Expansion', icon: '🇺🇸', distanceMod: 0.3, brandBonus: 0, managementCost: 5000, requiresManager: true },
+];
+
+const FRANCHISE_TIERS = [
+  { id: 'single', name: 'Single Unit Franchise', fee: 35000, royalty: 0.05, marketingFee: 0.02, minLocations: 1, training: 4 },
+  { id: 'area', name: 'Area Developer', fee: 100000, royalty: 0.045, marketingFee: 0.02, minLocations: 3, training: 6 },
+  { id: 'master', name: 'Master Franchisee', fee: 250000, royalty: 0.04, marketingFee: 0.015, minLocations: 10, training: 8 },
+];
+
+// ============================================
+// COMPETITION SYSTEM
+// ============================================
+const COMPETITOR_TYPES = [
+  { id: 'local_indie', name: 'Local Independent', icon: '🏠', threat: 0.1, priceCompetition: 0.05, qualityFocus: 0.8 },
+  { id: 'regional_chain', name: 'Regional Chain', icon: '🏪', threat: 0.2, priceCompetition: 0.15, qualityFocus: 0.6 },
+  { id: 'national_chain', name: 'National Chain', icon: '🏢', threat: 0.3, priceCompetition: 0.25, qualityFocus: 0.4 },
+  { id: 'ghost_kitchen', name: 'Ghost Kitchen', icon: '👻', threat: 0.15, priceCompetition: 0.2, qualityFocus: 0.5, deliveryOnly: true },
+  { id: 'fast_casual', name: 'Fast Casual', icon: '🚀', threat: 0.25, priceCompetition: 0.2, qualityFocus: 0.7 },
+  { id: 'fine_dining', name: 'Fine Dining', icon: '✨', threat: 0.1, priceCompetition: 0, qualityFocus: 0.95, priceUp: true },
+];
+
+const COMPETITOR_NAMES = {
+  burgers: ['Burger Barn', 'Patty Palace', 'Bun & Done', 'Stack Attack', 'Grillmasters'],
+  mexican: ['Casa Grande', 'Taco Town', 'El Sabor', 'Fiesta Fresh', 'Salsa Sisters'],
+  pizza: ['Slice Heaven', 'Dough Bros', 'Pie Perfect', 'Crust & Co', 'Pepperoni Pete'],
+  chinese: ['Golden Dragon', 'Wok This Way', 'Lucky Panda', 'Oriental Garden', 'Jade Palace'],
+  japanese: ['Sakura Sushi', 'Tokyo Table', 'Rising Sun', 'Wasabi House', 'Ninja Kitchen'],
+  default: ['The Competition', 'Rival Kitchen', 'Other Place', 'Next Door', 'Down the Street'],
+};
+
+// ============================================
+// VENDOR SYSTEM
+// ============================================
+const VENDORS = [
+  { id: 'sysco', name: 'Sysco', icon: '🚛', type: 'broadline', priceLevel: 1.0, quality: 0.7, reliability: 0.9, minOrder: 500 },
+  { id: 'usfoods', name: 'US Foods', icon: '🚚', type: 'broadline', priceLevel: 0.98, quality: 0.72, reliability: 0.88, minOrder: 400 },
+  { id: 'pfg', name: 'Performance Food', icon: '📦', type: 'broadline', priceLevel: 0.95, quality: 0.68, reliability: 0.85, minOrder: 300 },
+  { id: 'local_farms', name: 'Local Farms Co-op', icon: '🌾', type: 'specialty', priceLevel: 1.15, quality: 0.95, reliability: 0.7, minOrder: 200, seasonal: true },
+  { id: 'premium_meats', name: 'Premium Meats Inc', icon: '🥩', type: 'protein', priceLevel: 1.25, quality: 0.92, reliability: 0.85, minOrder: 300 },
+  { id: 'ocean_fresh', name: 'Ocean Fresh Seafood', icon: '🦐', type: 'seafood', priceLevel: 1.3, quality: 0.9, reliability: 0.75, minOrder: 250 },
+  { id: 'bakery_direct', name: 'Artisan Bakery Direct', icon: '🥖', type: 'bakery', priceLevel: 1.1, quality: 0.88, reliability: 0.82, minOrder: 100 },
+  { id: 'beverage_kings', name: 'Beverage Kings', icon: '🥤', type: 'beverage', priceLevel: 0.9, quality: 0.75, reliability: 0.95, minOrder: 200 },
+];
+
+const VENDOR_DEALS = [
+  { id: 'volume_discount', name: 'Volume Discount', description: '10% off orders over $2K/week', discount: 0.1, minWeeklyOrder: 2000 },
+  { id: 'loyalty_program', name: 'Loyalty Program', description: '5% rebate after 6 months', discount: 0.05, minWeeks: 24 },
+  { id: 'exclusive_contract', name: 'Exclusive Contract', description: '15% off for 1-year commitment', discount: 0.15, commitment: 52, penalty: 10000 },
+  { id: 'early_pay', name: 'Early Payment', description: '2% off for payment within 10 days', discount: 0.02, requiresCash: true },
+];
+
+// ============================================
+// EVENTS CALENDAR
+// ============================================
+const CALENDAR_EVENTS = [
+  { id: 'valentines', name: "Valentine's Day", icon: '💕', week: 7, revenueBoost: 0.4, type: 'romantic', tip: 'Offer special prix fixe menus' },
+  { id: 'mothers_day', name: "Mother's Day", icon: '💐', week: 19, revenueBoost: 0.5, type: 'family', tip: 'Book reservations early, add brunch' },
+  { id: 'fathers_day', name: "Father's Day", icon: '👔', week: 24, revenueBoost: 0.3, type: 'family', tip: 'Steak specials work well' },
+  { id: 'july_4th', name: 'Independence Day', icon: '🎆', week: 27, revenueBoost: 0.2, type: 'holiday', tip: 'BBQ themes, outdoor seating premium' },
+  { id: 'labor_day', name: 'Labor Day', icon: '⚒️', week: 36, revenueBoost: 0.1, type: 'holiday', tip: 'Last summer hurrah - end of season specials' },
+  { id: 'halloween', name: 'Halloween', icon: '🎃', week: 44, revenueBoost: 0.15, type: 'theme', tip: 'Themed cocktails and decor' },
+  { id: 'thanksgiving', name: 'Thanksgiving', icon: '🦃', week: 47, revenueBoost: -0.3, type: 'holiday', tip: 'Most dine at home - consider catering' },
+  { id: 'christmas_eve', name: 'Christmas Eve', icon: '🎄', week: 51, revenueBoost: 0.2, type: 'holiday', tip: 'Special hours, limited menu' },
+  { id: 'new_years', name: "New Year's Eve", icon: '🥂', week: 52, revenueBoost: 0.6, type: 'celebration', tip: 'Premium pricing accepted, require deposits' },
+  { id: 'super_bowl', name: 'Super Bowl', icon: '🏈', week: 6, revenueBoost: 0.35, type: 'sports', tip: 'Wings, nachos, delivery surge' },
+  { id: 'march_madness', name: 'March Madness Start', icon: '🏀', week: 11, revenueBoost: 0.15, type: 'sports', tip: 'Bar traffic up, add screens' },
+  { id: 'cinco_de_mayo', name: 'Cinco de Mayo', icon: '🇲🇽', week: 18, revenueBoost: 0.25, type: 'theme', tip: 'Margarita specials (if applicable)' },
+  { id: 'restaurant_week', name: 'Restaurant Week', icon: '🍽️', week: 30, revenueBoost: 0.2, type: 'industry', tip: 'Lower margins but great exposure' },
+];
+
+const SEASONAL_EFFECTS = {
+  winter: { weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 50, 51, 52], modifier: -0.1, heating: 500 },
+  spring: { weeks: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], modifier: 0.05, patioBoost: 0.15 },
+  summer: { weeks: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35], modifier: -0.05, acCost: 400 },
+  fall: { weeks: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], modifier: 0.1, peakSeason: true },
+};
+
+// ============================================
+// TUTORIAL SYSTEM
+// ============================================
+const TUTORIAL_STEPS = [
+  { id: 'welcome', title: 'Welcome to 86\'d!', message: 'Ready to build your restaurant empire? I\'m Chef Marcus, your mentor. I\'ve seen it all in 30 years - successes, failures, and everything in between. Let me show you around.', highlight: null, action: 'continue' },
+  { id: 'dashboard', title: 'Your Command Center', message: 'This is your dashboard. Every number tells a story. Green is good, red means trouble. Watch your cash like a hawk - it\'s the lifeblood of your business.', highlight: 'quickStats', action: 'continue' },
+  { id: 'week', title: 'The Weekly Grind', message: 'Time moves in weeks. Each week you\'ll face decisions, collect revenue, and pay bills. Hit "NEXT WEEK" when you\'re ready to advance.', highlight: 'nextWeekButton', action: 'nextWeek' },
+  { id: 'staff', title: 'Your Team', message: 'Staff is your biggest expense AND your biggest asset. Underpay and they leave. Overpay and you go broke. Find the balance. Happy staff = happy customers.', highlight: 'staffTab', action: 'goToStaff' },
+  { id: 'scenarios', title: 'Crisis & Opportunity', message: 'Random events will test you. No-shows, equipment failures, great reviews - they all happen. Your choices have real consequences. There are no undo buttons in this business.', highlight: null, action: 'continue' },
+  { id: 'mentor', title: 'I\'m Here to Help', message: 'Tap on my bar anytime to ask questions. I\'ll give you my honest take - not what you want to hear, but what you need to hear. Good luck, chef.', highlight: 'aiBar', action: 'complete' },
+];
+
+// ============================================
+// STATISTICS & MILESTONES
+// ============================================
+const MILESTONES = [
+  { id: 'first_profit', name: 'First Profit', description: 'Achieve positive weekly profit', icon: '💵', stat: 'weeklyProfit', threshold: 0, reward: 1000 },
+  { id: 'week_10k', name: '$10K Week', description: 'Hit $10,000 weekly revenue', icon: '📈', stat: 'weeklyRevenue', threshold: 10000, reward: 2500 },
+  { id: 'week_25k', name: '$25K Week', description: 'Hit $25,000 weekly revenue', icon: '🚀', stat: 'weeklyRevenue', threshold: 25000, reward: 5000 },
+  { id: 'week_50k', name: '$50K Week', description: 'Hit $50,000 weekly revenue', icon: '💎', stat: 'weeklyRevenue', threshold: 50000, reward: 10000 },
+  { id: 'staff_10', name: 'Growing Team', description: 'Employ 10+ staff members', icon: '👥', stat: 'totalStaff', threshold: 10, reward: 2000 },
+  { id: 'staff_25', name: 'Small Army', description: 'Employ 25+ staff members', icon: '🎖️', stat: 'totalStaff', threshold: 25, reward: 5000 },
+  { id: 'reputation_80', name: 'Well Regarded', description: 'Reach 80% reputation', icon: '⭐', stat: 'reputation', threshold: 80, reward: 3000 },
+  { id: 'reputation_95', name: 'Legendary', description: 'Reach 95% reputation', icon: '👑', stat: 'reputation', threshold: 95, reward: 10000 },
+  { id: 'survive_52', name: 'Year One', description: 'Survive 52 weeks', icon: '🎂', stat: 'weeks', threshold: 52, reward: 15000 },
+  { id: 'survive_104', name: 'Year Two', description: 'Survive 104 weeks', icon: '🎉', stat: 'weeks', threshold: 104, reward: 25000 },
+  { id: 'location_2', name: 'Expansion', description: 'Open a second location', icon: '🏪', stat: 'locations', threshold: 2, reward: 5000 },
+  { id: 'location_5', name: 'Mini Empire', description: 'Own 5 locations', icon: '🏛️', stat: 'locations', threshold: 5, reward: 20000 },
+  { id: 'franchise_1', name: 'Franchisor', description: 'Sell your first franchise', icon: '🤝', stat: 'franchises', threshold: 1, reward: 10000 },
+  { id: 'valuation_1m', name: 'Millionaire', description: 'Empire valued at $1M+', icon: '💰', stat: 'valuation', threshold: 1000000, reward: 25000 },
+  { id: 'valuation_5m', name: 'Mogul', description: 'Empire valued at $5M+', icon: '🏆', stat: 'valuation', threshold: 5000000, reward: 50000 },
+];
+
+// Food Competition Types
 const COMPETITIONS = [
   { id: 'local_best', name: 'Best Local Restaurant', icon: '🏆', entryFee: 500, prize: 5000, reputationBonus: 15, difficulty: 'easy', judgeCount: 3 },
   { id: 'cuisine_championship', name: 'Cuisine Championship', icon: '🥇', entryFee: 1500, prize: 15000, reputationBonus: 25, difficulty: 'medium', judgeCount: 5 },
