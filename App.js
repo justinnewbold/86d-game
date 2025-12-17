@@ -5,13 +5,60 @@ import {
 } from 'react-native';
 // Slider removed for web compatibility
 
-// Import utility functions and components from modular architecture
-// Data constants are defined locally in this file - can be migrated to src/constants/ later
-import { formatCurrency, formatPct, formatNumber, formatWeeks } from './src/utils/formatters';
-import { generateName, generateMenuItem, generateCompetitorName } from './src/utils/generators';
-import { ErrorBoundary } from './src/components/common/ErrorBoundary';
-
 const { width } = Dimensions.get('window');
+
+// Error Boundary to catch and display React errors
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.setState({ error, errorInfo });
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#0D0D0D' }}>
+          <Text style={{ color: '#DC2626', fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Something went wrong</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 14, marginBottom: 10, textAlign: 'center' }}>
+            {this.state.error?.toString()}
+          </Text>
+          <Text style={{ color: '#A3A3A3', fontSize: 12, textAlign: 'center' }}>
+            {this.state.errorInfo?.componentStack?.substring(0, 500)}
+          </Text>
+          <TouchableOpacity
+            style={{ marginTop: 20, backgroundColor: '#F59E0B', padding: 15, borderRadius: 8 }}
+            onPress={() => window.location.reload()}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Reload App</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================
+// THEME & UTILITIES
+// ============================================
+const colors = {
+  background: '#0D0D0D', surface: '#1A1A1A', surfaceLight: '#252525',
+  primary: '#F59E0B', accent: '#DC2626', success: '#10B981', warning: '#F97316',
+  info: '#3B82F6', purple: '#8B5CF6', pink: '#EC4899', cyan: '#06B6D4',
+  textPrimary: '#FFFFFF', textSecondary: '#A3A3A3', textMuted: '#737373', border: '#333333',
+};
+
+const formatCurrency = (v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${Math.round(v).toLocaleString()}`;
+const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 
 // ============================================
 // AI MENTOR SYSTEM
@@ -1107,7 +1154,21 @@ const GOALS = [
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-// Note: generateName and generateMenuItem are imported from ./src/utils/generators
+const generateName = () => {
+  const first = ['Alex', 'Jordan', 'Sam', 'Casey', 'Morgan', 'Riley', 'Taylor', 'Jamie', 'Quinn', 'Avery', 'Cameron', 'Drew', 'Emery', 'Finley', 'Hayden', 'Jesse', 'Kai', 'Logan', 'Marley', 'Noah', 'Parker', 'Reese', 'Sage', 'Tatum'];
+  return first[Math.floor(Math.random() * first.length)];
+};
+
+const generateMenuItem = (cuisine) => {
+  const items = {
+    burgers: ['Classic Smash', 'Bacon Double', 'Mushroom Swiss', 'BBQ Bacon', 'Veggie Burger', 'Patty Melt', 'Western Burger', 'Jalapeño Popper'],
+    mexican: ['Street Tacos', 'Burrito Bowl', 'Quesadilla Grande', 'Enchiladas Verdes', 'Nachos Supreme', 'Carnitas Plate', 'Fish Tacos', 'Birria Tacos'],
+    pizza: ['Margherita', 'Pepperoni', 'Supreme', 'White Pizza', 'Meat Lovers', 'Hawaiian', 'Buffalo Chicken', 'Veggie Deluxe'],
+    default: ['House Special', 'Chef\'s Choice', 'Daily Feature', 'Signature Dish', 'Classic Favorite', 'Popular Pick', 'Customer Fave', 'Must Try'],
+  };
+  const list = items[cuisine] || items.default;
+  return list[Math.floor(Math.random() * list.length)];
+};
 
 const generateLocationName = (market, type) => {
   const prefixes = ['Downtown', 'Midtown', 'Uptown', 'East Side', 'West End', 'North Point', 'South Gate', 'Central', 'Harbor', 'Park'];
