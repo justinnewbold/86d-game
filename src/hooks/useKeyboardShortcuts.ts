@@ -1,9 +1,12 @@
 import { useEffect, useCallback } from 'react';
 
+export type ShortcutHandler = (event: KeyboardEvent) => void;
+export type ShortcutMap = Record<string, ShortcutHandler>;
+
 /**
  * Hook to handle keyboard shortcuts
- * @param {Object} shortcuts - Map of key combinations to handlers
- * @param {boolean} enabled - Whether shortcuts are active
+ * @param shortcuts - Map of key combinations to handlers
+ * @param enabled - Whether shortcuts are active
  *
  * Usage:
  * useKeyboardShortcuts({
@@ -13,16 +16,17 @@ import { useEffect, useCallback } from 'react';
  *   'Escape': () => closeModal(),
  * }, isEnabled);
  */
-export const useKeyboardShortcuts = (shortcuts, enabled = true) => {
+export const useKeyboardShortcuts = (shortcuts: ShortcutMap, enabled: boolean = true): void => {
   const handleKeyDown = useCallback(
-    (event) => {
+    (event: KeyboardEvent) => {
       if (!enabled) return;
 
       // Don't trigger shortcuts when typing in inputs
+      const target = event.target as HTMLElement;
       if (
-        event.target.tagName === 'INPUT' ||
-        event.target.tagName === 'TEXTAREA' ||
-        event.target.isContentEditable
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
       ) {
         return;
       }
@@ -76,6 +80,8 @@ export const GAME_SHORTCUTS = {
   CLOSE_MODAL: 'Escape',
   SAVE_GAME: 'Ctrl+s',
   PAUSE: 'p',
-};
+} as const;
+
+export type GameShortcut = (typeof GAME_SHORTCUTS)[keyof typeof GAME_SHORTCUTS];
 
 export default useKeyboardShortcuts;

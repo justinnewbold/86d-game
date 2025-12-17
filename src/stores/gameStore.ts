@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { GameState, Setup, Scenario, Screen, Tab, GameSpeed, Location } from '../types';
 
 // Initial setup state
-const initialSetup = {
+const initialSetup: Setup = {
   cuisine: null,
   capital: 75000,
   name: '',
@@ -13,8 +14,63 @@ const initialSetup = {
   difficulty: 'normal',
 };
 
+export interface Notification {
+  id: number;
+  type: string;
+  message: string;
+}
+
+export interface GameStoreState {
+  // Screen state
+  screen: Screen;
+  onboardingStep: number;
+
+  // Setup state
+  setup: Setup;
+
+  // Game state
+  game: GameState | null;
+  activeLocationId: number | null;
+
+  // UI state
+  activeTab: Tab;
+  scenario: Scenario | null;
+  scenarioResult: { success: boolean; outcome: unknown } | null;
+  aiMessage: string;
+  aiLoading: boolean;
+
+  // Notifications
+  notifications: Notification[];
+
+  // Settings
+  currentTheme: string;
+  difficulty: string;
+  gameSpeed: GameSpeed;
+  soundEnabled: boolean;
+  autoSaveEnabled: boolean;
+  showTips: boolean;
+
+  // Actions
+  setScreen: (screen: Screen) => void;
+  setOnboardingStep: (step: number) => void;
+  setSetup: (setup: Setup | ((prev: Setup) => Setup)) => void;
+  setGame: (game: GameState | null | ((prev: GameState | null) => GameState | null)) => void;
+  setActiveLocationId: (id: number | null) => void;
+  setActiveTab: (tab: Tab) => void;
+  setScenario: (scenario: Scenario | null) => void;
+  setScenarioResult: (result: { success: boolean; outcome: unknown } | null) => void;
+  setAiMessage: (message: string) => void;
+  setAiLoading: (loading: boolean) => void;
+  setGameSpeed: (speed: GameSpeed) => void;
+  setTheme: (theme: string) => void;
+  addNotification: (type: string, message: string) => void;
+  getActiveLocation: () => Location | null;
+  resetSetup: () => void;
+  resetGame: () => void;
+}
+
 // Game store with persistence
-export const useGameStore = create(
+export const useGameStore = create<GameStoreState>()(
   persist(
     (set, get) => ({
       // Screen state
@@ -49,12 +105,14 @@ export const useGameStore = create(
       // Actions
       setScreen: (screen) => set({ screen }),
       setOnboardingStep: (step) => set({ onboardingStep: step }),
-      setSetup: (setup) => set((state) => ({
-        setup: typeof setup === 'function' ? setup(state.setup) : setup
-      })),
-      setGame: (game) => set((state) => ({
-        game: typeof game === 'function' ? game(state.game) : game
-      })),
+      setSetup: (setup) =>
+        set((state) => ({
+          setup: typeof setup === 'function' ? setup(state.setup) : setup,
+        })),
+      setGame: (game) =>
+        set((state) => ({
+          game: typeof game === 'function' ? game(state.game) : game,
+        })),
       setActiveLocationId: (id) => set({ activeLocationId: id }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setScenario: (scenario) => set({ scenario }),
@@ -86,16 +144,17 @@ export const useGameStore = create(
 
       // Reset actions
       resetSetup: () => set({ setup: { ...initialSetup } }),
-      resetGame: () => set({
-        screen: 'welcome',
-        onboardingStep: 0,
-        setup: { ...initialSetup },
-        game: null,
-        activeLocationId: null,
-        scenario: null,
-        scenarioResult: null,
-        aiMessage: '',
-      }),
+      resetGame: () =>
+        set({
+          screen: 'welcome',
+          onboardingStep: 0,
+          setup: { ...initialSetup },
+          game: null,
+          activeLocationId: null,
+          scenario: null,
+          scenarioResult: null,
+          aiMessage: '',
+        }),
     }),
     {
       name: '86d-game-storage',
