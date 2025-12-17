@@ -66,7 +66,7 @@ const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 const getAIMentorResponse = async (context, game, setup) => {
   const totalLocations = game.locations?.length || 1;
   const totalCash = game.locations?.reduce((sum, loc) => sum + loc.cash, 0) || game.cash;
-  const totalStaff = game.locations?.reduce((sum, loc) => sum + loc.staff.length, 0) || game.staff?.length || 0;
+  const totalStaff = game.locations?.reduce((sum, loc) => sum + (loc.staff?.length || 0), 0) || game.staff?.length || 0;
   
   const prompt = `You are Chef Marcus, an AI mentor in a restaurant business simulator game called "86'd". 
 
@@ -1667,8 +1667,8 @@ const generateLocationName = (market, type) => {
 const calculateLocationValuation = (location, cuisine) => {
   const annualRevenue = (location.totalRevenue / Math.max(1, location.weeksOpen)) * 52;
   const revenueMult = location.reputation > 80 ? 3 : location.reputation > 60 ? 2.5 : 2;
-  const equipmentValue = location.equipment.length * 3000;
-  const upgradeValue = location.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.cost || 0) * 0.5, 0);
+  const equipmentValue = (location.equipment?.length || 0) * 3000;
+  const upgradeValue = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.cost || 0) * 0.5, 0);
   return Math.round(annualRevenue * revenueMult + equipmentValue + upgradeValue);
 };
 
@@ -1720,8 +1720,9 @@ const getPromotionPath = (staff) => {
 // Calculate competition success chance
 const calculateCompetitionChance = (location, competition, customRecipes = []) => {
   let baseChance = 0.3;
-  baseChance += location.reputation / 500;
-  const avgSkill = location.staff.reduce((sum, s) => sum + s.skill, 0) / (location.staff.length || 1);
+  baseChance += (location.reputation || 50) / 500;
+  const staff = location.staff || [];
+  const avgSkill = staff.length > 0 ? staff.reduce((sum, s) => sum + s.skill, 0) / staff.length : 5;
   baseChance += avgSkill / 20;
   baseChance += Math.min(customRecipes.length * 0.02, 0.15);
   if (location.upgrades?.fullRenovation) baseChance += 0.1;
@@ -1765,8 +1766,8 @@ const generateRecipeName = (category) => {
 // Develop recipe with success chance
 const developRecipe = (location, category, investment = 1) => {
   const baseSuccess = 0.6;
-  const kitchenStaff = location.staff.filter(s => s.department === 'kitchen');
-  const avgSkill = kitchenStaff.reduce((sum, s) => sum + s.skill, 0) / (kitchenStaff.length || 1);
+  const kitchenStaff = (location.staff || []).filter(s => s.department === 'kitchen');
+  const avgSkill = kitchenStaff.length > 0 ? kitchenStaff.reduce((sum, s) => sum + s.skill, 0) / kitchenStaff.length : 5;
   const successChance = Math.min(baseSuccess + (avgSkill / 20) + (investment * 0.1), 0.95);
   const success = Math.random() < successChance;
   if (success) {
@@ -2440,10 +2441,11 @@ function AppContent() {
     const type = LOCATION_TYPES.find(t => t.id === location.locationType);
     
     // Calculate modifiers
-    const equipCapacityMod = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
-    const upgradeCapacityMod = location.upgrades.reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
-    const marketingReachMod = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
-    const staffQualityMod = location.staff.length > 0 ? location.staff.reduce((sum, s) => sum + s.skill, 0) / location.staff.length / 20 : 0;
+    const equipCapacityMod = (location.equipment || []).reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
+    const upgradeCapacityMod = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
+    const marketingReachMod = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
+    const locationStaff = location.staff || [];
+    const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + s.skill, 0) / locationStaff.length / 20 : 0;
     const moraleMod = (location.morale - 50) / 200;
     const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
     
@@ -2468,16 +2470,17 @@ function AppContent() {
     }
     
     const dineInRevenue = totalSpend;
-    
+
     // Delivery revenue
-    const deliveryOrders = location.delivery.platforms.length > 0 ? Math.floor((location.isGhostKitchen ? 80 : weekCovers * 0.25) * location.delivery.platforms.length / 3) : 0;
-    const avgCommission = location.delivery.platforms.length > 0 
-      ? location.delivery.platforms.reduce((sum, p) => sum + (DELIVERY_PLATFORMS.find(dp => dp.id === p)?.commission || 0.25), 0) / location.delivery.platforms.length 
+    const deliveryPlatforms = location.delivery?.platforms || [];
+    const deliveryOrders = deliveryPlatforms.length > 0 ? Math.floor((location.isGhostKitchen ? 80 : weekCovers * 0.25) * deliveryPlatforms.length / 3) : 0;
+    const avgCommission = deliveryPlatforms.length > 0
+      ? deliveryPlatforms.reduce((sum, p) => sum + (DELIVERY_PLATFORMS.find(dp => dp.id === p)?.commission || 0.25), 0) / deliveryPlatforms.length
       : 0;
     const deliveryRevenue = deliveryOrders * location.avgTicket * (1 - avgCommission);
-    
+
     // Virtual brand revenue
-    const virtualBrandRevenue = location.virtualBrands.reduce((sum, vb) => {
+    const virtualBrandRevenue = (location.virtualBrands || []).reduce((sum, vb) => {
       const brand = VIRTUAL_BRANDS.find(v => v.id === vb);
       if (!brand) return sum;
       const orders = Math.floor(15 + Math.random() * 20);
@@ -2485,7 +2488,7 @@ function AppContent() {
     }, 0);
     
     // Bar revenue
-    const barRevenue = location.upgrades.includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
+    const barRevenue = (location.upgrades || []).includes('bar') ? weekCovers * 8 * (0.3 + Math.random() * 0.4) : 0;
     
     const baseRevenue = dineInRevenue + deliveryRevenue + virtualBrandRevenue + barRevenue;
     
@@ -2496,18 +2499,18 @@ function AppContent() {
     // Costs (also affected by economic conditions)
     const economicCostMultiplier = location.economicCostMultiplier || 1;
     const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
-    const laborCost = location.staff.reduce((sum, s) => sum + s.wage * 40, 0);
+    const laborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
     const rent = location.rent;
     const utilities = Math.floor(rent * 0.15);
-    const marketingCost = location.marketing.channels.reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
-    const equipmentMaint = location.equipment.reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
+    const marketingCost = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
+    const equipmentMaint = (location.equipment || []).reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
     const ccFees = totalRevenue * 0.025;
     
     const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + ccFees;
     const weekProfit = totalRevenue - totalCosts;
     
     // Update staff
-    const updatedStaff = location.staff.map(s => {
+    const updatedStaff = (location.staff || []).map(s => {
       let newMorale = s.morale;
       if (weekProfit > 0) newMorale += 2;
       if (weekProfit < -1000) newMorale -= 5;
@@ -2539,7 +2542,7 @@ function AppContent() {
       weeksOpen: location.weeksOpen + 1,
       weeklyHistory: newHistory,
       reputation: Math.min(100, Math.max(0, location.reputation + (weekProfit > 0 ? 1 : -1))),
-      delivery: { ...location.delivery, orders: location.delivery.orders + deliveryOrders },
+      delivery: { ...(location.delivery || {}), orders: (location.delivery?.orders || 0) + deliveryOrders },
     };
   }, []);
 
@@ -2569,7 +2572,7 @@ function AppContent() {
     // Update competitor strengths
     setGame(g => ({
       ...g,
-      competitors: g.competitors.map(c => ({
+      competitors: (g.competitors || []).map(c => ({
         ...c,
         reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
         weeksOpen: c.weeksOpen + 1,
@@ -2583,10 +2586,10 @@ function AppContent() {
 
     const newMilestones = [];
     const loc = getActiveLocation();
-    const totalStaff = game.locations.reduce((sum, l) => sum + (l.staff?.length || 0), 0);
+    const totalStaff = (game.locations || []).reduce((sum, l) => sum + (l.staff?.length || 0), 0);
 
     MILESTONES.forEach(m => {
-      if (game.unlockedMilestones.includes(m.id)) return;
+      if (game.unlockedMilestones?.includes(m.id)) return;
 
       let achieved = false;
       switch (m.stat) {
@@ -2595,9 +2598,9 @@ function AppContent() {
         case 'totalStaff': achieved = totalStaff >= m.threshold; break;
         case 'reputation': achieved = loc?.reputation >= m.threshold; break;
         case 'weeks': achieved = game.week >= m.threshold; break;
-        case 'locations': achieved = game.locations.length >= m.threshold; break;
-        case 'franchises': achieved = game.franchises.length >= m.threshold; break;
-        case 'valuation': achieved = game.empireValuation >= m.threshold; break;
+        case 'locations': achieved = (game.locations?.length || 0) >= m.threshold; break;
+        case 'franchises': achieved = (game.franchises?.length || 0) >= m.threshold; break;
+        case 'valuation': achieved = (game.empireValuation || 0) >= m.threshold; break;
       }
 
       if (achieved) newMilestones.push(m);
@@ -3018,34 +3021,34 @@ function AppContent() {
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
-        menu: l.menu.map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
+        menu: (l.menu || []).map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
       } : l),
     }));
   };
 
   const buyEquipment = (eq) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < eq.cost || loc.equipment.includes(eq.id)) return;
+    if (!loc || loc.cash < eq.cost || (loc.equipment || []).includes(eq.id)) return;
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         cash: l.cash - eq.cost,
-        equipment: [...l.equipment, eq.id],
+        equipment: [...(l.equipment || []), eq.id],
       } : l),
     }));
   };
 
   const buyUpgrade = (up) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < up.cost || loc.upgrades.includes(up.id)) return;
+    if (!loc || loc.cash < up.cost || (loc.upgrades || []).includes(up.id)) return;
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         cash: l.cash - up.cost,
-        upgrades: [...l.upgrades, up.id],
-        reputation: l.reputation + (up.effect.reputation || 0),
+        upgrades: [...(l.upgrades || []), up.id],
+        reputation: l.reputation + (up.effect?.reputation || 0),
       } : l),
     }));
   };
@@ -3058,10 +3061,10 @@ function AppContent() {
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         marketing: {
-          ...l.marketing,
-          channels: l.marketing.channels.includes(channelId)
-            ? l.marketing.channels.filter(c => c !== channelId)
-            : [...l.marketing.channels, channelId],
+          ...(l.marketing || {}),
+          channels: (l.marketing?.channels || []).includes(channelId)
+            ? (l.marketing?.channels || []).filter(c => c !== channelId)
+            : [...(l.marketing?.channels || []), channelId],
         },
       } : l),
     }));
@@ -3071,16 +3074,17 @@ function AppContent() {
     const platform = DELIVERY_PLATFORMS.find(p => p.id === platformId);
     const loc = getActiveLocation();
     if (!platform || !loc) return;
-    
+
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => {
         if (l.id !== loc.id) return l;
-        const isActive = l.delivery.platforms.includes(platformId);
+        const platforms = l.delivery?.platforms || [];
+        const isActive = platforms.includes(platformId);
         if (isActive) {
-          return { ...l, delivery: { ...l.delivery, platforms: l.delivery.platforms.filter(p => p !== platformId) } };
+          return { ...l, delivery: { ...(l.delivery || {}), platforms: platforms.filter(p => p !== platformId) } };
         } else if (l.cash >= platform.setup) {
-          return { ...l, cash: l.cash - platform.setup, delivery: { ...l.delivery, platforms: [...l.delivery.platforms, platformId] } };
+          return { ...l, cash: l.cash - platform.setup, delivery: { ...(l.delivery || {}), platforms: [...platforms, platformId] } };
         }
         return l;
       }),
@@ -3090,14 +3094,14 @@ function AppContent() {
   const launchVirtualBrand = (brandId) => {
     const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
     const loc = getActiveLocation();
-    if (!loc || !brand || loc.virtualBrands.includes(brandId) || loc.cash < brand.setupCost) return;
-    
+    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || loc.cash < brand.setupCost) return;
+
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         cash: l.cash - brand.setupCost,
-        virtualBrands: [...l.virtualBrands, brandId],
+        virtualBrands: [...(l.virtualBrands || []), brandId],
       } : l),
     }));
   };
@@ -3296,7 +3300,7 @@ function AppContent() {
     
     // Valuation: 2-3x annual profit + assets
     const annualProfit = (location.totalProfit / Math.max(1, location.weeksOpen)) * 52;
-    const assetValue = location.equipment.length * 5000 + location.upgrades.length * 15000;
+    const assetValue = (location.equipment?.length || 0) * 5000 + (location.upgrades?.length || 0) * 15000;
     const salePrice = Math.max(25000, Math.floor(annualProfit * (2 + Math.random()) + assetValue));
     
     setGame(g => ({
@@ -3326,7 +3330,7 @@ function AppContent() {
     if (!location) return;
     
     // Closing costs: severance, lease break, etc.
-    const closingCost = location.staff.length * 1000 + location.rent * 3;
+    const closingCost = (location.staff?.length || 0) * 1000 + location.rent * 3;
     
     setGame(g => ({
       ...g,
@@ -4140,23 +4144,23 @@ function AppContent() {
                 </View>
                 <View style={styles.corporateStat}>
                   <Text style={styles.corporateStatLabel}>Franchise Royalties</Text>
-                  <Text style={styles.corporateStatValue}>{formatCurrency(game.franchises.reduce((s, f) => s + f.weeklyRoyalty, 0))}/wk</Text>
+                  <Text style={styles.corporateStatValue}>{formatCurrency((game.franchises || []).reduce((s, f) => s + (f.weeklyRoyalty || 0), 0))}/wk</Text>
                 </View>
                 <View style={styles.corporateStat}>
                   <Text style={styles.corporateStatLabel}>Total Staff</Text>
-                  <Text style={styles.corporateStatValue}>{game.locations.reduce((s, l) => s + l.staff.length, 0)}</Text>
+                  <Text style={styles.corporateStatValue}>{(game.locations || []).reduce((s, l) => s + (l.staff?.length || 0), 0)}</Text>
                 </View>
               </View>
             </View>
           )}
 
           {/* Mini Chart */}
-          {loc && loc.weeklyHistory.length > 1 && (
+          {loc && (loc.weeklyHistory?.length || 0) > 1 && (
             <View style={styles.chartContainer}>
               <Text style={styles.chartTitle}>Revenue Trend (12 weeks)</Text>
-              <MiniChart data={loc.weeklyHistory.map(w => w.revenue)} color={colors.info} height={50} />
+              <MiniChart data={(loc.weeklyHistory || []).map(w => w.revenue)} color={colors.info} height={50} />
               <Text style={styles.chartTitle}>Profit Trend</Text>
-              <MiniChart data={loc.weeklyHistory.map(w => w.profit)} color={colors.success} height={50} />
+              <MiniChart data={(loc.weeklyHistory || []).map(w => w.profit)} color={colors.success} height={50} />
             </View>
           )}
 
@@ -4292,16 +4296,16 @@ function AppContent() {
                 {/* Active Systems Badges */}
                 <Text style={styles.sectionTitle}>Active Systems</Text>
                 <View style={styles.badgeContainer}>
-                  {loc.marketing.channels.map(c => (
+                  {(loc.marketing?.channels || []).map(c => (
                     <View key={c} style={styles.badge}><Text style={styles.badgeText}>{MARKETING_CHANNELS.find(m => m.id === c)?.icon} {MARKETING_CHANNELS.find(m => m.id === c)?.name}</Text></View>
                   ))}
-                  {loc.delivery.platforms.map(p => (
+                  {(loc.delivery?.platforms || []).map(p => (
                     <View key={p} style={[styles.badge, { backgroundColor: colors.info }]}><Text style={styles.badgeText}>{DELIVERY_PLATFORMS.find(d => d.id === p)?.icon} {DELIVERY_PLATFORMS.find(d => d.id === p)?.name}</Text></View>
                   ))}
-                  {loc.virtualBrands.map(v => (
+                  {(loc.virtualBrands || []).map(v => (
                     <View key={v} style={[styles.badge, { backgroundColor: colors.purple }]}><Text style={styles.badgeText}>{VIRTUAL_BRANDS.find(vb => vb.id === v)?.icon} {VIRTUAL_BRANDS.find(vb => vb.id === v)?.name}</Text></View>
                   ))}
-                  {loc.equipment.map(e => (
+                  {(loc.equipment || []).map(e => (
                     <View key={e} style={[styles.badge, { backgroundColor: colors.surfaceLight }]}><Text style={styles.badgeText}>{EQUIPMENT.find(eq => eq.id === e)?.icon} {EQUIPMENT.find(eq => eq.id === e)?.name}</Text></View>
                   ))}
                 </View>
@@ -4355,12 +4359,12 @@ function AppContent() {
               <>
                 {/* Menu */}
                 <View style={styles.menuHeader}>
-                  <Text style={styles.sectionTitle}>Menu ({loc.menu.length} items)</Text>
+                  <Text style={styles.sectionTitle}>Menu ({loc.menu?.length || 0} items)</Text>
                   <TouchableOpacity style={styles.addMenuBtn} onPress={addMenuItem}>
                     <Text style={styles.addMenuBtnText}>+ ADD ITEM</Text>
                   </TouchableOpacity>
                 </View>
-                {loc.menu.map(item => (
+                {(loc.menu || []).map(item => (
                   <TouchableOpacity key={item.id} style={[styles.menuItem, item.is86d && styles.menuItem86d]} onPress={() => toggle86(item.id)}>
                     <View>
                       <Text style={[styles.menuItemName, item.is86d && styles.menuItemName86d]}>{item.name}</Text>
@@ -4374,7 +4378,7 @@ function AppContent() {
                 <Text style={styles.sectionTitle}>Equipment</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
                   {EQUIPMENT.map(eq => {
-                    const owned = loc.equipment.includes(eq.id);
+                    const owned = (loc.equipment || []).includes(eq.id);
                     return (
                       <TouchableOpacity key={eq.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyEquipment(eq)} disabled={owned}>
                         <Text style={styles.equipmentIcon}>{eq.icon}</Text>
@@ -4389,7 +4393,7 @@ function AppContent() {
                 <Text style={styles.sectionTitle}>Upgrades</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
                   {UPGRADES.map(up => {
-                    const owned = loc.upgrades.includes(up.id);
+                    const owned = (loc.upgrades || []).includes(up.id);
                     return (
                       <TouchableOpacity key={up.id} style={[styles.equipmentCard, owned && styles.equipmentOwned]} onPress={() => !owned && buyUpgrade(up)} disabled={owned}>
                         <Text style={styles.equipmentIcon}>{up.icon}</Text>
@@ -4404,7 +4408,7 @@ function AppContent() {
                 <Text style={styles.sectionTitle}>Virtual Brands (Ghost Kitchens)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.equipmentScroll}>
                   {VIRTUAL_BRANDS.map(vb => {
-                    const active = loc.virtualBrands.includes(vb.id);
+                    const active = (loc.virtualBrands || []).includes(vb.id);
                     return (
                       <TouchableOpacity key={vb.id} style={[styles.equipmentCard, active && styles.equipmentOwned]} onPress={() => !active && launchVirtualBrand(vb.id)} disabled={active}>
                         <Text style={styles.equipmentIcon}>{vb.icon}</Text>
@@ -4440,10 +4444,10 @@ function AppContent() {
                     <Text style={styles.loanBtnText}>+ NEW LOAN</Text>
                   </TouchableOpacity>
                 </View>
-                {game.loans.length === 0 ? (
+                {(game.loans?.length || 0) === 0 ? (
                   <Text style={styles.emptyText}>No active loans - debt free!</Text>
                 ) : (
-                  game.loans.map((loan, i) => {
+                  (game.loans || []).map((loan, i) => {
                     const loanData = LOANS.find(l => l.id === loan.type);
                     return (
                       <View key={i} style={styles.loanCard}>
@@ -4650,7 +4654,7 @@ function AppContent() {
               </View>
               <ScrollView>
                 {MARKETING_CHANNELS.map(c => {
-                  const active = loc?.marketing.channels.includes(c.id);
+                  const active = (loc?.marketing?.channels || []).includes(c.id);
                   return (
                     <TouchableOpacity key={c.id} style={[styles.channelOption, active && styles.channelActive]} onPress={() => toggleMarketingChannel(c.id)}>
                       <Text style={styles.channelIcon}>{c.icon}</Text>
@@ -4677,7 +4681,7 @@ function AppContent() {
               </View>
               <ScrollView>
                 {DELIVERY_PLATFORMS.map(p => {
-                  const active = loc?.delivery.platforms.includes(p.id);
+                  const active = (loc?.delivery?.platforms || []).includes(p.id);
                   return (
                     <TouchableOpacity key={p.id} style={[styles.deliveryOption, active && styles.deliveryActive]} onPress={() => toggleDeliveryPlatform(p.id)}>
                       <Text style={styles.deliveryIcon}>{p.icon}</Text>
