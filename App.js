@@ -2132,6 +2132,7 @@ function AppContent() {
   const [staffModal, setStaffModal] = useState(false);
   const [trainingModal, setTrainingModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(0);
   const [marketingModal, setMarketingModal] = useState(false);
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [analyticsModal, setAnalyticsModal] = useState(false);
