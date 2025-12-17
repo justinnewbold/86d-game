@@ -466,6 +466,21 @@ const TUTORIAL_STEPS = [
   { id: 'mentor', title: 'I\'m Here to Help', message: 'Tap on my bar anytime to ask questions. I\'ll give you my honest take - not what you want to hear, but what you need to hear. Good luck, chef.', highlight: 'aiBar', action: 'complete' },
 ];
 
+const GAMEPLAY_TIPS = [
+  { id: 1, tip: "💡 Keep 4-6 weeks of expenses in cash reserves for emergencies." },
+  { id: 2, tip: "💡 A line cook at $18/hr costs you ~$27/hr after all expenses." },
+  { id: 3, tip: "💡 Social media marketing has the best ROI for new restaurants." },
+  { id: 4, tip: "💡 Prime cost (food + labor) should stay under 65% of revenue." },
+  { id: 5, tip: "💡 Train staff to reduce turnover - it's cheaper than hiring new." },
+  { id: 6, tip: "💡 Delivery apps take 15-30% - factor that into your pricing." },
+  { id: 7, tip: "💡 Don't expand until your first location is consistently profitable." },
+  { id: 8, tip: "💡 Negotiate with vendors quarterly - prices change." },
+  { id: 9, tip: "💡 A great manager can run a location for you - invest in them." },
+  { id: 10, tip: "💡 Ghost kitchens have low overhead but zero walk-in traffic." },
+  { id: 11, tip: "💡 The restaurant that survives isn't the best - it's the most adaptable." },
+  { id: 12, tip: "💡 Equipment failures always happen at the worst time. Maintain proactively." },
+];
+
 // ============================================
 // STATISTICS & MILESTONES
 // ============================================
