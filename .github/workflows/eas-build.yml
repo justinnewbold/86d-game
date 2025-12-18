@@ -69,14 +69,6 @@ jobs:
       - name: 🔍 Verify EAS CLI
         run: eas whoami
 
-      - name: 🔧 Configure EAS project
-        run: |
-          # Check if project is linked, if not configure it
-          if ! eas project:info 2>/dev/null; then
-            echo "Project not linked, running eas init..."
-            eas init --id ${{ secrets.EAS_PROJECT_ID }} --non-interactive || eas init --non-interactive
-          fi
-
       - name: 🚀 Build app
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"

@@ -44,9 +44,7 @@
       "expo-av"
     ],
     "extra": {
-      "eas": {
-        "projectId": "86d-game"
-      }
+      "eas": {}
     },
     "updates": {
       "fallbackToCacheTimeout": 0
