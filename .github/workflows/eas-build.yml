@@ -142,9 +142,10 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📱 Submit to App Store
-        if: ${{ secrets.APPLE_ID != '' }}
         run: eas submit --platform ios --latest --non-interactive
         continue-on-error: true
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
 
       - name: 🤖 Submit to Play Store
         run: eas submit --platform android --latest --non-interactive
