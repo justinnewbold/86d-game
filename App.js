@@ -2,10 +2,50 @@ import React, { useState, useEffect, useCallback, useRef, Component } from 'reac
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   SafeAreaView, StatusBar, Modal, Dimensions, ActivityIndicator, Animated,
+  Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
+
+// Platform-safe reload function
+const reloadApp = async () => {
+  if (Platform.OS === 'web') {
+    window.location.reload();
+  } else {
+    try {
+      const Updates = await import('expo-updates');
+      await Updates.reloadAsync();
+    } catch (error) {
+      console.error('Could not reload:', error);
+    }
+  }
+};
+
+// Platform-safe storage functions (localStorage on web, AsyncStorage on native)
+const storage = {
+  async getItem(key) {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key);
+    }
+    return AsyncStorage.getItem(key);
+  },
+  async setItem(key, value) {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value);
+      return;
+    }
+    return AsyncStorage.setItem(key, value);
+  },
+  async removeItem(key) {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key);
+      return;
+    }
+    return AsyncStorage.removeItem(key);
+  },
+};
 
 // Error Boundary to catch and display React errors
 class ErrorBoundary extends Component {
@@ -36,7 +76,7 @@ class ErrorBoundary extends Component {
           </Text>
           <TouchableOpacity
             style={{ marginTop: 20, backgroundColor: '#F59E0B', padding: 15, borderRadius: 8 }}
-            onPress={() => window.location.reload()}
+            onPress={reloadApp}
           >
             <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Reload App</Text>
           </TouchableOpacity>
@@ -3386,7 +3426,7 @@ function AppContent() {
       }
     }
     try {
-      localStorage.setItem('86d_theme', themeId);
+      storage.setItem('86d_theme', themeId);
     } catch (e) {}
   };
 
@@ -3429,7 +3469,7 @@ function AppContent() {
           game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
           week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
         };
-        localStorage.setItem('86d_autosave', JSON.stringify(autoSave));
+        storage.setItem('86d_autosave', JSON.stringify(autoSave));
       } catch (e) {}
     }
   }, [game?.week, autoSaveEnabled, game, setup]);
@@ -3451,24 +3491,31 @@ function AppContent() {
       maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + l.staff.length, 0) || 0,
     };
     
-    try {
-      const existing = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
-      const updated = [...existing, currentRun].slice(-50); // Keep last 50 runs
-      localStorage.setItem('86d_hall_of_fame', JSON.stringify(updated));
-      setHallOfFame(updated);
-    } catch (e) {}
+    (async () => {
+      try {
+        const existingStr = await storage.getItem('86d_hall_of_fame');
+        const existing = JSON.parse(existingStr || '[]');
+        const updated = [...existing, currentRun].slice(-50); // Keep last 50 runs
+        await storage.setItem('86d_hall_of_fame', JSON.stringify(updated));
+        setHallOfFame(updated);
+      } catch (e) {}
+    })();
   }, [game, setup]);
   
   // Load Hall of Fame on mount
   useEffect(() => {
-    try {
-      const hof = JSON.parse(localStorage.getItem('86d_hall_of_fame') || '[]');
-      setHallOfFame(hof);
-      const savedTheme = localStorage.getItem('86d_theme');
-      if (savedTheme && THEMES[savedTheme]) setCurrentTheme(savedTheme);
-      const savedPrestige = parseInt(localStorage.getItem('86d_prestige') || '0');
-      setPrestigeLevel(savedPrestige);
-    } catch (e) {}
+    (async () => {
+      try {
+        const hofStr = await storage.getItem('86d_hall_of_fame');
+        const hof = JSON.parse(hofStr || '[]');
+        setHallOfFame(hof);
+        const savedTheme = await storage.getItem('86d_theme');
+        if (savedTheme && THEMES[savedTheme]) setCurrentTheme(savedTheme);
+        const savedPrestigeStr = await storage.getItem('86d_prestige');
+        const savedPrestige = parseInt(savedPrestigeStr || '0');
+        setPrestigeLevel(savedPrestige);
+      } catch (e) {}
+    })();
   }, []);
   
   // Prestige System
@@ -3493,7 +3540,7 @@ function AppContent() {
     setTotalRunsCompleted(prev => prev + 1);
     
     try {
-      localStorage.setItem('86d_prestige', String(newPrestige));
+      storage.setItem('86d_prestige', String(newPrestige));
     } catch (e) {}
     
     // Reset to welcome with prestige bonus message

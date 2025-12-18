@@ -2,8 +2,8 @@
   "expo": {
     "name": "86'd",
     "slug": "86d-game",
-    "version": "2.2.0",
-    "orientation": "portrait",
+    "version": "2.3.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "eightysixd",
@@ -12,10 +12,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#0D0D0D"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.newbold.eightysixd",
-      "buildNumber": "1"
+      "buildNumber": "2",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSMicrophoneUsageDescription": "This app does not use the microphone."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,17 +30,29 @@
         "backgroundColor": "#0D0D0D"
       },
       "package": "com.newbold.eightysixd",
-      "versionCode": 1
+      "versionCode": 2,
+      "permissions": [
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
       "output": "single"
     },
+    "plugins": [
+      "expo-av"
+    ],
     "extra": {
       "eas": {
         "projectId": "86d-game"
       }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
