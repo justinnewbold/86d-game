@@ -69,18 +69,26 @@ jobs:
       - name: 🔍 Verify EAS CLI
         run: eas whoami
 
-      - name: 🔧 Initialize EAS Project
+      - name: 🔧 Check/Initialize EAS Project
+        id: eas-check
         run: |
-          # Check if project is already configured
-          if ! grep -q '"projectId"' app.json || grep -q '"projectId": *""' app.json || grep -q '"eas": *{}' app.json; then
-            echo "Project not configured, initializing..."
-            # Create/link project on expo.dev
-            npx eas-cli init --non-interactive || echo "Init failed, trying build anyway..."
+          # Check if project has a valid projectId configured
+          if grep -q '"projectId":' app.json && ! grep -q '"eas": *{}' app.json; then
+            PROJECT_ID=$(grep -o '"projectId": *"[^"]*"' app.json | cut -d'"' -f4)
+            if [ -n "$PROJECT_ID" ] && [ "$PROJECT_ID" != "" ]; then
+              echo "Project configured with ID: $PROJECT_ID"
+              echo "configured=true" >> $GITHUB_OUTPUT
+            else
+              echo "No valid project ID found"
+              echo "configured=false" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "Project already configured"
+            echo "Project not configured. Run 'eas init' locally to link your Expo account."
+            echo "configured=false" >> $GITHUB_OUTPUT
           fi
 
       - name: 🚀 Build app
+        if: steps.eas-check.outputs.configured == 'true'
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"
           PROFILE="${{ github.event.inputs.profile || 'preview' }}"
@@ -97,6 +105,16 @@ jobs:
           else
             eas build --platform $PLATFORM --profile $PROFILE --non-interactive
           fi
+
+      - name: ⚠️ EAS Build Skipped
+        if: steps.eas-check.outputs.configured != 'true'
+        run: |
+          echo "::warning::EAS Build skipped - no project ID configured."
+          echo "To enable native builds, run locally:"
+          echo "  1. npm install -g eas-cli"
+          echo "  2. eas login"
+          echo "  3. eas init"
+          echo "  4. git add app.json && git commit -m 'Add EAS project ID' && git push"
 
   # Web build job
   build-web:
