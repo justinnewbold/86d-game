@@ -2714,21 +2714,21 @@ function AppContent() {
       }, 0);
       
       // PHASE 6: Property appreciation (if owning properties)
-      const propertyAppreciation = g.ownedProperties.reduce((sum, prop) => {
+      const propertyAppreciation = (g.ownedProperties || []).reduce((sum, prop) => {
         return sum + (prop.value * 0.0006); // ~3% annual = 0.06% weekly
       }, 0);
       
       // Loan payments from corporate
-      const loanPayments = g.loans.reduce((sum, l) => {
+      const loanPayments = (g.loans || []).reduce((sum, l) => {
         const loan = LOANS.find(lo => lo.id === l.type);
         return sum + (loan?.weeklyPayment || 0);
       }, 0);
       
       // PHASE 6: Mortgage payments
-      const mortgagePayments = g.mortgages.reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
+      const mortgagePayments = (g.mortgages || []).reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
       
       // Corporate costs (management, district managers, etc)
-      const corporateCosts = g.corporateStaff.reduce((sum, s) => sum + s.wage * 40, 0);
+      const corporateCosts = (g.corporateStaff || []).reduce((sum, s) => sum + s.wage * 40, 0);
       const marketCosts = g.locations.reduce((sum, l) => {
         const mkt = MARKETS.find(m => m.id === l.market);
         return sum + (mkt?.managementCost || 0);
@@ -2985,7 +2985,7 @@ function AppContent() {
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
-        staff: l.staff.filter(s => s.id !== staffId),
+        staff: (l.staff || []).filter(s => s.id !== staffId),
         morale: Math.max(30, l.morale - 10),
         manager: l.manager?.id === staffId ? null : l.manager,
       } : l),
@@ -3004,7 +3004,7 @@ function AppContent() {
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         manager: staff,
-        staff: l.staff.map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
+        staff: (l.staff || []).map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
       } : l),
     }));
   };
@@ -3019,7 +3019,7 @@ function AppContent() {
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         cash: l.cash - program.cost,
-        staff: l.staff.map(s => s.id === selectedStaff.id ? {
+        staff: (l.staff || []).map(s => s.id === selectedStaff.id ? {
           ...s,
           training: [...s.training, program.id],
           skill: Math.min(10, s.skill + program.skillBoost),
@@ -3488,7 +3488,7 @@ function AppContent() {
       peakWeeklyRevenue: game.stats?.peakWeeklyRevenue || 0,
       maxLocations: Math.max(game.locations?.length || 1, game.stats?.locationsOpened || 1),
       peakValuation: game.empireValuation || 0,
-      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + l.staff.length, 0) || 0,
+      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + (l.staff?.length || 0), 0) || 0,
     };
     
     (async () => {
@@ -3588,7 +3588,7 @@ function AppContent() {
           if (outcome.morale) loc.morale = Math.min(100, Math.max(0, loc.morale + outcome.morale));
           if (outcome.covers) loc.covers += outcome.covers;
           if (outcome.foodCostMod) loc.foodCostPct += outcome.foodCostMod;
-          if (outcome.laborCostMod) {
+          if (outcome.laborCostMod && loc.staff) {
             loc.staff = loc.staff.map(s => ({ ...s, wage: Math.round(s.wage * (1 + outcome.laborCostMod)) }));
           }
           return loc;
@@ -3607,7 +3607,7 @@ function AppContent() {
             if (outcome.morale) newLoc.morale = Math.min(100, Math.max(0, newLoc.morale + outcome.morale));
             if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
             if (outcome.covers) newLoc.covers += outcome.covers;
-            if (outcome.followers) newLoc.marketing.socialFollowers += outcome.followers;
+            if (outcome.followers && newLoc.marketing) newLoc.marketing.socialFollowers = (newLoc.marketing.socialFollowers || 0) + outcome.followers;
             return newLoc;
           });
         }
@@ -3667,10 +3667,16 @@ function AppContent() {
   const askAI = async () => {
     if (!aiChatInput.trim() || !game) return;
     setAiLoading(true);
-    const response = await getAIMentorResponse(`Player asks: "${aiChatInput}"`, game, setup);
-    setAiMessage(response);
-    setAiChatInput('');
-    setAiLoading(false);
+    try {
+      const response = await getAIMentorResponse(`Player asks: "${aiChatInput}"`, game, setup);
+      setAiMessage(response);
+      setAiChatInput('');
+    } catch (error) {
+      console.error('AI error:', error);
+      setAiMessage("I'm having trouble connecting right now. Try again in a moment.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const saveGame = (slot) => {
@@ -3682,7 +3688,7 @@ function AppContent() {
   const loadGame = (save) => {
     setSetup(save.setup);
     setGame(save.game);
-    setActiveLocationId(save.game.locations[0].id);
+    setActiveLocationId(save.game.locations?.[0]?.id || 1);
     setScreen('dashboard');
     setSaveModal(false);
   };
@@ -4363,16 +4369,16 @@ function AppContent() {
             {activeTab === 'staff' && loc && (
               <>
                 <View style={styles.staffHeader}>
-                  <Text style={styles.sectionTitle}>Staff ({loc.staff.length})</Text>
+                  <Text style={styles.sectionTitle}>Staff ({loc.staff?.length || 0})</Text>
                   <TouchableOpacity style={styles.hireButton} onPress={() => setStaffModal(true)}>
                     <Text style={styles.hireButtonText}>+ HIRE</Text>
                   </TouchableOpacity>
                 </View>
                 
-                {loc.staff.length === 0 ? (
+                {(!loc.staff || loc.staff.length === 0) ? (
                   <Text style={styles.emptyText}>No staff hired yet. Running solo!</Text>
                 ) : (
-                  loc.staff.map(s => (
+                  (loc.staff || []).map(s => (
                     <View key={s.id} style={styles.staffCard}>
                       <Text style={styles.staffIcon}>{s.icon}</Text>
                       <View style={styles.staffInfo}>
@@ -4477,9 +4483,9 @@ function AppContent() {
                   <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
                   <View style={styles.plDivider} />
                   <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency((loc.staff || []).reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency(loc.marketing.channels.reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency((loc.marketing?.channels || []).reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
                   <View style={styles.plDivider} />
                   <View style={styles.plRow}><Text style={[styles.plLabel, { fontWeight: 'bold' }]}>Net Profit</Text><Text style={[styles.plValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent, fontWeight: 'bold' }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text></View>
                 </View>
@@ -4616,7 +4622,7 @@ function AppContent() {
                     <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
                     <View style={styles.locationCardInfo}>
                       <Text style={styles.locationCardName}>{l.name}</Text>
-                      <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
+                      <Text style={styles.locationCardDetails}>{l.staff?.length || 0} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
                     </View>
                     <View>
                       <Text style={[styles.locationCardCash, { color: l.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(l.cash)}</Text>
@@ -4791,7 +4797,7 @@ function AppContent() {
                     <Text style={styles.analyticsSection}>Key Ratios</Text>
                     <View style={styles.analyticsGrid}>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatPct(loc.foodCostPct)}</Text><Text style={styles.analyticsLabel}>Food Cost %</Text></View>
-                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.staff.length > 0 ? formatPct(loc.staff.reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{(loc.staff?.length || 0) > 0 ? formatPct((loc.staff || []).reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.lastWeekRevenue > 0 ? formatPct(loc.lastWeekProfit / loc.lastWeekRevenue) : '0%'}</Text><Text style={styles.analyticsLabel}>Profit Margin</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.lastWeekRevenue / Math.max(1, loc.lastWeekCovers))}</Text><Text style={styles.analyticsLabel}>Avg Check</Text></View>
                     </View>
@@ -5135,8 +5141,8 @@ function AppContent() {
                     <Text style={styles.exitIntro}>Sometimes the best move is knowing when to exit. Select a location:</Text>
                     {game.locations.map(l => {
                       const annualProfit = (l.totalProfit / Math.max(1, l.weeksOpen)) * 52;
-                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + l.equipment.length * 5000));
-                      const closingCost = l.staff.length * 1000 + l.rent * 3;
+                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + (l.equipment?.length || 0) * 5000));
+                      const closingCost = (l.staff?.length || 0) * 1000 + l.rent * 3;
                       return (
                         <View key={l.id} style={styles.exitLocationCard}>
                           <View style={styles.exitLocationHeader}>
@@ -5145,7 +5151,7 @@ function AppContent() {
                           </View>
                           <View style={styles.exitLocationStats}>
                             <Text style={styles.exitStat}>Cash: {formatCurrency(l.cash)}</Text>
-                            <Text style={styles.exitStat}>Staff: {l.staff.length}</Text>
+                            <Text style={styles.exitStat}>Staff: {l.staff?.length || 0}</Text>
                             <Text style={styles.exitStat}>Rep: {l.reputation}%</Text>
                           </View>
                           <View style={styles.exitActions}>
