@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import * as Updates from 'expo-updates';
 
 // Error Boundary to catch and display React errors
 export class ErrorBoundary extends Component {
@@ -30,7 +31,18 @@ export class ErrorBoundary extends Component {
           </Text>
           <TouchableOpacity
             style={{ marginTop: 20, backgroundColor: '#F59E0B', padding: 15, borderRadius: 8 }}
-            onPress={() => window.location.reload()}
+            onPress={async () => {
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                try {
+                  await Updates.reloadAsync();
+                } catch (e) {
+                  // If Updates.reloadAsync fails (e.g., in development), just reset state
+                  this.setState({ hasError: false, error: null, errorInfo: null });
+                }
+              }
+            }}
           >
             <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Reload App</Text>
           </TouchableOpacity>
