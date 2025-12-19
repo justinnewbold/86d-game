@@ -4084,9 +4084,9 @@ function AppContent() {
   if (screen === 'dashboard' && game) {
     const loc = getActiveLocation();
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    const totalCash = game.locations.reduce((sum, l) => sum + l.cash, 0) + game.corporateCash;
-    const totalUnits = game.locations.length + game.franchises.length;
-    const isMultiLocation = game.locations.length > 1;
+    const totalCash = (game.locations || []).reduce((sum, l) => sum + l.cash, 0) + (game.corporateCash || 0);
+    const totalUnits = (game.locations?.length || 0) + (game.franchises?.length || 0);
+    const isMultiLocation = (game.locations?.length || 0) > 1;
     
     return (
       <SafeAreaView style={styles.container}>
@@ -4525,11 +4525,11 @@ function AppContent() {
                 {/* Empire Stats */}
                 <View style={styles.empireStatsCard}>
                   <View style={styles.empireStat}>
-                    <Text style={styles.empireStatValue}>{game.locations.length}</Text>
+                    <Text style={styles.empireStatValue}>{game.locations?.length || 0}</Text>
                     <Text style={styles.empireStatLabel}>Owned</Text>
                   </View>
                   <View style={styles.empireStat}>
-                    <Text style={styles.empireStatValue}>{game.franchises.length}</Text>
+                    <Text style={styles.empireStatValue}>{game.franchises?.length || 0}</Text>
                     <Text style={styles.empireStatLabel}>Franchises</Text>
                   </View>
                   <View style={styles.empireStat}>
@@ -4551,17 +4551,17 @@ function AppContent() {
                 {/* Franchising */}
                 <Text style={styles.sectionTitle}>Franchising</Text>
                 {!game.franchiseEnabled ? (
-                  <TouchableOpacity 
-                    style={[styles.expansionButton, game.locations.length < 3 && styles.expansionButtonDisabled]} 
+                  <TouchableOpacity
+                    style={[styles.expansionButton, (game.locations?.length || 0) < 3 && styles.expansionButtonDisabled]}
                     onPress={enableFranchising}
-                    disabled={game.locations.length < 3}
+                    disabled={(game.locations?.length || 0) < 3}
                   >
                     <Text style={styles.expansionButtonIcon}>🌐</Text>
                     <View>
                       <Text style={styles.expansionButtonTitle}>Enable Franchising</Text>
                       <Text style={styles.expansionButtonDesc}>
-                        {game.locations.length < 3 
-                          ? `Need 3 locations first (have ${game.locations.length})` 
+                        {(game.locations?.length || 0) < 3
+                          ? `Need 3 locations first (have ${game.locations?.length || 0})`
                           : '$50K setup • Let others expand your brand'}
                       </Text>
                     </View>
@@ -4583,10 +4583,10 @@ function AppContent() {
                 )}
 
                 {/* Active Franchises */}
-                {game.franchises.length > 0 && (
+                {(game.franchises?.length || 0) > 0 && (
                   <>
-                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises.length})</Text>
-                    {game.franchises.map(f => (
+                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises?.length || 0})</Text>
+                    {(game.franchises || []).map(f => (
                       <View key={f.id} style={styles.franchiseCard}>
                         <View>
                           <Text style={styles.franchiseName}>{f.name}</Text>
@@ -4602,7 +4602,7 @@ function AppContent() {
                 )}
 
                 {/* Exit Strategy */}
-                {game.locations.length > 1 && (
+                {(game.locations?.length || 0) > 1 && (
                   <>
                     <Text style={styles.sectionTitle}>Exit Strategy</Text>
                     <TouchableOpacity style={styles.expansionButton} onPress={() => setSellLocationModal(true)}>
