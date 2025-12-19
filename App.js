@@ -103,41 +103,107 @@ const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 // ============================================
 // AI MENTOR SYSTEM
 // ============================================
-const getAIMentorResponse = async (context, game, setup) => {
-  const totalLocations = game.locations?.length || 1;
-  const totalCash = game.locations?.reduce((sum, loc) => sum + loc.cash, 0) || game.cash;
-  const totalStaff = game.locations?.reduce((sum, loc) => sum + (loc.staff?.length || 0), 0) || game.staff?.length || 0;
-  
-  const prompt = `You are Chef Marcus, an AI mentor in a restaurant business simulator game called "86'd". 
+const buildGameStateForAI = (game, setup) => {
+  if (!game) return null;
 
-Your personality:
-- 30 years in the restaurant industry
-- Opened 12 restaurants, failed at 4, learned from all
-- Direct but supportive - you warn but don't block decisions
-- You celebrate wins genuinely
-- You teach through reflection on past choices
+  // Calculate totals across all locations
+  const totalCash = game.locations?.reduce((sum, loc) => sum + (loc.cash || 0), 0) || game.cash || 0;
+  const totalDebt = game.locations?.reduce((sum, loc) => sum + (loc.loans?.reduce((s, l) => s + l.remaining, 0) || 0), 0) || 0;
+  const weeklyPayroll = game.locations?.reduce((sum, loc) => sum + (loc.staff?.reduce((s, st) => s + st.wage, 0) || 0), 0) || 0;
+  const weeklyRent = game.locations?.reduce((sum, loc) => sum + (loc.rent || 0), 0) || 0;
 
-Current empire state:
-- Total Locations: ${totalLocations}
-- Restaurant: ${setup.name || 'Unnamed'} (${setup.cuisine} cuisine)
-- Week: ${game.week}
-- Total Cash: $${totalCash.toLocaleString()}
-- Total Staff: ${totalStaff}
-- Franchises: ${game.franchises?.length || 0}
-- Empire Valuation: $${(game.empireValuation || 0).toLocaleString()}
+  // Location costs for expansion reference
+  const EXPANSION_COSTS = {
+    urban_downtown: 150000,
+    urban_neighborhood: 75000,
+    suburban_strip: 50000,
+    suburban_standalone: 100000,
+    food_hall: 35000,
+    ghost_kitchen: 25000,
+  };
 
-Context: ${context}
+  return {
+    restaurant: {
+      name: setup.name || 'Unnamed',
+      cuisine: setup.cuisine,
+      goal: setup.goal,
+      playerExperience: setup.experience,
+    },
+    currentWeek: game.week,
+    finances: {
+      totalCash,
+      totalDebt,
+      weeklyPayroll,
+      weeklyRent,
+      weeklyExpenses: weeklyPayroll + weeklyRent,
+      corporateCash: game.corporateCash || 0,
+      empireValuation: game.empireValuation || 0,
+    },
+    locations: game.locations?.map(loc => ({
+      id: loc.id,
+      name: loc.name,
+      type: loc.locationType,
+      cash: loc.cash,
+      reputation: loc.reputation,
+      morale: loc.morale,
+      weeksOpen: loc.weeksOpen,
+      staffCount: loc.staff?.length || 0,
+      staffWages: loc.staff?.reduce((s, st) => s + st.wage, 0) || 0,
+      equipment: loc.equipment?.length || 0,
+      upgrades: loc.upgrades?.length || 0,
+      lastWeekRevenue: loc.lastWeekRevenue || 0,
+      lastWeekProfit: loc.lastWeekProfit || 0,
+      loans: loc.loans?.map(l => ({ amount: l.amount, remaining: l.remaining, weeklyPayment: l.weeklyPayment })) || [],
+      rent: loc.rent,
+    })) || [],
+    franchising: {
+      enabled: game.franchiseEnabled || false,
+      franchiseCount: game.franchises?.length || 0,
+      weeklyRoyalties: game.franchises?.reduce((s, f) => s + f.weeklyRoyalty, 0) || 0,
+    },
+    expansionCosts: EXPANSION_COSTS,
+    requirements: {
+      secondLocation: {
+        minimumCash: 50000,
+        description: 'Need at least $50K cash to open a second location (cheapest is Ghost Kitchen at $25K + operating capital)'
+      },
+      franchising: {
+        minimumLocations: 3,
+        setupCost: 50000,
+        description: 'Need 3 successful locations and $50K to enable franchising'
+      }
+    }
+  };
+};
 
-Respond as Chef Marcus in 2-3 sentences. Be conversational and direct. Reference specific numbers when relevant.`;
+const getAIMentorResponse = async (context, game, setup, conversationHistory = [], setConversationHistory = null) => {
+  const gameState = buildGameStateForAI(game, setup);
+
+  const prompt = context;
 
   try {
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({
+        prompt,
+        conversationHistory,
+        gameState
+      })
     });
     const data = await response.json();
-    return data.response || getFallbackResponse(context, game);
+    const aiResponse = data.response || getFallbackResponse(context, game);
+
+    // Update conversation history if setter is provided
+    if (setConversationHistory) {
+      setConversationHistory(prev => [
+        ...prev,
+        { role: 'user', content: context },
+        { role: 'assistant', content: aiResponse }
+      ].slice(-20)); // Keep last 20 messages
+    }
+
+    return aiResponse;
   } catch (error) {
     return getFallbackResponse(context, game);
   }
@@ -2166,6 +2232,7 @@ function AppContent() {
   const [scenarioResult, setScenarioResult] = useState(null);
   const [aiMessage, setAiMessage] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiConversationHistory, setAiConversationHistory] = useState([]);
   
   // Custom capital input
   const [customCapitalMode, setCustomCapitalMode] = useState(false);
@@ -2465,10 +2532,11 @@ function AppContent() {
     setActiveLocationId(1);
     setScreen('dashboard');
     
-    // Initial AI greeting
+    // Initial AI greeting - reset conversation history for new game
+    setAiConversationHistory([]);
     setTimeout(async () => {
       setAiLoading(true);
-      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup);
+      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup, [], setAiConversationHistory);
       setAiMessage(response);
       setAiLoading(false);
     }, 500);
@@ -2900,12 +2968,12 @@ function AppContent() {
       if (game) {
         setAiLoading(true);
         const totalLocations = game.locations?.length || 1;
-        const context = totalLocations > 1 
+        const context = totalLocations > 1
           ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
-          : game.locations?.[0]?.lastWeekProfit > 0 
+          : game.locations?.[0]?.lastWeekProfit > 0
             ? 'Weekly summary - profitable week.'
             : 'Weekly summary - lost money this week.';
-        const response = await getAIMentorResponse(context, game, setup);
+        const response = await getAIMentorResponse(context, game, setup, aiConversationHistory, setAiConversationHistory);
         setAiMessage(response);
         setAiLoading(false);
         
@@ -3196,7 +3264,7 @@ function AppContent() {
     // AI response
     setTimeout(async () => {
       setAiLoading(true);
-      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup);
+      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup, aiConversationHistory, setAiConversationHistory);
       setAiMessage(response);
       setAiLoading(false);
     }, 500);
@@ -3654,7 +3722,7 @@ function AppContent() {
     
     setAiLoading(true);
     const context = `Player faced "${scenario.title}" and ${success ? 'succeeded' : 'failed'}. Give brief commentary.`;
-    const response = await getAIMentorResponse(context, game, setup);
+    const response = await getAIMentorResponse(context, game, setup, aiConversationHistory, setAiConversationHistory);
     setAiMessage(response);
     setAiLoading(false);
   };
@@ -3667,7 +3735,7 @@ function AppContent() {
   const askAI = async () => {
     if (!aiChatInput.trim() || !game) return;
     setAiLoading(true);
-    const response = await getAIMentorResponse(`Player asks: "${aiChatInput}"`, game, setup);
+    const response = await getAIMentorResponse(aiChatInput, game, setup, aiConversationHistory, setAiConversationHistory);
     setAiMessage(response);
     setAiChatInput('');
     setAiLoading(false);
