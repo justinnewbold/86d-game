@@ -2675,7 +2675,7 @@ function AppContent() {
       const economicCostMultiplier = currentCondition.costMultiplier;
       
       // Apply economic effects to all locations before processing
-      const locationsWithEconomics = g.locations.map(loc => ({
+      const locationsWithEconomics = (g.locations || []).map(loc => ({
         ...loc,
         economicRevenueMultiplier,
         economicCostMultiplier,
@@ -2690,22 +2690,22 @@ function AppContent() {
       const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + l.lastWeekProfit, 0);
       
       // Process franchise royalties
-      const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
-      
+      const franchiseRoyalties = (g.franchises || []).reduce((sum, f) => sum + f.weeklyRoyalty, 0);
+
       // PHASE 6: Catering Revenue
-      const cateringRevenue = g.cateringEnabled ? g.cateringContracts.reduce((sum, contract) => {
+      const cateringRevenue = g.cateringEnabled ? (g.cateringContracts || []).reduce((sum, contract) => {
         const contractData = CATERING_CONTRACTS.find(c => c.id === contract.id);
         return sum + (contractData?.weeklyRevenue || 0);
       }, 0) : 0;
       
       // PHASE 6: Food Truck Revenue
-      const truckRevenue = g.foodTrucks.reduce((sum, truck) => {
+      const truckRevenue = (g.foodTrucks || []).reduce((sum, truck) => {
         const eventRevenue = truck.currentEvent ? (truck.eventRevenue || 800) : 0;
         return sum + eventRevenue;
       }, 0);
-      
+
       // PHASE 6: Media/Brand Deal Revenue
-      const brandDealRevenue = g.brandDeals.reduce((sum, deal) => {
+      const brandDealRevenue = (g.brandDeals || []).reduce((sum, deal) => {
         const dealData = BRAND_DEALS.find(d => d.id === deal.id);
         if (dealData?.type === 'royalty' && deal.active) {
           return sum + (dealData.weeklyRoyalty || 0);
@@ -2729,7 +2729,7 @@ function AppContent() {
       
       // Corporate costs (management, district managers, etc)
       const corporateCosts = (g.corporateStaff || []).reduce((sum, s) => sum + s.wage * 40, 0);
-      const marketCosts = g.locations.reduce((sum, l) => {
+      const marketCosts = (g.locations || []).reduce((sum, l) => {
         const mkt = MARKETS.find(m => m.id === l.market);
         return sum + (mkt?.managementCost || 0);
       }, 0);
@@ -2781,7 +2781,7 @@ function AppContent() {
       }
       
       // PHASE 6: Media reputation boost
-      const mediaBoost = g.mediaAppearances.reduce((sum, app) => {
+      const mediaBoost = (g.mediaAppearances || []).reduce((sum, app) => {
         const media = MEDIA_OPPORTUNITIES.find(m => m.id === app.id);
         return sum + (media?.reputationBoost || 0) * 0.1; // Decay over time
       }, 0);
@@ -3581,7 +3581,7 @@ function AppContent() {
       let updated = { ...g, scenariosSeen: [...(g.scenariosSeen || []), scenario.id] };
       
       // Handle empire-wide effects
-      if (outcome.allLocations) {
+      if (outcome.allLocations && updated.locations) {
         updated.locations = updated.locations.map(l => {
           let loc = { ...l };
           if (outcome.reputation) loc.reputation = Math.min(100, Math.max(0, loc.reputation + outcome.reputation));
@@ -3598,7 +3598,7 @@ function AppContent() {
       // Handle single location effects
       if (!outcome.allLocations) {
         const loc = getActiveLocation();
-        if (loc) {
+        if (loc && updated.locations) {
           updated.locations = updated.locations.map(l => {
             if (l.id !== loc.id) return l;
             let newLoc = { ...l };
@@ -3625,12 +3625,13 @@ function AppContent() {
       
       // New franchises
       if (outcome.newFranchises) {
-        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / updated.locations.length;
+        const avgRevenue = (updated.locations || []).reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, updated.locations?.length || 1);
+        updated.franchises = updated.franchises || [];
         for (let i = 0; i < outcome.newFranchises; i++) {
           updated.franchises.push({
             id: Date.now() + i,
             tier: 'area',
-            name: `Area Developer ${updated.franchises.length + 1}`,
+            name: `Area Developer ${(updated.franchises?.length || 0) + 1}`,
             weeklyRoyalty: avgRevenue * 0.045,
             weeksActive: 0,
             performance: 0.9 + Math.random() * 0.2,
@@ -6015,7 +6016,7 @@ function AppContent() {
                                   weeklyPayment: weeklyMortgage,
                                   rate: 0.065,
                                 }],
-                                locations: g.locations.map(l => 
+                                locations: (g.locations || []).map(l =>
                                   l.id === loc.id ? { ...l, rent: 0, ownsProperty: true } : l
                                 ),
                               }));
