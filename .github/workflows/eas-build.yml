@@ -69,6 +69,17 @@ jobs:
       - name: 🔍 Verify EAS CLI
         run: eas whoami
 
+      - name: 🔧 Initialize EAS Project
+        run: |
+          # Check if project is already configured
+          if ! grep -q '"projectId"' app.json || grep -q '"projectId": *""' app.json || grep -q '"eas": *{}' app.json; then
+            echo "Project not configured, initializing..."
+            # Create/link project on expo.dev
+            npx eas-cli init --non-interactive || echo "Init failed, trying build anyway..."
+          else
+            echo "Project already configured"
+          fi
+
       - name: 🚀 Build app
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"
