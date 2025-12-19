@@ -3223,13 +3223,13 @@ function AppContent() {
     const franchiseTier = FRANCHISE_TIERS.find(t => t.id === tier);
     if (!franchiseTier || !game || !game.franchiseEnabled) return;
     
-    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, game.locations.length);
+    const avgLocationRevenue = (game.locations || []).reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, game.locations?.length || 1);
     const weeklyRoyalty = avgLocationRevenue * franchiseTier.royalty;
-    
+
     const newFranchise = {
       id: Date.now(),
       tier: tier,
-      name: `Franchisee ${game.franchises.length + 1}`,
+      name: `Franchisee ${(game.franchises?.length || 0) + 1}`,
       weeklyRoyalty,
       weeksActive: 0,
       performance: 0.8 + Math.random() * 0.4, // 80-120% performance vs company average
@@ -3467,7 +3467,7 @@ function AppContent() {
       try {
         const autoSave = {
           game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
-          week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
+          week: game.week, cash: (game.corporateCash || 0) + (game.locations || []).reduce((s, l) => s + l.cash, 0),
         };
         storage.setItem('86d_autosave', JSON.stringify(autoSave));
       } catch (e) {}
