@@ -2604,7 +2604,7 @@ function AppContent() {
       const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
       setGame(g => ({
         ...g,
-        competitors: [...g.competitors, newCompetitor],
+        competitors: [...(g.competitors || []), newCompetitor],
       }));
       setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
     }
@@ -2650,7 +2650,7 @@ function AppContent() {
       const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
       setGame(g => ({
         ...g,
-        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
+        unlockedMilestones: [...(g.unlockedMilestones || []), ...newMilestones.map(m => m.id)],
         milestoneRewards: g.milestoneRewards + totalReward,
         corporateCash: g.corporateCash + totalReward,
       }));
@@ -2792,10 +2792,10 @@ function AppContent() {
       }
       
       // Update achievements
-      const newAchievements = [...g.achievements];
+      const newAchievements = [...(g.achievements || [])];
       const weekNum = g.week + 1;
       const totalLocations = updatedLocations.length;
-      const totalFranchises = g.franchises.length;
+      const totalFranchises = g.franchises?.length || 0;
       const totalUnits = totalLocations + totalFranchises;
       
       if (weekNum >= 4 && !newAchievements.includes('first_month')) newAchievements.push('first_month');
@@ -2821,13 +2821,13 @@ function AppContent() {
       const investorTypes = g.investors?.map(inv => inv.type) || [];
       
       const availableScenarios = allScenarios.filter(s => {
-        if (g.scenariosSeen.includes(s.id)) return false;
+        if ((g.scenariosSeen || []).includes(s.id)) return false;
         if (s.minWeek && weekNum < s.minWeek) return false;
         if (s.minCash && totalLocationCash + newCorporateCash < s.minCash) return false;
         if (s.minLocations && totalLocations < s.minLocations) return false;
         if (s.maxLocations && totalLocations > s.maxLocations) return false;
         if (s.minFranchises && totalFranchises < s.minFranchises) return false;
-        if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
+        if (s.minReputation && updatedLocations[0]?.reputation < s.minReputation) return false;
         if (s.minValuation && empireValuation < s.minValuation) return false;
         // Phase 6: Investor requirements
         if (s.requiresInvestors && !hasInvestors) return false;
@@ -2946,9 +2946,9 @@ function AppContent() {
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
         cash: l.cash - template.wage * 40,
-        staff: [...l.staff, newStaff],
+        staff: [...(l.staff || []), newStaff],
       } : l),
-      achievements: g.achievements.includes('first_hire') ? g.achievements : [...g.achievements, 'first_hire'],
+      achievements: (g.achievements || []).includes('first_hire') ? g.achievements : [...(g.achievements || []), 'first_hire'],
     }));
     setStaffModal(false);
   };
@@ -2973,7 +2973,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash - template.wage * 40,
-      corporateStaff: [...g.corporateStaff, newStaff],
+      corporateStaff: [...(g.corporateStaff || []), newStaff],
     }));
   };
 
@@ -3152,7 +3152,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash + loan.amount,
-      loans: [...g.loans, { type: loanId, remaining: loan.term, principal: loan.amount }],
+      loans: [...(g.loans || []), { type: loanId, remaining: loan.term, principal: loan.amount }],
       equity: g.equity - (loan.equity || 0),
     }));
     setLoanModal(false);
@@ -3187,7 +3187,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash - totalCost,
-      locations: [...g.locations, newLocation],
+      locations: [...(g.locations || []), newLocation],
     }));
     
     setExpansionModal(false);
@@ -3239,7 +3239,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash + franchiseTier.fee,
-      franchises: [...g.franchises, newFranchise],
+      franchises: [...(g.franchises || []), newFranchise],
     }));
     
     setFranchiseModal(false);
@@ -3254,7 +3254,7 @@ function AppContent() {
     const deal = VENDOR_DEALS.find(d => d.id === dealId);
     if (!vendor || !deal) return;
     
-    const currentVendor = game.vendors.find(v => v.id === vendorId);
+    const currentVendor = (game.vendors || []).find(v => v.id === vendorId);
     const relationship = currentVendor?.relationship || 50;
     const successChance = 0.5 + (relationship / 200);
     const success = Math.random() < successChance;
@@ -3262,7 +3262,7 @@ function AppContent() {
     if (success) {
       setGame(g => ({
         ...g,
-        vendors: g.vendors.map(v => 
+        vendors: (g.vendors || []).map(v => 
           v.id === vendorId 
             ? { ...v, deal: dealId, relationship: Math.min(100, v.relationship + 10) }
             : v
@@ -3272,7 +3272,7 @@ function AppContent() {
     } else {
       setGame(g => ({
         ...g,
-        vendors: g.vendors.map(v => 
+        vendors: (g.vendors || []).map(v => 
           v.id === vendorId 
             ? { ...v, relationship: Math.max(0, v.relationship - 5) }
             : v
@@ -3285,11 +3285,11 @@ function AppContent() {
   const addVendor = (vendorId) => {
     if (!game) return;
     const vendor = VENDORS.find(v => v.id === vendorId);
-    if (!vendor || game.vendors.find(v => v.id === vendorId)) return;
+    if (!vendor || (game.vendors || []).find(v => v.id === vendorId)) return;
     
     setGame(g => ({
       ...g,
-      vendors: [...g.vendors, {
+      vendors: [...(g.vendors || []), {
         id: vendorId,
         name: vendor.name,
         weeksUsed: 0,
@@ -3345,13 +3345,13 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.filter(l => l.id !== locationId),
+      locations: (g.locations || []).filter(l => l.id !== locationId),
       corporateCash: g.corporateCash + salePrice,
       stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
     }));
     
     // Switch to another location
-    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    const remainingLocations = (game.locations || []).filter(l => l.id !== locationId);
     if (remainingLocations.length > 0) {
       setActiveLocationId(remainingLocations[0].id);
     }
@@ -3374,12 +3374,12 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.filter(l => l.id !== locationId),
+      locations: (g.locations || []).filter(l => l.id !== locationId),
       corporateCash: g.corporateCash - closingCost,
       stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
     }));
-    
-    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+
+    const remainingLocations = (game.locations || []).filter(l => l.id !== locationId);
     if (remainingLocations.length > 0) {
       setActiveLocationId(remainingLocations[0].id);
     }
@@ -3578,7 +3578,7 @@ function AppContent() {
     setScenarioResult({ success, outcome });
     
     setGame(g => {
-      let updated = { ...g, scenariosSeen: [...g.scenariosSeen, scenario.id] };
+      let updated = { ...g, scenariosSeen: [...(g.scenariosSeen || []), scenario.id] };
       
       // Handle empire-wide effects
       if (outcome.allLocations) {
@@ -4114,9 +4114,9 @@ function AppContent() {
               <Text style={styles.locationTabIcon}>🏛️</Text>
               <Text style={[styles.locationTabText, !activeLocationId && styles.locationTabTextActive]}>Empire</Text>
             </TouchableOpacity>
-            {game.locations.map(l => (
-              <TouchableOpacity 
-                key={l.id} 
+            {(game.locations || []).map(l => (
+              <TouchableOpacity
+                key={l.id}
                 style={[styles.locationTab, activeLocationId === l.id && styles.locationTabActive]}
                 onPress={() => setActiveLocationId(l.id)}
               >
@@ -4152,7 +4152,7 @@ function AppContent() {
         )}
         {game.burnout > 70 && (
           <View style={[styles.warningBanner, { backgroundColor: colors.warning }]}>
-            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {game.locations.filter(l => !l.manager).length} locations without managers</Text>
+            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {(game.locations || []).filter(l => !l.manager).length} locations without managers</Text>
           </View>
         )}
 
@@ -4617,7 +4617,7 @@ function AppContent() {
 
                 {/* All Locations List */}
                 <Text style={styles.sectionTitle}>All Locations</Text>
-                {game.locations.map(l => (
+                {(game.locations || []).map(l => (
                   <TouchableOpacity key={l.id} style={styles.locationCard} onPress={() => setActiveLocationId(l.id)}>
                     <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
                     <View style={styles.locationCardInfo}>
@@ -5139,7 +5139,7 @@ function AppContent() {
                 {game?.locations?.length > 1 ? (
                   <>
                     <Text style={styles.exitIntro}>Sometimes the best move is knowing when to exit. Select a location:</Text>
-                    {game.locations.map(l => {
+                    {(game.locations || []).map(l => {
                       const annualProfit = (l.totalProfit / Math.max(1, l.weeksOpen)) * 52;
                       const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + (l.equipment?.length || 0) * 5000));
                       const closingCost = (l.staff?.length || 0) * 1000 + l.rent * 3;
