@@ -2774,8 +2774,8 @@ function AppContent() {
         if (newIdx !== currentIdx) {
           newEconomicCondition = ECONOMIC_CONDITIONS[newIdx].id;
           setTimeout(() => {
-            addNotification(`📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`, 
-              newIdx < currentIdx ? 'warning' : 'info');
+            addNotification(newIdx < currentIdx ? 'warning' : 'info',
+              `📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`);
           }, 1000);
         }
       }
@@ -2864,7 +2864,7 @@ function AppContent() {
         if (exitOption) {
           const finalPayout = empireValuation * exitOption.valuationMultiple * ((g.equity || 100) / 100);
           setTimeout(() => {
-            addNotification(`🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`, 'achievement');
+            addNotification('achievement', `🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`);
             setScreen('win');
           }, 500);
         }
@@ -2996,7 +2996,7 @@ function AppContent() {
     const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
     if (!loc) return;
     
-    const staff = loc.staff.find(s => s.id === staffId);
+    const staff = loc.staff?.find(s => s.id === staffId);
     if (!staff || !staff.canManage) return;
     
     setGame(g => ({
@@ -3174,7 +3174,7 @@ function AppContent() {
       return;
     }
     
-    const newId = Math.max(...game.locations.map(l => l.id)) + 1;
+    const newId = game.locations.length > 0 ? Math.max(...game.locations.map(l => l.id)) + 1 : 1;
     const newLocation = createLocation(
       newId,
       newLocationData.name || generateLocationName(newLocationData.market, newLocationData.type),
@@ -5466,7 +5466,7 @@ function AppContent() {
                           }],
                           boardMembers: (g.boardMembers || 0) + (inv.boardSeat ? 1 : 0),
                         }));
-                        addNotification(`${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`, 'success');
+                        addNotification('success', `${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`);
                         setInvestorModal(false);
                       }
                     }}
@@ -5526,7 +5526,7 @@ function AppContent() {
                     onPress={() => {
                       if ((game?.corporateCash || 0) >= 10000) {
                         setGame(g => ({ ...g, cateringEnabled: true, corporateCash: g.corporateCash - 10000 }));
-                        addNotification('🍽️ Catering division launched! $10K invested.', 'success');
+                        addNotification('success', '🍽️ Catering division launched! $10K invested.');
                       }
                     }}
                   >
@@ -5546,7 +5546,7 @@ function AppContent() {
                             ...g,
                             cateringContracts: [...(g.cateringContracts || []), { ...contract, startWeek: g.week, weeksRemaining: contract.term }],
                           }));
-                          addNotification(`📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`, 'success');
+                          addNotification('success', `📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`);
                         }}
                       >
                         <Text style={styles.contractIcon}>{contract.icon}</Text>
@@ -5629,9 +5629,9 @@ function AppContent() {
                             events: [],
                           }],
                         }));
-                        addNotification(`🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`, 'success');
+                        addNotification('success', `🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`);
                       } else {
-                        addNotification(`Need ${formatCurrency(truck.cost)} to purchase`, 'warning');
+                        addNotification('warning', `Need ${formatCurrency(truck.cost)} to purchase`);
                       }
                     }}
                   >
@@ -5653,7 +5653,7 @@ function AppContent() {
                         key={event.id}
                         style={styles.eventOption}
                         onPress={() => {
-                          addNotification(`🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`, 'success');
+                          addNotification('success', `🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`);
                         }}
                       >
                         <Text style={styles.eventIcon}>{event.icon}</Text>
@@ -5707,7 +5707,7 @@ function AppContent() {
                         publicProfile: Math.min(100, (g.publicProfile || 0) + media.reputationBoost),
                         mediaAppearances: [...(g.mediaAppearances || []), { ...media, week: g.week }],
                       }));
-                      addNotification(`${media.icon} ${media.name}! +${media.reputationBoost} profile`, 'success');
+                      addNotification('success', `${media.icon} ${media.name}! +${media.reputationBoost} profile`);
                     }}
                   >
                     <Text style={styles.mediaIcon}>{media.icon}</Text>
@@ -5729,7 +5729,7 @@ function AppContent() {
                         corporateCash: g.corporateCash + (deal.advance || deal.fee || 0),
                         brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week }],
                       }));
-                      addNotification(`📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`, 'success');
+                      addNotification('success', `📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`);
                       setMediaModal(false);
                     }}
                   >
@@ -5791,7 +5791,7 @@ function AppContent() {
                       onPress={() => {
                         if (exit.id === 'family_succession') {
                           // End game with family succession
-                          addNotification('🏆 Congratulations! You passed your empire to the next generation!', 'achievement');
+                          addNotification('achievement', '🏆 Congratulations! You passed your empire to the next generation!');
                           setGame(g => ({ ...g, exitStrategy: exit.id, exitProgress: 100 }));
                         } else {
                           setGame(g => ({ 
@@ -5800,7 +5800,7 @@ function AppContent() {
                             exitProgress: 0,
                             corporateCash: g.corporateCash - exit.cost 
                           }));
-                          addNotification(`📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`, 'info');
+                          addNotification('info', `📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`);
                         }
                         setExitStrategyModal(false);
                       }}
@@ -5926,7 +5926,7 @@ function AppContent() {
                     key={option.id}
                     style={styles.leaseOption}
                     onPress={() => {
-                      addNotification(`📋 Switched to ${option.name} for new locations`, 'info');
+                      addNotification('info', `📋 Switched to ${option.name} for new locations`);
                       setGame(g => ({ ...g, preferredLeaseType: option.id }));
                     }}
                   >
@@ -6013,7 +6013,7 @@ function AppContent() {
                                   l.id === loc.id ? { ...l, rent: 0, ownsProperty: true } : l
                                 ),
                               }));
-                              addNotification(`🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`, 'achievement');
+                              addNotification('achievement', `🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`);
                               setRealEstateModal(false);
                             }}
                           >
