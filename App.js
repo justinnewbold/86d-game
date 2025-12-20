@@ -2943,9 +2943,9 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - template.wage * 40,
+        cash: (l.cash || 0) - template.wage * 40,
         staff: [...(l.staff || []), newStaff],
       } : l),
       achievements: (g.achievements || []).includes('first_hire') ? g.achievements : [...(g.achievements || []), 'first_hire'],
@@ -2978,33 +2978,33 @@ function AppContent() {
   };
 
   const fireStaff = (staffId, locationId = null) => {
-    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    const loc = locationId ? (game.locations || []).find(l => l.id === locationId) : getActiveLocation();
     if (!loc) return;
-    
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         staff: (l.staff || []).filter(s => s.id !== staffId),
-        morale: Math.max(30, l.morale - 10),
+        morale: Math.max(30, (l.morale || 50) - 10),
         manager: l.manager?.id === staffId ? null : l.manager,
       } : l),
     }));
   };
 
   const promoteToManager = (staffId, locationId = null) => {
-    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    const loc = locationId ? (game.locations || []).find(l => l.id === locationId) : getActiveLocation();
     if (!loc) return;
-    
-    const staff = loc.staff?.find(s => s.id === staffId);
+
+    const staff = (loc.staff || []).find(s => s.id === staffId);
     if (!staff || !staff.canManage) return;
-    
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         manager: staff,
-        staff: (l.staff || []).map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
+        staff: (l.staff || []).map(s => s.id === staffId ? { ...s, wage: (s.wage || 0) + 5, morale: Math.min(100, (s.morale || 50) + 20) } : s),
       } : l),
     }));
   };
@@ -3012,18 +3012,18 @@ function AppContent() {
   const startTraining = (program) => {
     if (!selectedStaff || !game) return;
     const loc = getActiveLocation();
-    if (!loc || loc.cash < program.cost) return;
-    
+    if (!loc || (loc.cash || 0) < program.cost) return;
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - program.cost,
+        cash: (l.cash || 0) - program.cost,
         staff: (l.staff || []).map(s => s.id === selectedStaff.id ? {
           ...s,
-          training: [...s.training, program.id],
-          skill: Math.min(10, s.skill + program.skillBoost),
-          morale: Math.min(100, s.morale + program.morale),
+          training: [...(s.training || []), program.id],
+          skill: Math.min(10, (s.skill || 0) + program.skillBoost),
+          morale: Math.min(100, (s.morale || 50) + program.morale),
           canManage: program.id === 'management' || program.id === 'multi_unit' ? true : s.canManage,
         } : s),
       } : l),
@@ -3036,13 +3036,13 @@ function AppContent() {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
     const loc = getActiveLocation();
     if (!cuisine || !loc) return;
-    
+
     const priceVariance = 0.7 + Math.random() * 0.6;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        menu: [...l.menu, {
+        menu: [...(l.menu || []), {
           id: Date.now(),
           name: generateMenuItem(setup.cuisine),
           price: Math.round(cuisine.avgTicket * priceVariance * 100) / 100,
@@ -3059,7 +3059,7 @@ function AppContent() {
     if (!loc) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         menu: (l.menu || []).map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
       } : l),
@@ -3068,12 +3068,12 @@ function AppContent() {
 
   const buyEquipment = (eq) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < eq.cost || (loc.equipment || []).includes(eq.id)) return;
+    if (!loc || (loc.cash || 0) < eq.cost || (loc.equipment || []).includes(eq.id)) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - eq.cost,
+        cash: (l.cash || 0) - eq.cost,
         equipment: [...(l.equipment || []), eq.id],
       } : l),
     }));
@@ -3081,14 +3081,14 @@ function AppContent() {
 
   const buyUpgrade = (up) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < up.cost || (loc.upgrades || []).includes(up.id)) return;
+    if (!loc || (loc.cash || 0) < up.cost || (loc.upgrades || []).includes(up.id)) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - up.cost,
+        cash: (l.cash || 0) - up.cost,
         upgrades: [...(l.upgrades || []), up.id],
-        reputation: l.reputation + (up.effect?.reputation || 0),
+        reputation: (l.reputation || 50) + (up.effect?.reputation || 0),
       } : l),
     }));
   };
@@ -3098,7 +3098,7 @@ function AppContent() {
     if (!loc) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         marketing: {
           ...(l.marketing || {}),
@@ -3117,14 +3117,14 @@ function AppContent() {
 
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => {
+      locations: (g.locations || []).map(l => {
         if (l.id !== loc.id) return l;
         const platforms = l.delivery?.platforms || [];
         const isActive = platforms.includes(platformId);
         if (isActive) {
           return { ...l, delivery: { ...(l.delivery || {}), platforms: platforms.filter(p => p !== platformId) } };
-        } else if (l.cash >= platform.setup) {
-          return { ...l, cash: l.cash - platform.setup, delivery: { ...(l.delivery || {}), platforms: [...platforms, platformId] } };
+        } else if ((l.cash || 0) >= platform.setup) {
+          return { ...l, cash: (l.cash || 0) - platform.setup, delivery: { ...(l.delivery || {}), platforms: [...platforms, platformId] } };
         }
         return l;
       }),
@@ -3134,13 +3134,13 @@ function AppContent() {
   const launchVirtualBrand = (brandId) => {
     const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
     const loc = getActiveLocation();
-    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || loc.cash < brand.setupCost) return;
+    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || (loc.cash || 0) < brand.setupCost) return;
 
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - brand.setupCost,
+        cash: (l.cash || 0) - brand.setupCost,
         virtualBrands: [...(l.virtualBrands || []), brandId],
       } : l),
     }));

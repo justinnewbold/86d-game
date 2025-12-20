@@ -262,16 +262,17 @@ export function GameProvider({ children }) {
   }, []);
 
   const addNotification = useCallback((type, message) => {
+    const notificationId = Date.now();
     dispatchUI({
       type: UI_ACTIONS.ADD_NOTIFICATION,
-      payload: { type, message },
+      payload: { type, message, id: notificationId },
     });
 
-    // Auto-remove after 4 seconds
+    // Auto-remove after 4 seconds using the captured ID
     setTimeout(() => {
       dispatchUI({
         type: UI_ACTIONS.REMOVE_NOTIFICATION,
-        payload: Date.now(), // Will be the approximate ID
+        payload: notificationId,
       });
     }, 4000);
   }, []);
