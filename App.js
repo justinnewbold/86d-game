@@ -103,107 +103,41 @@ const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 // ============================================
 // AI MENTOR SYSTEM
 // ============================================
-const buildGameStateForAI = (game, setup) => {
-  if (!game) return null;
+const getAIMentorResponse = async (context, game, setup) => {
+  const totalLocations = game.locations?.length || 1;
+  const totalCash = game.locations?.reduce((sum, loc) => sum + (loc.cash || 0), 0) || game.cash;
+  const totalStaff = game.locations?.reduce((sum, loc) => sum + (loc.staff?.length || 0), 0) || game.staff?.length || 0;
+  
+  const prompt = `You are Chef Marcus, an AI mentor in a restaurant business simulator game called "86'd". 
 
-  // Calculate totals across all locations
-  const totalCash = game.locations?.reduce((sum, loc) => sum + (loc.cash || 0), 0) || game.cash || 0;
-  const totalDebt = game.locations?.reduce((sum, loc) => sum + (loc.loans?.reduce((s, l) => s + l.remaining, 0) || 0), 0) || 0;
-  const weeklyPayroll = game.locations?.reduce((sum, loc) => sum + (loc.staff?.reduce((s, st) => s + st.wage, 0) || 0), 0) || 0;
-  const weeklyRent = game.locations?.reduce((sum, loc) => sum + (loc.rent || 0), 0) || 0;
+Your personality:
+- 30 years in the restaurant industry
+- Opened 12 restaurants, failed at 4, learned from all
+- Direct but supportive - you warn but don't block decisions
+- You celebrate wins genuinely
+- You teach through reflection on past choices
 
-  // Location costs for expansion reference
-  const EXPANSION_COSTS = {
-    urban_downtown: 150000,
-    urban_neighborhood: 75000,
-    suburban_strip: 50000,
-    suburban_standalone: 100000,
-    food_hall: 35000,
-    ghost_kitchen: 25000,
-  };
+Current empire state:
+- Total Locations: ${totalLocations}
+- Restaurant: ${setup.name || 'Unnamed'} (${setup.cuisine} cuisine)
+- Week: ${game.week}
+- Total Cash: $${totalCash.toLocaleString()}
+- Total Staff: ${totalStaff}
+- Franchises: ${game.franchises?.length || 0}
+- Empire Valuation: $${(game.empireValuation || 0).toLocaleString()}
 
-  return {
-    restaurant: {
-      name: setup.name || 'Unnamed',
-      cuisine: setup.cuisine,
-      goal: setup.goal,
-      playerExperience: setup.experience,
-    },
-    currentWeek: game.week,
-    finances: {
-      totalCash,
-      totalDebt,
-      weeklyPayroll,
-      weeklyRent,
-      weeklyExpenses: weeklyPayroll + weeklyRent,
-      corporateCash: game.corporateCash || 0,
-      empireValuation: game.empireValuation || 0,
-    },
-    locations: game.locations?.map(loc => ({
-      id: loc.id,
-      name: loc.name,
-      type: loc.locationType,
-      cash: loc.cash,
-      reputation: loc.reputation,
-      morale: loc.morale,
-      weeksOpen: loc.weeksOpen,
-      staffCount: loc.staff?.length || 0,
-      staffWages: loc.staff?.reduce((s, st) => s + st.wage, 0) || 0,
-      equipment: loc.equipment?.length || 0,
-      upgrades: loc.upgrades?.length || 0,
-      lastWeekRevenue: loc.lastWeekRevenue || 0,
-      lastWeekProfit: loc.lastWeekProfit || 0,
-      loans: loc.loans?.map(l => ({ amount: l.amount, remaining: l.remaining, weeklyPayment: l.weeklyPayment })) || [],
-      rent: loc.rent,
-    })) || [],
-    franchising: {
-      enabled: game.franchiseEnabled || false,
-      franchiseCount: game.franchises?.length || 0,
-      weeklyRoyalties: game.franchises?.reduce((s, f) => s + f.weeklyRoyalty, 0) || 0,
-    },
-    expansionCosts: EXPANSION_COSTS,
-    requirements: {
-      secondLocation: {
-        minimumCash: 50000,
-        description: 'Need at least $50K cash to open a second location (cheapest is Ghost Kitchen at $25K + operating capital)'
-      },
-      franchising: {
-        minimumLocations: 3,
-        setupCost: 50000,
-        description: 'Need 3 successful locations and $50K to enable franchising'
-      }
-    }
-  };
-};
+Context: ${context}
 
-const getAIMentorResponse = async (context, game, setup, conversationHistory = [], setConversationHistory = null) => {
-  const gameState = buildGameStateForAI(game, setup);
-
-  const prompt = context;
+Respond as Chef Marcus in 2-3 sentences. Be conversational and direct. Reference specific numbers when relevant.`;
 
   try {
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        conversationHistory,
-        gameState
-      })
+      body: JSON.stringify({ prompt })
     });
     const data = await response.json();
-    const aiResponse = data.response || getFallbackResponse(context, game);
-
-    // Update conversation history if setter is provided
-    if (setConversationHistory) {
-      setConversationHistory(prev => [
-        ...prev,
-        { role: 'user', content: context },
-        { role: 'assistant', content: aiResponse }
-      ].slice(-20)); // Keep last 20 messages
-    }
-
-    return aiResponse;
+    return data.response || getFallbackResponse(context, game);
   } catch (error) {
     return getFallbackResponse(context, game);
   }
@@ -1828,7 +1762,7 @@ const calculateCompetitionChance = (location, competition, customRecipes = []) =
   let baseChance = 0.3;
   baseChance += (location.reputation || 50) / 500;
   const staff = location.staff || [];
-  const avgSkill = staff.length > 0 ? staff.reduce((sum, s) => sum + s.skill, 0) / staff.length : 5;
+  const avgSkill = staff.length > 0 ? staff.reduce((sum, s) => sum + (s.skill || 0), 0) / staff.length : 5;
   baseChance += avgSkill / 20;
   baseChance += Math.min(customRecipes.length * 0.02, 0.15);
   if (location.upgrades?.fullRenovation) baseChance += 0.1;
@@ -1873,7 +1807,7 @@ const generateRecipeName = (category) => {
 const developRecipe = (location, category, investment = 1) => {
   const baseSuccess = 0.6;
   const kitchenStaff = (location.staff || []).filter(s => s.department === 'kitchen');
-  const avgSkill = kitchenStaff.length > 0 ? kitchenStaff.reduce((sum, s) => sum + s.skill, 0) / kitchenStaff.length : 5;
+  const avgSkill = kitchenStaff.length > 0 ? kitchenStaff.reduce((sum, s) => sum + (s.skill || 0), 0) / kitchenStaff.length : 5;
   const successChance = Math.min(baseSuccess + (avgSkill / 20) + (investment * 0.1), 0.95);
   const success = Math.random() < successChance;
   if (success) {
@@ -1938,7 +1872,7 @@ const calculatePlayerRank = (game, category) => {
     case 'week': playerScore = game.week || 0; break;
     case 'totalLocations': playerScore = game.locations?.length || 0; break;
     case 'franchises': playerScore = game.franchises?.length || 0; break;
-    case 'avgReputation': playerScore = game.locations?.reduce((sum, l) => sum + l.reputation, 0) / (game.locations?.length || 1) || 0; break;
+    case 'avgReputation': playerScore = game.locations?.reduce((sum, l) => sum + (l.reputation || 0), 0) / (game.locations?.length || 1) || 0; break;
     default: playerScore = 0;
   }
   const mockLeaderboard = generateMockLeaderboard(category);
@@ -2076,7 +2010,7 @@ const conductHealthInspection = (location) => {
   const violations = [];
   
   // Check for violations based on staff quality and equipment maintenance
-  const staffQuality = location.staff?.reduce((sum, s) => sum + s.skill, 0) / (location.staff?.length || 1) || 50;
+  const staffQuality = location.staff?.reduce((sum, s) => sum + (s.skill || 0), 0) / (location.staff?.length || 1) || 50;
   const maintenanceLevel = location.maintenanceLevel || 0.5;
   
   HEALTH_VIOLATIONS.forEach(violation => {
@@ -2232,7 +2166,6 @@ function AppContent() {
   const [scenarioResult, setScenarioResult] = useState(null);
   const [aiMessage, setAiMessage] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiConversationHistory, setAiConversationHistory] = useState([]);
   
   // Custom capital input
   const [customCapitalMode, setCustomCapitalMode] = useState(false);
@@ -2532,11 +2465,10 @@ function AppContent() {
     setActiveLocationId(1);
     setScreen('dashboard');
     
-    // Initial AI greeting - reset conversation history for new game
-    setAiConversationHistory([]);
+    // Initial AI greeting
     setTimeout(async () => {
       setAiLoading(true);
-      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup, [], setAiConversationHistory);
+      const response = await getAIMentorResponse('Player just opened their first restaurant. Give encouraging but realistic opening advice.', initialGame, setup);
       setAiMessage(response);
       setAiLoading(false);
     }, 500);
@@ -2553,7 +2485,7 @@ function AppContent() {
     const upgradeCapacityMod = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
     const marketingReachMod = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
     const locationStaff = location.staff || [];
-    const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + s.skill, 0) / locationStaff.length / 20 : 0;
+    const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + (s.skill || 0), 0) / locationStaff.length / 20 : 0;
     const moraleMod = (location.morale - 50) / 200;
     const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
     
@@ -2607,27 +2539,27 @@ function AppContent() {
     // Costs (also affected by economic conditions)
     const economicCostMultiplier = location.economicCostMultiplier || 1;
     const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
-    const laborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
-    const rent = location.rent;
+    const laborCost = (location.staff || []).reduce((sum, s) => sum + (s.wage || 0) * 40, 0);
+    const rent = location.rent || 0;
     const utilities = Math.floor(rent * 0.15);
     const marketingCost = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
     const equipmentMaint = (location.equipment || []).reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
     const ccFees = totalRevenue * 0.025;
-    
+
     const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + ccFees;
     const weekProfit = totalRevenue - totalCosts;
-    
+
     // Update staff
     const updatedStaff = (location.staff || []).map(s => {
-      let newMorale = s.morale;
+      let newMorale = s.morale || 50;
       if (weekProfit > 0) newMorale += 2;
       if (weekProfit < -1000) newMorale -= 5;
       newMorale = Math.max(20, Math.min(100, newMorale + (Math.random() - 0.5) * 5));
-      const skillGain = s.weeks > 0 && s.weeks % 8 === 0 && s.skill < 10 ? 0.5 : 0;
-      return { ...s, weeks: s.weeks + 1, morale: Math.round(newMorale), skill: Math.min(10, s.skill + skillGain) };
-    }).filter(s => !(s.morale < 30 && Math.random() < 0.3)); // Staff quits
-    
-    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + s.morale, 0) / updatedStaff.length : 50;
+      const skillGain = (s.weeks || 0) > 0 && (s.weeks || 0) % 8 === 0 && (s.skill || 0) < 10 ? 0.5 : 0;
+      return { ...s, weeks: (s.weeks || 0) + 1, morale: Math.round(newMorale), skill: Math.min(10, (s.skill || 0) + skillGain) };
+    }).filter(s => !((s.morale || 50) < 30 && Math.random() < 0.3)); // Staff quits
+
+    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + (s.morale || 50), 0) / updatedStaff.length : 50;
     
     // Update history
     const newHistory = [...location.weeklyHistory, { 
@@ -2672,7 +2604,7 @@ function AppContent() {
       const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
       setGame(g => ({
         ...g,
-        competitors: [...g.competitors, newCompetitor],
+        competitors: [...(g.competitors || []), newCompetitor],
       }));
       setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
     }
@@ -2718,7 +2650,7 @@ function AppContent() {
       const totalReward = newMilestones.reduce((sum, m) => sum + m.reward, 0);
       setGame(g => ({
         ...g,
-        unlockedMilestones: [...g.unlockedMilestones, ...newMilestones.map(m => m.id)],
+        unlockedMilestones: [...(g.unlockedMilestones || []), ...newMilestones.map(m => m.id)],
         milestoneRewards: g.milestoneRewards + totalReward,
         corporateCash: g.corporateCash + totalReward,
       }));
@@ -2743,7 +2675,7 @@ function AppContent() {
       const economicCostMultiplier = currentCondition.costMultiplier;
       
       // Apply economic effects to all locations before processing
-      const locationsWithEconomics = g.locations.map(loc => ({
+      const locationsWithEconomics = (g.locations || []).map(loc => ({
         ...loc,
         economicRevenueMultiplier,
         economicCostMultiplier,
@@ -2753,27 +2685,27 @@ function AppContent() {
       const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine));
       
       // Calculate empire totals
-      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
-      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + l.lastWeekRevenue, 0);
-      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + l.lastWeekProfit, 0);
-      
+      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + (l.cash || 0), 0);
+      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + (l.lastWeekRevenue || 0), 0);
+      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + (l.lastWeekProfit || 0), 0);
+
       // Process franchise royalties
-      const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
-      
+      const franchiseRoyalties = (g.franchises || []).reduce((sum, f) => sum + (f.weeklyRoyalty || 0), 0);
+
       // PHASE 6: Catering Revenue
-      const cateringRevenue = g.cateringEnabled ? g.cateringContracts.reduce((sum, contract) => {
+      const cateringRevenue = g.cateringEnabled ? (g.cateringContracts || []).reduce((sum, contract) => {
         const contractData = CATERING_CONTRACTS.find(c => c.id === contract.id);
         return sum + (contractData?.weeklyRevenue || 0);
       }, 0) : 0;
       
       // PHASE 6: Food Truck Revenue
-      const truckRevenue = g.foodTrucks.reduce((sum, truck) => {
+      const truckRevenue = (g.foodTrucks || []).reduce((sum, truck) => {
         const eventRevenue = truck.currentEvent ? (truck.eventRevenue || 800) : 0;
         return sum + eventRevenue;
       }, 0);
-      
+
       // PHASE 6: Media/Brand Deal Revenue
-      const brandDealRevenue = g.brandDeals.reduce((sum, deal) => {
+      const brandDealRevenue = (g.brandDeals || []).reduce((sum, deal) => {
         const dealData = BRAND_DEALS.find(d => d.id === deal.id);
         if (dealData?.type === 'royalty' && deal.active) {
           return sum + (dealData.weeklyRoyalty || 0);
@@ -2782,22 +2714,22 @@ function AppContent() {
       }, 0);
       
       // PHASE 6: Property appreciation (if owning properties)
-      const propertyAppreciation = g.ownedProperties.reduce((sum, prop) => {
+      const propertyAppreciation = (g.ownedProperties || []).reduce((sum, prop) => {
         return sum + (prop.value * 0.0006); // ~3% annual = 0.06% weekly
       }, 0);
       
       // Loan payments from corporate
-      const loanPayments = g.loans.reduce((sum, l) => {
+      const loanPayments = (g.loans || []).reduce((sum, l) => {
         const loan = LOANS.find(lo => lo.id === l.type);
         return sum + (loan?.weeklyPayment || 0);
       }, 0);
       
       // PHASE 6: Mortgage payments
-      const mortgagePayments = g.mortgages.reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
+      const mortgagePayments = (g.mortgages || []).reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
       
       // Corporate costs (management, district managers, etc)
-      const corporateCosts = g.corporateStaff.reduce((sum, s) => sum + s.wage * 40, 0);
-      const marketCosts = g.locations.reduce((sum, l) => {
+      const corporateCosts = (g.corporateStaff || []).reduce((sum, s) => sum + (s.wage || 0) * 40, 0);
+      const marketCosts = (g.locations || []).reduce((sum, l) => {
         const mkt = MARKETS.find(m => m.id === l.market);
         return sum + (mkt?.managementCost || 0);
       }, 0);
@@ -2842,14 +2774,14 @@ function AppContent() {
         if (newIdx !== currentIdx) {
           newEconomicCondition = ECONOMIC_CONDITIONS[newIdx].id;
           setTimeout(() => {
-            addNotification(`📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`, 
-              newIdx < currentIdx ? 'warning' : 'info');
+            addNotification(newIdx < currentIdx ? 'warning' : 'info',
+              `📊 Economic shift: ${ECONOMIC_CONDITIONS[newIdx].name}`);
           }, 1000);
         }
       }
       
       // PHASE 6: Media reputation boost
-      const mediaBoost = g.mediaAppearances.reduce((sum, app) => {
+      const mediaBoost = (g.mediaAppearances || []).reduce((sum, app) => {
         const media = MEDIA_OPPORTUNITIES.find(m => m.id === app.id);
         return sum + (media?.reputationBoost || 0) * 0.1; // Decay over time
       }, 0);
@@ -2860,10 +2792,10 @@ function AppContent() {
       }
       
       // Update achievements
-      const newAchievements = [...g.achievements];
+      const newAchievements = [...(g.achievements || [])];
       const weekNum = g.week + 1;
       const totalLocations = updatedLocations.length;
-      const totalFranchises = g.franchises.length;
+      const totalFranchises = g.franchises?.length || 0;
       const totalUnits = totalLocations + totalFranchises;
       
       if (weekNum >= 4 && !newAchievements.includes('first_month')) newAchievements.push('first_month');
@@ -2889,13 +2821,13 @@ function AppContent() {
       const investorTypes = g.investors?.map(inv => inv.type) || [];
       
       const availableScenarios = allScenarios.filter(s => {
-        if (g.scenariosSeen.includes(s.id)) return false;
+        if ((g.scenariosSeen || []).includes(s.id)) return false;
         if (s.minWeek && weekNum < s.minWeek) return false;
         if (s.minCash && totalLocationCash + newCorporateCash < s.minCash) return false;
         if (s.minLocations && totalLocations < s.minLocations) return false;
         if (s.maxLocations && totalLocations > s.maxLocations) return false;
         if (s.minFranchises && totalFranchises < s.minFranchises) return false;
-        if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
+        if (s.minReputation && updatedLocations[0]?.reputation < s.minReputation) return false;
         if (s.minValuation && empireValuation < s.minValuation) return false;
         // Phase 6: Investor requirements
         if (s.requiresInvestors && !hasInvestors) return false;
@@ -2932,7 +2864,7 @@ function AppContent() {
         if (exitOption) {
           const finalPayout = empireValuation * exitOption.valuationMultiple * ((g.equity || 100) / 100);
           setTimeout(() => {
-            addNotification(`🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`, 'achievement');
+            addNotification('achievement', `🎉 ${exitOption.name} complete! Your payout: ${formatCurrency(finalPayout)}`);
             setScreen('win');
           }, 500);
         }
@@ -2959,7 +2891,7 @@ function AppContent() {
         ownedProperties: updatedProperties,
         exitProgress: newExitProgress,
         economicCondition: newEconomicCondition,
-        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
+        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + (p.value || 0), 0),
       };
     });
     
@@ -2968,12 +2900,12 @@ function AppContent() {
       if (game) {
         setAiLoading(true);
         const totalLocations = game.locations?.length || 1;
-        const context = totalLocations > 1
+        const context = totalLocations > 1 
           ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
-          : game.locations?.[0]?.lastWeekProfit > 0
+          : game.locations?.[0]?.lastWeekProfit > 0 
             ? 'Weekly summary - profitable week.'
             : 'Weekly summary - lost money this week.';
-        const response = await getAIMentorResponse(context, game, setup, aiConversationHistory, setAiConversationHistory);
+        const response = await getAIMentorResponse(context, game, setup);
         setAiMessage(response);
         setAiLoading(false);
         
@@ -3011,12 +2943,12 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - template.wage * 40,
-        staff: [...l.staff, newStaff],
+        cash: (l.cash || 0) - template.wage * 40,
+        staff: [...(l.staff || []), newStaff],
       } : l),
-      achievements: g.achievements.includes('first_hire') ? g.achievements : [...g.achievements, 'first_hire'],
+      achievements: (g.achievements || []).includes('first_hire') ? g.achievements : [...(g.achievements || []), 'first_hire'],
     }));
     setStaffModal(false);
   };
@@ -3041,38 +2973,38 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash - template.wage * 40,
-      corporateStaff: [...g.corporateStaff, newStaff],
+      corporateStaff: [...(g.corporateStaff || []), newStaff],
     }));
   };
 
   const fireStaff = (staffId, locationId = null) => {
-    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    const loc = locationId ? (game.locations || []).find(l => l.id === locationId) : getActiveLocation();
     if (!loc) return;
-    
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        staff: l.staff.filter(s => s.id !== staffId),
-        morale: Math.max(30, l.morale - 10),
+        staff: (l.staff || []).filter(s => s.id !== staffId),
+        morale: Math.max(30, (l.morale || 50) - 10),
         manager: l.manager?.id === staffId ? null : l.manager,
       } : l),
     }));
   };
 
   const promoteToManager = (staffId, locationId = null) => {
-    const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
+    const loc = locationId ? (game.locations || []).find(l => l.id === locationId) : getActiveLocation();
     if (!loc) return;
-    
-    const staff = loc.staff.find(s => s.id === staffId);
+
+    const staff = (loc.staff || []).find(s => s.id === staffId);
     if (!staff || !staff.canManage) return;
-    
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         manager: staff,
-        staff: l.staff.map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
+        staff: (l.staff || []).map(s => s.id === staffId ? { ...s, wage: (s.wage || 0) + 5, morale: Math.min(100, (s.morale || 50) + 20) } : s),
       } : l),
     }));
   };
@@ -3080,18 +3012,18 @@ function AppContent() {
   const startTraining = (program) => {
     if (!selectedStaff || !game) return;
     const loc = getActiveLocation();
-    if (!loc || loc.cash < program.cost) return;
-    
+    if (!loc || (loc.cash || 0) < program.cost) return;
+
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - program.cost,
-        staff: l.staff.map(s => s.id === selectedStaff.id ? {
+        cash: (l.cash || 0) - program.cost,
+        staff: (l.staff || []).map(s => s.id === selectedStaff.id ? {
           ...s,
-          training: [...s.training, program.id],
-          skill: Math.min(10, s.skill + program.skillBoost),
-          morale: Math.min(100, s.morale + program.morale),
+          training: [...(s.training || []), program.id],
+          skill: Math.min(10, (s.skill || 0) + program.skillBoost),
+          morale: Math.min(100, (s.morale || 50) + program.morale),
           canManage: program.id === 'management' || program.id === 'multi_unit' ? true : s.canManage,
         } : s),
       } : l),
@@ -3104,13 +3036,13 @@ function AppContent() {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
     const loc = getActiveLocation();
     if (!cuisine || !loc) return;
-    
+
     const priceVariance = 0.7 + Math.random() * 0.6;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        menu: [...l.menu, {
+        menu: [...(l.menu || []), {
           id: Date.now(),
           name: generateMenuItem(setup.cuisine),
           price: Math.round(cuisine.avgTicket * priceVariance * 100) / 100,
@@ -3127,7 +3059,7 @@ function AppContent() {
     if (!loc) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         menu: (l.menu || []).map(m => m.id === itemId ? { ...m, is86d: !m.is86d } : m),
       } : l),
@@ -3136,12 +3068,12 @@ function AppContent() {
 
   const buyEquipment = (eq) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < eq.cost || (loc.equipment || []).includes(eq.id)) return;
+    if (!loc || (loc.cash || 0) < eq.cost || (loc.equipment || []).includes(eq.id)) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - eq.cost,
+        cash: (l.cash || 0) - eq.cost,
         equipment: [...(l.equipment || []), eq.id],
       } : l),
     }));
@@ -3149,14 +3081,14 @@ function AppContent() {
 
   const buyUpgrade = (up) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < up.cost || (loc.upgrades || []).includes(up.id)) return;
+    if (!loc || (loc.cash || 0) < up.cost || (loc.upgrades || []).includes(up.id)) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - up.cost,
+        cash: (l.cash || 0) - up.cost,
         upgrades: [...(l.upgrades || []), up.id],
-        reputation: l.reputation + (up.effect?.reputation || 0),
+        reputation: (l.reputation || 50) + (up.effect?.reputation || 0),
       } : l),
     }));
   };
@@ -3166,7 +3098,7 @@ function AppContent() {
     if (!loc) return;
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
         marketing: {
           ...(l.marketing || {}),
@@ -3185,14 +3117,14 @@ function AppContent() {
 
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => {
+      locations: (g.locations || []).map(l => {
         if (l.id !== loc.id) return l;
         const platforms = l.delivery?.platforms || [];
         const isActive = platforms.includes(platformId);
         if (isActive) {
           return { ...l, delivery: { ...(l.delivery || {}), platforms: platforms.filter(p => p !== platformId) } };
-        } else if (l.cash >= platform.setup) {
-          return { ...l, cash: l.cash - platform.setup, delivery: { ...(l.delivery || {}), platforms: [...platforms, platformId] } };
+        } else if ((l.cash || 0) >= platform.setup) {
+          return { ...l, cash: (l.cash || 0) - platform.setup, delivery: { ...(l.delivery || {}), platforms: [...platforms, platformId] } };
         }
         return l;
       }),
@@ -3202,13 +3134,13 @@ function AppContent() {
   const launchVirtualBrand = (brandId) => {
     const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
     const loc = getActiveLocation();
-    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || loc.cash < brand.setupCost) return;
+    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || (loc.cash || 0) < brand.setupCost) return;
 
     setGame(g => ({
       ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
+      locations: (g.locations || []).map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - brand.setupCost,
+        cash: (l.cash || 0) - brand.setupCost,
         virtualBrands: [...(l.virtualBrands || []), brandId],
       } : l),
     }));
@@ -3220,7 +3152,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash + loan.amount,
-      loans: [...g.loans, { type: loanId, remaining: loan.term, principal: loan.amount }],
+      loans: [...(g.loans || []), { type: loanId, remaining: loan.term, principal: loan.amount }],
       equity: g.equity - (loan.equity || 0),
     }));
     setLoanModal(false);
@@ -3242,7 +3174,7 @@ function AppContent() {
       return;
     }
     
-    const newId = Math.max(...game.locations.map(l => l.id)) + 1;
+    const newId = game.locations.length > 0 ? Math.max(...game.locations.map(l => l.id)) + 1 : 1;
     const newLocation = createLocation(
       newId,
       newLocationData.name || generateLocationName(newLocationData.market, newLocationData.type),
@@ -3255,7 +3187,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash - totalCost,
-      locations: [...g.locations, newLocation],
+      locations: [...(g.locations || []), newLocation],
     }));
     
     setExpansionModal(false);
@@ -3264,7 +3196,7 @@ function AppContent() {
     // AI response
     setTimeout(async () => {
       setAiLoading(true);
-      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup, aiConversationHistory, setAiConversationHistory);
+      const response = await getAIMentorResponse(`Player just opened location #${newId}. This is a ${type.name} in a ${mkt.name} market. Give expansion advice.`, game, setup);
       setAiMessage(response);
       setAiLoading(false);
     }, 500);
@@ -3291,13 +3223,13 @@ function AppContent() {
     const franchiseTier = FRANCHISE_TIERS.find(t => t.id === tier);
     if (!franchiseTier || !game || !game.franchiseEnabled) return;
     
-    const avgLocationRevenue = game.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, game.locations.length);
+    const avgLocationRevenue = (game.locations || []).reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, game.locations?.length || 1);
     const weeklyRoyalty = avgLocationRevenue * franchiseTier.royalty;
-    
+
     const newFranchise = {
       id: Date.now(),
       tier: tier,
-      name: `Franchisee ${game.franchises.length + 1}`,
+      name: `Franchisee ${(game.franchises?.length || 0) + 1}`,
       weeklyRoyalty,
       weeksActive: 0,
       performance: 0.8 + Math.random() * 0.4, // 80-120% performance vs company average
@@ -3307,7 +3239,7 @@ function AppContent() {
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash + franchiseTier.fee,
-      franchises: [...g.franchises, newFranchise],
+      franchises: [...(g.franchises || []), newFranchise],
     }));
     
     setFranchiseModal(false);
@@ -3322,7 +3254,7 @@ function AppContent() {
     const deal = VENDOR_DEALS.find(d => d.id === dealId);
     if (!vendor || !deal) return;
     
-    const currentVendor = game.vendors.find(v => v.id === vendorId);
+    const currentVendor = (game.vendors || []).find(v => v.id === vendorId);
     const relationship = currentVendor?.relationship || 50;
     const successChance = 0.5 + (relationship / 200);
     const success = Math.random() < successChance;
@@ -3330,7 +3262,7 @@ function AppContent() {
     if (success) {
       setGame(g => ({
         ...g,
-        vendors: g.vendors.map(v => 
+        vendors: (g.vendors || []).map(v => 
           v.id === vendorId 
             ? { ...v, deal: dealId, relationship: Math.min(100, v.relationship + 10) }
             : v
@@ -3340,7 +3272,7 @@ function AppContent() {
     } else {
       setGame(g => ({
         ...g,
-        vendors: g.vendors.map(v => 
+        vendors: (g.vendors || []).map(v => 
           v.id === vendorId 
             ? { ...v, relationship: Math.max(0, v.relationship - 5) }
             : v
@@ -3353,11 +3285,11 @@ function AppContent() {
   const addVendor = (vendorId) => {
     if (!game) return;
     const vendor = VENDORS.find(v => v.id === vendorId);
-    if (!vendor || game.vendors.find(v => v.id === vendorId)) return;
+    if (!vendor || (game.vendors || []).find(v => v.id === vendorId)) return;
     
     setGame(g => ({
       ...g,
-      vendors: [...g.vendors, {
+      vendors: [...(g.vendors || []), {
         id: vendorId,
         name: vendor.name,
         weeksUsed: 0,
@@ -3413,13 +3345,13 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.filter(l => l.id !== locationId),
+      locations: (g.locations || []).filter(l => l.id !== locationId),
       corporateCash: g.corporateCash + salePrice,
       stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
     }));
     
     // Switch to another location
-    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+    const remainingLocations = (game.locations || []).filter(l => l.id !== locationId);
     if (remainingLocations.length > 0) {
       setActiveLocationId(remainingLocations[0].id);
     }
@@ -3442,12 +3374,12 @@ function AppContent() {
     
     setGame(g => ({
       ...g,
-      locations: g.locations.filter(l => l.id !== locationId),
+      locations: (g.locations || []).filter(l => l.id !== locationId),
       corporateCash: g.corporateCash - closingCost,
       stats: { ...g.stats, locationsClosed: g.stats.locationsClosed + 1 },
     }));
-    
-    const remainingLocations = game.locations.filter(l => l.id !== locationId);
+
+    const remainingLocations = (game.locations || []).filter(l => l.id !== locationId);
     if (remainingLocations.length > 0) {
       setActiveLocationId(remainingLocations[0].id);
     }
@@ -3535,7 +3467,7 @@ function AppContent() {
       try {
         const autoSave = {
           game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
-          week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
+          week: game.week, cash: (game.corporateCash || 0) + (game.locations || []).reduce((s, l) => s + (l.cash || 0), 0),
         };
         storage.setItem('86d_autosave', JSON.stringify(autoSave));
       } catch (e) {}
@@ -3556,7 +3488,7 @@ function AppContent() {
       peakWeeklyRevenue: game.stats?.peakWeeklyRevenue || 0,
       maxLocations: Math.max(game.locations?.length || 1, game.stats?.locationsOpened || 1),
       peakValuation: game.empireValuation || 0,
-      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + l.staff.length, 0) || 0,
+      maxStaff: game.stats?.employeesHired || game.locations?.reduce((s, l) => s + (l.staff?.length || 0), 0) || 0,
     };
     
     (async () => {
@@ -3646,17 +3578,17 @@ function AppContent() {
     setScenarioResult({ success, outcome });
     
     setGame(g => {
-      let updated = { ...g, scenariosSeen: [...g.scenariosSeen, scenario.id] };
+      let updated = { ...g, scenariosSeen: [...(g.scenariosSeen || []), scenario.id] };
       
       // Handle empire-wide effects
-      if (outcome.allLocations) {
+      if (outcome.allLocations && updated.locations) {
         updated.locations = updated.locations.map(l => {
           let loc = { ...l };
           if (outcome.reputation) loc.reputation = Math.min(100, Math.max(0, loc.reputation + outcome.reputation));
           if (outcome.morale) loc.morale = Math.min(100, Math.max(0, loc.morale + outcome.morale));
           if (outcome.covers) loc.covers += outcome.covers;
           if (outcome.foodCostMod) loc.foodCostPct += outcome.foodCostMod;
-          if (outcome.laborCostMod) {
+          if (outcome.laborCostMod && loc.staff) {
             loc.staff = loc.staff.map(s => ({ ...s, wage: Math.round(s.wage * (1 + outcome.laborCostMod)) }));
           }
           return loc;
@@ -3666,7 +3598,7 @@ function AppContent() {
       // Handle single location effects
       if (!outcome.allLocations) {
         const loc = getActiveLocation();
-        if (loc) {
+        if (loc && updated.locations) {
           updated.locations = updated.locations.map(l => {
             if (l.id !== loc.id) return l;
             let newLoc = { ...l };
@@ -3675,7 +3607,7 @@ function AppContent() {
             if (outcome.morale) newLoc.morale = Math.min(100, Math.max(0, newLoc.morale + outcome.morale));
             if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
             if (outcome.covers) newLoc.covers += outcome.covers;
-            if (outcome.followers) newLoc.marketing.socialFollowers += outcome.followers;
+            if (outcome.followers && newLoc.marketing) newLoc.marketing.socialFollowers = (newLoc.marketing.socialFollowers || 0) + outcome.followers;
             return newLoc;
           });
         }
@@ -3693,12 +3625,13 @@ function AppContent() {
       
       // New franchises
       if (outcome.newFranchises) {
-        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / updated.locations.length;
+        const avgRevenue = (updated.locations || []).reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, updated.locations?.length || 1);
+        updated.franchises = updated.franchises || [];
         for (let i = 0; i < outcome.newFranchises; i++) {
           updated.franchises.push({
             id: Date.now() + i,
             tier: 'area',
-            name: `Area Developer ${updated.franchises.length + 1}`,
+            name: `Area Developer ${(updated.franchises?.length || 0) + 1}`,
             weeklyRoyalty: avgRevenue * 0.045,
             weeksActive: 0,
             performance: 0.9 + Math.random() * 0.2,
@@ -3722,7 +3655,7 @@ function AppContent() {
     
     setAiLoading(true);
     const context = `Player faced "${scenario.title}" and ${success ? 'succeeded' : 'failed'}. Give brief commentary.`;
-    const response = await getAIMentorResponse(context, game, setup, aiConversationHistory, setAiConversationHistory);
+    const response = await getAIMentorResponse(context, game, setup);
     setAiMessage(response);
     setAiLoading(false);
   };
@@ -3735,10 +3668,16 @@ function AppContent() {
   const askAI = async () => {
     if (!aiChatInput.trim() || !game) return;
     setAiLoading(true);
-    const response = await getAIMentorResponse(aiChatInput, game, setup, aiConversationHistory, setAiConversationHistory);
-    setAiMessage(response);
-    setAiChatInput('');
-    setAiLoading(false);
+    try {
+      const response = await getAIMentorResponse(`Player asks: "${aiChatInput}"`, game, setup);
+      setAiMessage(response);
+      setAiChatInput('');
+    } catch (error) {
+      console.error('AI error:', error);
+      setAiMessage("I'm having trouble connecting right now. Try again in a moment.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const saveGame = (slot) => {
@@ -3750,7 +3689,7 @@ function AppContent() {
   const loadGame = (save) => {
     setSetup(save.setup);
     setGame(save.game);
-    setActiveLocationId(save.game.locations[0].id);
+    setActiveLocationId(save.game.locations?.[0]?.id || 1);
     setScreen('dashboard');
     setSaveModal(false);
   };
@@ -4146,9 +4085,9 @@ function AppContent() {
   if (screen === 'dashboard' && game) {
     const loc = getActiveLocation();
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    const totalCash = game.locations.reduce((sum, l) => sum + l.cash, 0) + game.corporateCash;
-    const totalUnits = game.locations.length + game.franchises.length;
-    const isMultiLocation = game.locations.length > 1;
+    const totalCash = (game.locations || []).reduce((sum, l) => sum + (l.cash || 0), 0) + (game.corporateCash || 0);
+    const totalUnits = (game.locations?.length || 0) + (game.franchises?.length || 0);
+    const isMultiLocation = (game.locations?.length || 0) > 1;
     
     return (
       <SafeAreaView style={styles.container}>
@@ -4176,9 +4115,9 @@ function AppContent() {
               <Text style={styles.locationTabIcon}>🏛️</Text>
               <Text style={[styles.locationTabText, !activeLocationId && styles.locationTabTextActive]}>Empire</Text>
             </TouchableOpacity>
-            {game.locations.map(l => (
-              <TouchableOpacity 
-                key={l.id} 
+            {(game.locations || []).map(l => (
+              <TouchableOpacity
+                key={l.id}
                 style={[styles.locationTab, activeLocationId === l.id && styles.locationTabActive]}
                 onPress={() => setActiveLocationId(l.id)}
               >
@@ -4214,7 +4153,7 @@ function AppContent() {
         )}
         {game.burnout > 70 && (
           <View style={[styles.warningBanner, { backgroundColor: colors.warning }]}>
-            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {game.locations.filter(l => !l.manager).length} locations without managers</Text>
+            <Text style={styles.warningText}>🔥 HIGH BURNOUT - {(game.locations || []).filter(l => !l.manager).length} locations without managers</Text>
           </View>
         )}
 
@@ -4431,16 +4370,16 @@ function AppContent() {
             {activeTab === 'staff' && loc && (
               <>
                 <View style={styles.staffHeader}>
-                  <Text style={styles.sectionTitle}>Staff ({loc.staff.length})</Text>
+                  <Text style={styles.sectionTitle}>Staff ({loc.staff?.length || 0})</Text>
                   <TouchableOpacity style={styles.hireButton} onPress={() => setStaffModal(true)}>
                     <Text style={styles.hireButtonText}>+ HIRE</Text>
                   </TouchableOpacity>
                 </View>
                 
-                {loc.staff.length === 0 ? (
+                {(!loc.staff || loc.staff.length === 0) ? (
                   <Text style={styles.emptyText}>No staff hired yet. Running solo!</Text>
                 ) : (
-                  loc.staff.map(s => (
+                  (loc.staff || []).map(s => (
                     <View key={s.id} style={styles.staffCard}>
                       <Text style={styles.staffIcon}>{s.icon}</Text>
                       <View style={styles.staffInfo}>
@@ -4545,9 +4484,9 @@ function AppContent() {
                   <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
                   <View style={styles.plDivider} />
                   <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency((loc.staff || []).reduce((s, st) => s + (st.wage || 0) * 40, 0))}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency(loc.marketing.channels.reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency((loc.marketing?.channels || []).reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
                   <View style={styles.plDivider} />
                   <View style={styles.plRow}><Text style={[styles.plLabel, { fontWeight: 'bold' }]}>Net Profit</Text><Text style={[styles.plValue, { color: loc.lastWeekProfit >= 0 ? colors.success : colors.accent, fontWeight: 'bold' }]}>{loc.lastWeekProfit >= 0 ? '+' : ''}{formatCurrency(loc.lastWeekProfit)}</Text></View>
                 </View>
@@ -4587,11 +4526,11 @@ function AppContent() {
                 {/* Empire Stats */}
                 <View style={styles.empireStatsCard}>
                   <View style={styles.empireStat}>
-                    <Text style={styles.empireStatValue}>{game.locations.length}</Text>
+                    <Text style={styles.empireStatValue}>{game.locations?.length || 0}</Text>
                     <Text style={styles.empireStatLabel}>Owned</Text>
                   </View>
                   <View style={styles.empireStat}>
-                    <Text style={styles.empireStatValue}>{game.franchises.length}</Text>
+                    <Text style={styles.empireStatValue}>{game.franchises?.length || 0}</Text>
                     <Text style={styles.empireStatLabel}>Franchises</Text>
                   </View>
                   <View style={styles.empireStat}>
@@ -4613,17 +4552,17 @@ function AppContent() {
                 {/* Franchising */}
                 <Text style={styles.sectionTitle}>Franchising</Text>
                 {!game.franchiseEnabled ? (
-                  <TouchableOpacity 
-                    style={[styles.expansionButton, game.locations.length < 3 && styles.expansionButtonDisabled]} 
+                  <TouchableOpacity
+                    style={[styles.expansionButton, (game.locations?.length || 0) < 3 && styles.expansionButtonDisabled]}
                     onPress={enableFranchising}
-                    disabled={game.locations.length < 3}
+                    disabled={(game.locations?.length || 0) < 3}
                   >
                     <Text style={styles.expansionButtonIcon}>🌐</Text>
                     <View>
                       <Text style={styles.expansionButtonTitle}>Enable Franchising</Text>
                       <Text style={styles.expansionButtonDesc}>
-                        {game.locations.length < 3 
-                          ? `Need 3 locations first (have ${game.locations.length})` 
+                        {(game.locations?.length || 0) < 3
+                          ? `Need 3 locations first (have ${game.locations?.length || 0})`
                           : '$50K setup • Let others expand your brand'}
                       </Text>
                     </View>
@@ -4645,10 +4584,10 @@ function AppContent() {
                 )}
 
                 {/* Active Franchises */}
-                {game.franchises.length > 0 && (
+                {(game.franchises?.length || 0) > 0 && (
                   <>
-                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises.length})</Text>
-                    {game.franchises.map(f => (
+                    <Text style={styles.sectionTitle}>Active Franchises ({game.franchises?.length || 0})</Text>
+                    {(game.franchises || []).map(f => (
                       <View key={f.id} style={styles.franchiseCard}>
                         <View>
                           <Text style={styles.franchiseName}>{f.name}</Text>
@@ -4664,7 +4603,7 @@ function AppContent() {
                 )}
 
                 {/* Exit Strategy */}
-                {game.locations.length > 1 && (
+                {(game.locations?.length || 0) > 1 && (
                   <>
                     <Text style={styles.sectionTitle}>Exit Strategy</Text>
                     <TouchableOpacity style={styles.expansionButton} onPress={() => setSellLocationModal(true)}>
@@ -4679,12 +4618,12 @@ function AppContent() {
 
                 {/* All Locations List */}
                 <Text style={styles.sectionTitle}>All Locations</Text>
-                {game.locations.map(l => (
+                {(game.locations || []).map(l => (
                   <TouchableOpacity key={l.id} style={styles.locationCard} onPress={() => setActiveLocationId(l.id)}>
                     <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
                     <View style={styles.locationCardInfo}>
                       <Text style={styles.locationCardName}>{l.name}</Text>
-                      <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
+                      <Text style={styles.locationCardDetails}>{l.staff?.length || 0} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
                     </View>
                     <View>
                       <Text style={[styles.locationCardCash, { color: l.cash > 0 ? colors.success : colors.accent }]}>{formatCurrency(l.cash)}</Text>
@@ -4859,7 +4798,7 @@ function AppContent() {
                     <Text style={styles.analyticsSection}>Key Ratios</Text>
                     <View style={styles.analyticsGrid}>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatPct(loc.foodCostPct)}</Text><Text style={styles.analyticsLabel}>Food Cost %</Text></View>
-                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.staff.length > 0 ? formatPct(loc.staff.reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{(loc.staff?.length || 0) > 0 ? formatPct((loc.staff || []).reduce((s, st) => s + (st.wage || 0) * 40, 0) / Math.max(1, loc.lastWeekRevenue || 1)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.lastWeekRevenue > 0 ? formatPct(loc.lastWeekProfit / loc.lastWeekRevenue) : '0%'}</Text><Text style={styles.analyticsLabel}>Profit Margin</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.lastWeekRevenue / Math.max(1, loc.lastWeekCovers))}</Text><Text style={styles.analyticsLabel}>Avg Check</Text></View>
                     </View>
@@ -5201,10 +5140,10 @@ function AppContent() {
                 {game?.locations?.length > 1 ? (
                   <>
                     <Text style={styles.exitIntro}>Sometimes the best move is knowing when to exit. Select a location:</Text>
-                    {game.locations.map(l => {
+                    {(game.locations || []).map(l => {
                       const annualProfit = (l.totalProfit / Math.max(1, l.weeksOpen)) * 52;
-                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + l.equipment.length * 5000));
-                      const closingCost = l.staff.length * 1000 + l.rent * 3;
+                      const estimatedValue = Math.max(25000, Math.floor(annualProfit * 2.5 + (l.equipment?.length || 0) * 5000));
+                      const closingCost = (l.staff?.length || 0) * 1000 + l.rent * 3;
                       return (
                         <View key={l.id} style={styles.exitLocationCard}>
                           <View style={styles.exitLocationHeader}>
@@ -5213,7 +5152,7 @@ function AppContent() {
                           </View>
                           <View style={styles.exitLocationStats}>
                             <Text style={styles.exitStat}>Cash: {formatCurrency(l.cash)}</Text>
-                            <Text style={styles.exitStat}>Staff: {l.staff.length}</Text>
+                            <Text style={styles.exitStat}>Staff: {l.staff?.length || 0}</Text>
                             <Text style={styles.exitStat}>Rep: {l.reputation}%</Text>
                           </View>
                           <View style={styles.exitActions}>
@@ -5534,7 +5473,7 @@ function AppContent() {
                           }],
                           boardMembers: (g.boardMembers || 0) + (inv.boardSeat ? 1 : 0),
                         }));
-                        addNotification(`${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`, 'success');
+                        addNotification('success', `${inv.icon} ${inv.name} invested ${formatCurrency(investAmount)} for ${equityAsk}% equity!`);
                         setInvestorModal(false);
                       }
                     }}
@@ -5594,7 +5533,7 @@ function AppContent() {
                     onPress={() => {
                       if ((game?.corporateCash || 0) >= 10000) {
                         setGame(g => ({ ...g, cateringEnabled: true, corporateCash: g.corporateCash - 10000 }));
-                        addNotification('🍽️ Catering division launched! $10K invested.', 'success');
+                        addNotification('success', '🍽️ Catering division launched! $10K invested.');
                       }
                     }}
                   >
@@ -5614,7 +5553,7 @@ function AppContent() {
                             ...g,
                             cateringContracts: [...(g.cateringContracts || []), { ...contract, startWeek: g.week, weeksRemaining: contract.term }],
                           }));
-                          addNotification(`📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`, 'success');
+                          addNotification('success', `📋 Signed ${contract.name} contract! +${formatCurrency(contract.weeklyRevenue)}/week`);
                         }}
                       >
                         <Text style={styles.contractIcon}>{contract.icon}</Text>
@@ -5697,9 +5636,9 @@ function AppContent() {
                             events: [],
                           }],
                         }));
-                        addNotification(`🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`, 'success');
+                        addNotification('success', `🚚 Purchased ${truck.name} for ${formatCurrency(truck.cost)}!`);
                       } else {
-                        addNotification(`Need ${formatCurrency(truck.cost)} to purchase`, 'warning');
+                        addNotification('warning', `Need ${formatCurrency(truck.cost)} to purchase`);
                       }
                     }}
                   >
@@ -5721,7 +5660,7 @@ function AppContent() {
                         key={event.id}
                         style={styles.eventOption}
                         onPress={() => {
-                          addNotification(`🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`, 'success');
+                          addNotification('success', `🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`);
                         }}
                       >
                         <Text style={styles.eventIcon}>{event.icon}</Text>
@@ -5775,7 +5714,7 @@ function AppContent() {
                         publicProfile: Math.min(100, (g.publicProfile || 0) + media.reputationBoost),
                         mediaAppearances: [...(g.mediaAppearances || []), { ...media, week: g.week }],
                       }));
-                      addNotification(`${media.icon} ${media.name}! +${media.reputationBoost} profile`, 'success');
+                      addNotification('success', `${media.icon} ${media.name}! +${media.reputationBoost} profile`);
                     }}
                   >
                     <Text style={styles.mediaIcon}>{media.icon}</Text>
@@ -5797,7 +5736,7 @@ function AppContent() {
                         corporateCash: g.corporateCash + (deal.advance || deal.fee || 0),
                         brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week }],
                       }));
-                      addNotification(`📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`, 'success');
+                      addNotification('success', `📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`);
                       setMediaModal(false);
                     }}
                   >
@@ -5859,7 +5798,7 @@ function AppContent() {
                       onPress={() => {
                         if (exit.id === 'family_succession') {
                           // End game with family succession
-                          addNotification('🏆 Congratulations! You passed your empire to the next generation!', 'achievement');
+                          addNotification('achievement', '🏆 Congratulations! You passed your empire to the next generation!');
                           setGame(g => ({ ...g, exitStrategy: exit.id, exitProgress: 100 }));
                         } else {
                           setGame(g => ({ 
@@ -5868,7 +5807,7 @@ function AppContent() {
                             exitProgress: 0,
                             corporateCash: g.corporateCash - exit.cost 
                           }));
-                          addNotification(`📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`, 'info');
+                          addNotification('info', `📋 Started ${exit.name} process. ${exit.preparationTime} weeks to completion.`);
                         }
                         setExitStrategyModal(false);
                       }}
@@ -5994,7 +5933,7 @@ function AppContent() {
                     key={option.id}
                     style={styles.leaseOption}
                     onPress={() => {
-                      addNotification(`📋 Switched to ${option.name} for new locations`, 'info');
+                      addNotification('info', `📋 Switched to ${option.name} for new locations`);
                       setGame(g => ({ ...g, preferredLeaseType: option.id }));
                     }}
                   >
@@ -6077,11 +6016,11 @@ function AppContent() {
                                   weeklyPayment: weeklyMortgage,
                                   rate: 0.065,
                                 }],
-                                locations: g.locations.map(l => 
+                                locations: (g.locations || []).map(l =>
                                   l.id === loc.id ? { ...l, rent: 0, ownsProperty: true } : l
                                 ),
                               }));
-                              addNotification(`🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`, 'achievement');
+                              addNotification('achievement', `🏢 Purchased ${loc.name} property for ${formatCurrency(propertyValue)}!`);
                               setRealEstateModal(false);
                             }}
                           >

@@ -27,12 +27,14 @@ const initialSetupState = {
 
 // Validation helper
 function validateSetup(state) {
+  const name = state.name || '';
+  const capital = state.capital || 0;
   return (
-    state.name.trim().length >= 2 &&
-    state.name.trim().length <= 30 &&
+    name.trim().length >= 2 &&
+    name.trim().length <= 30 &&
     state.cuisine &&
-    state.capital >= 25000 &&
-    state.capital <= 100000000
+    capital >= 25000 &&
+    capital <= 100000000
   );
 }
 
