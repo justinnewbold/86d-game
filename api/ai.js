@@ -18,7 +18,7 @@ export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
@@ -28,7 +28,7 @@ export default async function handler(req) {
   } catch (e) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
@@ -37,7 +37,7 @@ export default async function handler(req) {
   if (!prompt) {
     return new Response(JSON.stringify({ error: 'Prompt is required' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
@@ -49,7 +49,7 @@ export default async function handler(req) {
       response: "I'm here to help, but my AI connection isn't configured yet. Keep playing - I'll give you tips when I'm online!"
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 
@@ -136,7 +136,7 @@ ${JSON.stringify(gameState, null, 2)}` : ''}`
         response: "Running into some technical difficulties. Focus on your numbers - that's what matters."
       }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
 
@@ -156,7 +156,7 @@ ${JSON.stringify(gameState, null, 2)}` : ''}`
       response: "Technical issues on my end. You've got this - trust your instincts."
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
 }

@@ -114,7 +114,7 @@ export function gameReducer(state, action) {
       const { locationId, updates } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId ? { ...loc, ...updates } : loc
         ),
       };
@@ -130,8 +130,8 @@ export function gameReducer(state, action) {
       const { locationId, amount } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
-          loc.id === locationId ? { ...loc, cash: loc.cash + amount } : loc
+        locations: (state.locations || []).map(loc =>
+          loc.id === locationId ? { ...loc, cash: (loc.cash || 0) + amount } : loc
         ),
       };
     }
@@ -145,18 +145,18 @@ export function gameReducer(state, action) {
     case GAME_ACTIONS.ADD_LOAN:
       return {
         ...state,
-        loans: [...state.loans, action.payload],
-        corporateCash: state.corporateCash + action.payload.amount,
+        loans: [...(state.loans || []), action.payload],
+        corporateCash: (state.corporateCash || 0) + action.payload.amount,
       };
 
     case GAME_ACTIONS.PAY_LOAN: {
       return {
         ...state,
-        loans: state.loans.map(loan =>
+        loans: (state.loans || []).map(loan =>
           loan.id === action.payload.loanId
-            ? { ...loan, remaining: loan.remaining - 1 }
+            ? { ...loan, remaining: (loan.remaining || 0) - 1 }
             : loan
-        ).filter(loan => loan.remaining > 0),
+        ).filter(loan => (loan.remaining || 0) > 0),
       };
     }
 
@@ -164,12 +164,12 @@ export function gameReducer(state, action) {
       const { locationId, staff } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
-            ? { ...loc, staff: [...(loc.staff || []), staff], cash: loc.cash - staff.wage * 2 }
+            ? { ...loc, staff: [...(loc.staff || []), staff], cash: (loc.cash || 0) - (staff.wage || 0) * 2 }
             : loc
         ),
-        stats: { ...state.stats, staffHired: state.stats.staffHired + 1 },
+        stats: { ...(state.stats || {}), staffHired: ((state.stats || {}).staffHired || 0) + 1 },
       };
     }
 
@@ -177,16 +177,16 @@ export function gameReducer(state, action) {
       const { locationId, staffId, severance } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
                 staff: (loc.staff || []).filter(s => s.id !== staffId),
-                cash: loc.cash - severance,
+                cash: (loc.cash || 0) - (severance || 0),
               }
             : loc
         ),
-        stats: { ...state.stats, staffFired: state.stats.staffFired + 1 },
+        stats: { ...(state.stats || {}), staffFired: ((state.stats || {}).staffFired || 0) + 1 },
       };
     }
 
@@ -194,14 +194,14 @@ export function gameReducer(state, action) {
       const { locationId, staffId, training, cost } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
-                cash: loc.cash - cost,
+                cash: (loc.cash || 0) - (cost || 0),
                 staff: (loc.staff || []).map(s =>
                   s.id === staffId
-                    ? { ...s, skill: Math.min(10, s.skill + training.skillBonus), training: training.id }
+                    ? { ...s, skill: Math.min(10, (s.skill || 0) + (training?.skillBonus || 0)), training: training?.id }
                     : s
                 ),
               }
@@ -214,12 +214,12 @@ export function gameReducer(state, action) {
       const { locationId, staff } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
                 manager: staff,
-                staff: (loc.staff || []).filter(s => s.id !== staff.id),
+                staff: (loc.staff || []).filter(s => s.id !== staff?.id),
               }
             : loc
         ),
@@ -230,11 +230,11 @@ export function gameReducer(state, action) {
       const { locationId, equipmentId, cost } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
-                cash: loc.cash - cost,
+                cash: (loc.cash || 0) - (cost || 0),
                 equipment: [...(loc.equipment || []), equipmentId],
               }
             : loc
@@ -246,13 +246,13 @@ export function gameReducer(state, action) {
       const { locationId, upgradeId, cost, reputationBonus } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
-                cash: loc.cash - cost,
+                cash: (loc.cash || 0) - (cost || 0),
                 upgrades: [...(loc.upgrades || []), upgradeId],
-                reputation: loc.reputation + (reputationBonus || 0),
+                reputation: (loc.reputation || 50) + (reputationBonus || 0),
               }
             : loc
         ),
@@ -263,7 +263,7 @@ export function gameReducer(state, action) {
       const { locationId, itemId } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
@@ -280,7 +280,7 @@ export function gameReducer(state, action) {
       const { locationId, item } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? { ...loc, menu: [...(loc.menu || []), item] }
             : loc
@@ -292,7 +292,7 @@ export function gameReducer(state, action) {
       const { locationId, channelId } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc => {
+        locations: (state.locations || []).map(loc => {
           if (loc.id !== locationId) return loc;
           const channels = loc.marketing?.channels || [];
           const isActive = channels.includes(channelId);
@@ -313,7 +313,7 @@ export function gameReducer(state, action) {
       const { locationId, platformId, setupCost, isActive } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc => {
+        locations: (state.locations || []).map(loc => {
           if (loc.id !== locationId) return loc;
           const platforms = loc.delivery?.platforms || [];
           if (isActive) {
@@ -324,7 +324,7 @@ export function gameReducer(state, action) {
           } else {
             return {
               ...loc,
-              cash: loc.cash - setupCost,
+              cash: (loc.cash || 0) - (setupCost || 0),
               delivery: { ...(loc.delivery || {}), platforms: [...platforms, platformId] },
             };
           }
@@ -336,11 +336,11 @@ export function gameReducer(state, action) {
       const { locationId, brandId, cost } = action.payload;
       return {
         ...state,
-        locations: state.locations.map(loc =>
+        locations: (state.locations || []).map(loc =>
           loc.id === locationId
             ? {
                 ...loc,
-                cash: loc.cash - cost,
+                cash: (loc.cash || 0) - (cost || 0),
                 virtualBrands: [...(loc.virtualBrands || []), brandId],
               }
             : loc
@@ -351,18 +351,18 @@ export function gameReducer(state, action) {
     case GAME_ACTIONS.ADD_LOCATION:
       return {
         ...state,
-        locations: [...state.locations, action.payload],
-        corporateCash: state.corporateCash - action.payload.setupCost,
-        stats: { ...state.stats, locationsOpened: state.stats.locationsOpened + 1 },
+        locations: [...(state.locations || []), action.payload],
+        corporateCash: (state.corporateCash || 0) - (action.payload?.setupCost || 0),
+        stats: { ...(state.stats || {}), locationsOpened: ((state.stats || {}).locationsOpened || 0) + 1 },
       };
 
     case GAME_ACTIONS.CLOSE_LOCATION: {
       const { locationId, closingCost } = action.payload;
       return {
         ...state,
-        locations: state.locations.filter(l => l.id !== locationId),
-        corporateCash: state.corporateCash - closingCost,
-        stats: { ...state.stats, locationsClosed: state.stats.locationsClosed + 1 },
+        locations: (state.locations || []).filter(l => l.id !== locationId),
+        corporateCash: (state.corporateCash || 0) - (closingCost || 0),
+        stats: { ...(state.stats || {}), locationsClosed: ((state.stats || {}).locationsClosed || 0) + 1 },
       };
     }
 
@@ -370,22 +370,22 @@ export function gameReducer(state, action) {
       const { locationId, salePrice } = action.payload;
       return {
         ...state,
-        locations: state.locations.filter(l => l.id !== locationId),
-        corporateCash: state.corporateCash + salePrice,
-        stats: { ...state.stats, locationsClosed: state.stats.locationsClosed + 1 },
+        locations: (state.locations || []).filter(l => l.id !== locationId),
+        corporateCash: (state.corporateCash || 0) + (salePrice || 0),
+        stats: { ...(state.stats || {}), locationsClosed: ((state.stats || {}).locationsClosed || 0) + 1 },
       };
     }
 
     case GAME_ACTIONS.ADD_FRANCHISE:
       return {
         ...state,
-        franchises: [...state.franchises, action.payload],
+        franchises: [...(state.franchises || []), action.payload],
       };
 
     case GAME_ACTIONS.UPDATE_STATS:
       return {
         ...state,
-        stats: { ...state.stats, ...action.payload },
+        stats: { ...(state.stats || {}), ...action.payload },
       };
 
     case GAME_ACTIONS.ADD_MILESTONE:
@@ -410,8 +410,8 @@ export function gameReducer(state, action) {
       return {
         ...state,
         activeEvent: null,
-        eventHistory: [...state.eventHistory, action.payload],
-        stats: { ...state.stats, eventsHandled: state.stats.eventsHandled + 1 },
+        eventHistory: [...(state.eventHistory || []), action.payload],
+        stats: { ...(state.stats || {}), eventsHandled: ((state.stats || {}).eventsHandled || 0) + 1 },
       };
 
     default:
