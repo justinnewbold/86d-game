@@ -105,7 +105,7 @@ const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 // ============================================
 const getAIMentorResponse = async (context, game, setup) => {
   const totalLocations = game.locations?.length || 1;
-  const totalCash = game.locations?.reduce((sum, loc) => sum + loc.cash, 0) || game.cash;
+  const totalCash = game.locations?.reduce((sum, loc) => sum + (loc.cash || 0), 0) || game.cash;
   const totalStaff = game.locations?.reduce((sum, loc) => sum + (loc.staff?.length || 0), 0) || game.staff?.length || 0;
   
   const prompt = `You are Chef Marcus, an AI mentor in a restaurant business simulator game called "86'd". 
@@ -1762,7 +1762,7 @@ const calculateCompetitionChance = (location, competition, customRecipes = []) =
   let baseChance = 0.3;
   baseChance += (location.reputation || 50) / 500;
   const staff = location.staff || [];
-  const avgSkill = staff.length > 0 ? staff.reduce((sum, s) => sum + s.skill, 0) / staff.length : 5;
+  const avgSkill = staff.length > 0 ? staff.reduce((sum, s) => sum + (s.skill || 0), 0) / staff.length : 5;
   baseChance += avgSkill / 20;
   baseChance += Math.min(customRecipes.length * 0.02, 0.15);
   if (location.upgrades?.fullRenovation) baseChance += 0.1;
@@ -1807,7 +1807,7 @@ const generateRecipeName = (category) => {
 const developRecipe = (location, category, investment = 1) => {
   const baseSuccess = 0.6;
   const kitchenStaff = (location.staff || []).filter(s => s.department === 'kitchen');
-  const avgSkill = kitchenStaff.length > 0 ? kitchenStaff.reduce((sum, s) => sum + s.skill, 0) / kitchenStaff.length : 5;
+  const avgSkill = kitchenStaff.length > 0 ? kitchenStaff.reduce((sum, s) => sum + (s.skill || 0), 0) / kitchenStaff.length : 5;
   const successChance = Math.min(baseSuccess + (avgSkill / 20) + (investment * 0.1), 0.95);
   const success = Math.random() < successChance;
   if (success) {
@@ -1872,7 +1872,7 @@ const calculatePlayerRank = (game, category) => {
     case 'week': playerScore = game.week || 0; break;
     case 'totalLocations': playerScore = game.locations?.length || 0; break;
     case 'franchises': playerScore = game.franchises?.length || 0; break;
-    case 'avgReputation': playerScore = game.locations?.reduce((sum, l) => sum + l.reputation, 0) / (game.locations?.length || 1) || 0; break;
+    case 'avgReputation': playerScore = game.locations?.reduce((sum, l) => sum + (l.reputation || 0), 0) / (game.locations?.length || 1) || 0; break;
     default: playerScore = 0;
   }
   const mockLeaderboard = generateMockLeaderboard(category);
@@ -2010,7 +2010,7 @@ const conductHealthInspection = (location) => {
   const violations = [];
   
   // Check for violations based on staff quality and equipment maintenance
-  const staffQuality = location.staff?.reduce((sum, s) => sum + s.skill, 0) / (location.staff?.length || 1) || 50;
+  const staffQuality = location.staff?.reduce((sum, s) => sum + (s.skill || 0), 0) / (location.staff?.length || 1) || 50;
   const maintenanceLevel = location.maintenanceLevel || 0.5;
   
   HEALTH_VIOLATIONS.forEach(violation => {
@@ -2485,7 +2485,7 @@ function AppContent() {
     const upgradeCapacityMod = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
     const marketingReachMod = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.effect?.reach || 0), 0);
     const locationStaff = location.staff || [];
-    const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + s.skill, 0) / locationStaff.length / 20 : 0;
+    const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + (s.skill || 0), 0) / locationStaff.length / 20 : 0;
     const moraleMod = (location.morale - 50) / 200;
     const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
     
@@ -2539,27 +2539,27 @@ function AppContent() {
     // Costs (also affected by economic conditions)
     const economicCostMultiplier = location.economicCostMultiplier || 1;
     const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
-    const laborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
-    const rent = location.rent;
+    const laborCost = (location.staff || []).reduce((sum, s) => sum + (s.wage || 0) * 40, 0);
+    const rent = location.rent || 0;
     const utilities = Math.floor(rent * 0.15);
     const marketingCost = (location.marketing?.channels || []).reduce((sum, c) => sum + (MARKETING_CHANNELS.find(mc => mc.id === c)?.costPerWeek || 0), 0);
     const equipmentMaint = (location.equipment || []).reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.maintenance || 0), 0) / 4;
     const ccFees = totalRevenue * 0.025;
-    
+
     const totalCosts = foodCost + laborCost + rent + utilities + marketingCost + equipmentMaint + ccFees;
     const weekProfit = totalRevenue - totalCosts;
-    
+
     // Update staff
     const updatedStaff = (location.staff || []).map(s => {
-      let newMorale = s.morale;
+      let newMorale = s.morale || 50;
       if (weekProfit > 0) newMorale += 2;
       if (weekProfit < -1000) newMorale -= 5;
       newMorale = Math.max(20, Math.min(100, newMorale + (Math.random() - 0.5) * 5));
-      const skillGain = s.weeks > 0 && s.weeks % 8 === 0 && s.skill < 10 ? 0.5 : 0;
-      return { ...s, weeks: s.weeks + 1, morale: Math.round(newMorale), skill: Math.min(10, s.skill + skillGain) };
-    }).filter(s => !(s.morale < 30 && Math.random() < 0.3)); // Staff quits
-    
-    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + s.morale, 0) / updatedStaff.length : 50;
+      const skillGain = (s.weeks || 0) > 0 && (s.weeks || 0) % 8 === 0 && (s.skill || 0) < 10 ? 0.5 : 0;
+      return { ...s, weeks: (s.weeks || 0) + 1, morale: Math.round(newMorale), skill: Math.min(10, (s.skill || 0) + skillGain) };
+    }).filter(s => !((s.morale || 50) < 30 && Math.random() < 0.3)); // Staff quits
+
+    const avgMorale = updatedStaff.length > 0 ? updatedStaff.reduce((sum, s) => sum + (s.morale || 50), 0) / updatedStaff.length : 50;
     
     // Update history
     const newHistory = [...location.weeklyHistory, { 
@@ -2685,12 +2685,12 @@ function AppContent() {
       const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine));
       
       // Calculate empire totals
-      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
-      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + l.lastWeekRevenue, 0);
-      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + l.lastWeekProfit, 0);
-      
+      const totalLocationCash = updatedLocations.reduce((sum, l) => sum + (l.cash || 0), 0);
+      const totalWeekRevenue = updatedLocations.reduce((sum, l) => sum + (l.lastWeekRevenue || 0), 0);
+      const totalWeekProfit = updatedLocations.reduce((sum, l) => sum + (l.lastWeekProfit || 0), 0);
+
       // Process franchise royalties
-      const franchiseRoyalties = (g.franchises || []).reduce((sum, f) => sum + f.weeklyRoyalty, 0);
+      const franchiseRoyalties = (g.franchises || []).reduce((sum, f) => sum + (f.weeklyRoyalty || 0), 0);
 
       // PHASE 6: Catering Revenue
       const cateringRevenue = g.cateringEnabled ? (g.cateringContracts || []).reduce((sum, contract) => {
@@ -2728,7 +2728,7 @@ function AppContent() {
       const mortgagePayments = (g.mortgages || []).reduce((sum, m) => sum + (m.weeklyPayment || 0), 0);
       
       // Corporate costs (management, district managers, etc)
-      const corporateCosts = (g.corporateStaff || []).reduce((sum, s) => sum + s.wage * 40, 0);
+      const corporateCosts = (g.corporateStaff || []).reduce((sum, s) => sum + (s.wage || 0) * 40, 0);
       const marketCosts = (g.locations || []).reduce((sum, l) => {
         const mkt = MARKETS.find(m => m.id === l.market);
         return sum + (mkt?.managementCost || 0);
@@ -2891,7 +2891,7 @@ function AppContent() {
         ownedProperties: updatedProperties,
         exitProgress: newExitProgress,
         economicCondition: newEconomicCondition,
-        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
+        totalPropertyValue: updatedProperties.reduce((sum, p) => sum + (p.value || 0), 0),
       };
     });
     
@@ -3467,7 +3467,7 @@ function AppContent() {
       try {
         const autoSave = {
           game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
-          week: game.week, cash: (game.corporateCash || 0) + (game.locations || []).reduce((s, l) => s + l.cash, 0),
+          week: game.week, cash: (game.corporateCash || 0) + (game.locations || []).reduce((s, l) => s + (l.cash || 0), 0),
         };
         storage.setItem('86d_autosave', JSON.stringify(autoSave));
       } catch (e) {}
@@ -4085,7 +4085,7 @@ function AppContent() {
   if (screen === 'dashboard' && game) {
     const loc = getActiveLocation();
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
-    const totalCash = (game.locations || []).reduce((sum, l) => sum + l.cash, 0) + (game.corporateCash || 0);
+    const totalCash = (game.locations || []).reduce((sum, l) => sum + (l.cash || 0), 0) + (game.corporateCash || 0);
     const totalUnits = (game.locations?.length || 0) + (game.franchises?.length || 0);
     const isMultiLocation = (game.locations?.length || 0) > 1;
     
@@ -4484,7 +4484,7 @@ function AppContent() {
                   <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
                   <View style={styles.plDivider} />
                   <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency((loc.staff || []).reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency((loc.staff || []).reduce((s, st) => s + (st.wage || 0) * 40, 0))}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency((loc.marketing?.channels || []).reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
                   <View style={styles.plDivider} />
@@ -4798,7 +4798,7 @@ function AppContent() {
                     <Text style={styles.analyticsSection}>Key Ratios</Text>
                     <View style={styles.analyticsGrid}>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatPct(loc.foodCostPct)}</Text><Text style={styles.analyticsLabel}>Food Cost %</Text></View>
-                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{(loc.staff?.length || 0) > 0 ? formatPct((loc.staff || []).reduce((s, st) => s + st.wage * 40, 0) / Math.max(1, loc.lastWeekRevenue)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
+                      <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{(loc.staff?.length || 0) > 0 ? formatPct((loc.staff || []).reduce((s, st) => s + (st.wage || 0) * 40, 0) / Math.max(1, loc.lastWeekRevenue || 1)) : '0%'}</Text><Text style={styles.analyticsLabel}>Labor Cost %</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{loc.lastWeekRevenue > 0 ? formatPct(loc.lastWeekProfit / loc.lastWeekRevenue) : '0%'}</Text><Text style={styles.analyticsLabel}>Profit Margin</Text></View>
                       <View style={styles.analyticsStat}><Text style={styles.analyticsValue}>{formatCurrency(loc.lastWeekRevenue / Math.max(1, loc.lastWeekCovers))}</Text><Text style={styles.analyticsLabel}>Avg Check</Text></View>
                     </View>
