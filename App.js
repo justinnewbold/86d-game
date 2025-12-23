@@ -242,6 +242,39 @@ const getFallbackResponse = (context, game) => {
   return options[Math.floor(Math.random() * options.length)];
 };
 
+// AI QUICK ACTION PROMPTS - Context-aware suggestions for each screen
+const AI_QUICK_ACTIONS = {
+  welcome: [
+    { label: "🎮 How to play?", prompt: "Give me a quick overview of how to play 86'd and what I should focus on first." },
+    { label: "💰 Starting capital?", prompt: "What starting capital amount do you recommend for a beginner?" },
+    { label: "🍔 Best cuisine?", prompt: "Which cuisine type is easiest to start with and why?" },
+  ],
+  onboarding: [
+    { label: "🏪 Location tips", prompt: "What should I consider when choosing my first restaurant location?" },
+    { label: "🎯 Best goals?", prompt: "Which goal should I pick as a beginner - survival, growth, or empire?" },
+    { label: "💵 Budget advice", prompt: "How should I budget my starting capital?" },
+  ],
+  dashboard: [
+    { label: "💰 Cash low!", prompt: "My cash is getting low. What are the fastest ways to improve my cash flow?" },
+    { label: "👥 Staffing help", prompt: "How should I think about hiring and managing staff effectively?" },
+    { label: "📈 Grow revenue", prompt: "What are the best strategies to increase my weekly revenue?" },
+    { label: "🏢 When to expand?", prompt: "How do I know when I'm ready to open a second location?" },
+    { label: "⚖️ Cut costs", prompt: "What costs should I focus on reducing first?" },
+    { label: "📊 Review numbers", prompt: "Look at my current game state and tell me what I should focus on this week." },
+  ],
+  gameover: [
+    { label: "🤔 What went wrong?", prompt: "Analyze my game and tell me the main reasons my restaurant failed." },
+    { label: "📚 Key lessons", prompt: "What are the most important lessons I should take from this failure?" },
+    { label: "🔄 Next attempt", prompt: "What should I do differently in my next playthrough?" },
+  ],
+  win: [
+    { label: "🏆 Review success", prompt: "Analyze what I did well in this game that led to success." },
+    { label: "🚀 Next challenge", prompt: "What harder goal should I try next to challenge myself?" },
+    { label: "💡 Advanced tips", prompt: "Now that I've succeeded, what advanced strategies should I learn?" },
+  ],
+};
+
+
 // Data constants now imported from ./src/constants
 
 const generateCompetitor = (cuisine, locationType) => {
@@ -3732,13 +3765,23 @@ function AppContent() {
     setScenarioResult(null);
   };
 
-  const askAI = async () => {
-    if (!aiChatInput.trim() || !game) return;
+  const askAI = async (customPrompt = null) => {
+    const prompt = customPrompt || aiChatInput;
+    if (!prompt.trim()) return;
     setAiLoading(true);
-    const response = await getAIMentorResponse(aiChatInput, game, setup, aiConversationHistory, setAiConversationHistory);
+    const response = await getAIMentorResponse(prompt, game, setup, aiConversationHistory, setAiConversationHistory);
     setAiMessage(response);
     setAiChatInput('');
     setAiLoading(false);
+  };
+
+  // Get quick actions based on current screen
+  const getQuickActions = () => {
+    if (screen === 'welcome') return AI_QUICK_ACTIONS.welcome;
+    if (screen === 'onboarding') return AI_QUICK_ACTIONS.onboarding;
+    if (screen === 'gameover') return AI_QUICK_ACTIONS.gameover;
+    if (screen === 'win') return AI_QUICK_ACTIONS.win;
+    return AI_QUICK_ACTIONS.dashboard;
   };
 
   const saveGame = (slot) => {
@@ -3780,8 +3823,66 @@ function AppContent() {
           <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v12.0.0 • Phase 10 • Endgame & Legacy Systems</Text>
+          <Text style={styles.versionText}>v13.0.0 • Global AI Chat Integration</Text>
         </View>
+        
+        {/* Floating AI Chat Button */}
+        <TouchableOpacity style={styles.floatingAiButton} onPress={() => setAiChatModal(true)}>
+          <Text style={styles.floatingAiIcon}>👨‍🍳</Text>
+          <Text style={styles.floatingAiLabel}>Ask Chef Marcus</Text>
+        </TouchableOpacity>
+        
+        {/* AI Chat Modal */}
+        <Modal visible={aiChatModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👨‍🍳 Chef Marcus - AI Mentor</Text>
+                <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              
+              {/* Quick Actions */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+                {getQuickActions().map((action, idx) => (
+                  <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => askAI(action.prompt)}>
+                    <Text style={styles.quickActionText}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
+              <View style={styles.aiChatContainer}>
+                {/* Conversation History */}
+                <ScrollView style={styles.aiConversationScroll}>
+                  {aiConversationHistory.length === 0 && !aiMessage ? (
+                    <Text style={styles.aiWelcomeText}>👋 Hi! I'm Chef Marcus, your AI mentor. I've spent 30 years in this industry. Ask me anything about starting your restaurant journey!</Text>
+                  ) : (
+                    <>
+                      {aiConversationHistory.slice(-6).map((msg, idx) => (
+                        <View key={idx} style={[styles.chatBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+                          <Text style={styles.chatBubbleText}>{msg.content}</Text>
+                        </View>
+                      ))}
+                      {aiLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />}
+                    </>
+                  )}
+                </ScrollView>
+                
+                <View style={styles.aiInputRow}>
+                  <TextInput 
+                    style={styles.aiInput} 
+                    placeholder="Ask about starting a restaurant..." 
+                    placeholderTextColor={colors.textMuted} 
+                    value={aiChatInput} 
+                    onChangeText={setAiChatInput}
+                    onSubmitEditing={() => askAI()}
+                    returnKeyType="send"
+                  />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={() => askAI()}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -4054,6 +4155,63 @@ function AppContent() {
             </View>
           </View>
         </Modal>
+        
+        {/* Floating AI Chat Button */}
+        <TouchableOpacity style={styles.floatingAiButton} onPress={() => setAiChatModal(true)}>
+          <Text style={styles.floatingAiIcon}>👨‍🍳</Text>
+          <Text style={styles.floatingAiLabel}>Ask Chef Marcus</Text>
+        </TouchableOpacity>
+        
+        {/* AI Chat Modal for Onboarding */}
+        <Modal visible={aiChatModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👨‍🍳 Chef Marcus - AI Mentor</Text>
+                <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              
+              {/* Quick Actions */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+                {getQuickActions().map((action, idx) => (
+                  <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => askAI(action.prompt)}>
+                    <Text style={styles.quickActionText}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
+              <View style={styles.aiChatContainer}>
+                <ScrollView style={styles.aiConversationScroll}>
+                  {aiConversationHistory.length === 0 && !aiMessage ? (
+                    <Text style={styles.aiWelcomeText}>👋 Need help with your setup? Ask me about cuisine choices, starting capital, locations, or anything else!</Text>
+                  ) : (
+                    <>
+                      {aiConversationHistory.slice(-6).map((msg, idx) => (
+                        <View key={idx} style={[styles.chatBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+                          <Text style={styles.chatBubbleText}>{msg.content}</Text>
+                        </View>
+                      ))}
+                      {aiLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />}
+                    </>
+                  )}
+                </ScrollView>
+                
+                <View style={styles.aiInputRow}>
+                  <TextInput 
+                    style={styles.aiInput} 
+                    placeholder="Ask about your setup choices..." 
+                    placeholderTextColor={colors.textMuted} 
+                    value={aiChatInput} 
+                    onChangeText={setAiChatInput}
+                    onSubmitEditing={() => askAI()}
+                    returnKeyType="send"
+                  />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={() => askAI()}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -4136,6 +4294,68 @@ function AppContent() {
             <Text style={styles.restartButtonText}>{isWin ? 'PLAY AGAIN' : 'TRY AGAIN'}</Text>
           </TouchableOpacity>
         </View>
+        
+        {/* Floating AI Chat Button */}
+        <TouchableOpacity style={styles.floatingAiButton} onPress={() => setAiChatModal(true)}>
+          <Text style={styles.floatingAiIcon}>👨‍🍳</Text>
+          <Text style={styles.floatingAiLabel}>{isWin ? 'Celebrate with Marcus' : 'Debrief with Marcus'}</Text>
+        </TouchableOpacity>
+        
+        {/* AI Chat Modal */}
+        <Modal visible={aiChatModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>👨‍🍳 Chef Marcus - {isWin ? 'Congratulations!' : 'Post-Game Review'}</Text>
+                <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              
+              {/* Quick Actions */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+                {getQuickActions().map((action, idx) => (
+                  <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => askAI(action.prompt)}>
+                    <Text style={styles.quickActionText}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
+              <View style={styles.aiChatContainer}>
+                <ScrollView style={styles.aiConversationScroll}>
+                  {aiConversationHistory.length === 0 && !aiMessage ? (
+                    <Text style={styles.aiWelcomeText}>
+                      {isWin 
+                        ? '🎉 Congratulations! You\'ve built something special. Let\'s talk about what made you successful and what challenges await next.'
+                        : '💪 Every failure is a lesson. Let\'s analyze what happened and how you can come back stronger.'
+                      }
+                    </Text>
+                  ) : (
+                    <>
+                      {aiConversationHistory.slice(-6).map((msg, idx) => (
+                        <View key={idx} style={[styles.chatBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+                          <Text style={styles.chatBubbleText}>{msg.content}</Text>
+                        </View>
+                      ))}
+                      {aiLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />}
+                    </>
+                  )}
+                </ScrollView>
+                
+                <View style={styles.aiInputRow}>
+                  <TextInput 
+                    style={styles.aiInput} 
+                    placeholder={isWin ? "Ask about your success..." : "Ask what went wrong..."} 
+                    placeholderTextColor={colors.textMuted} 
+                    value={aiChatInput} 
+                    onChangeText={setAiChatInput}
+                    onSubmitEditing={() => askAI()}
+                    returnKeyType="send"
+                  />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={() => askAI()}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -4965,21 +5185,64 @@ function AppContent() {
           </View>
         </Modal>
 
-        {/* AI Chat Modal */}
+        {/* AI Chat Modal - Enhanced with conversation history and quick actions */}
         <Modal visible={aiChatModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>👨‍🍳 Chat with Chef Marcus</Text>
+                <Text style={styles.modalTitle}>👨‍🍳 Chef Marcus - AI Mentor</Text>
                 <TouchableOpacity onPress={() => setAiChatModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
               </View>
+              
+              {/* Quick Actions */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+                {getQuickActions().map((action, idx) => (
+                  <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => askAI(action.prompt)}>
+                    <Text style={styles.quickActionText}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
               <View style={styles.aiChatContainer}>
-                <View style={styles.aiResponse}>
-                  {aiLoading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.aiResponseText}>{aiMessage || 'Ask me anything about running your empire...'}</Text>}
-                </View>
+                {/* Conversation History */}
+                <ScrollView style={styles.aiConversationScroll}>
+                  {aiConversationHistory.length === 0 && !aiMessage ? (
+                    <View style={styles.aiWelcomeBox}>
+                      <Text style={styles.aiWelcomeText}>👋 I'm Chef Marcus, your AI mentor with 30 years in this industry.</Text>
+                      <Text style={styles.aiWelcomeSubtext}>Ask me about staff, finances, expansion, marketing, or any challenge you're facing. I'll give you real advice based on your current situation.</Text>
+                    </View>
+                  ) : (
+                    <>
+                      {aiConversationHistory.slice(-8).map((msg, idx) => (
+                        <View key={idx} style={[styles.chatBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+                          <Text style={styles.chatBubbleLabel}>{msg.role === 'user' ? '👤 You' : '👨‍🍳 Chef Marcus'}</Text>
+                          <Text style={styles.chatBubbleText}>{msg.content}</Text>
+                        </View>
+                      ))}
+                      {aiLoading && (
+                        <View style={styles.aiBubble}>
+                          <ActivityIndicator color={colors.primary} />
+                          <Text style={styles.aiThinking}>Thinking...</Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </ScrollView>
+                
                 <View style={styles.aiInputRow}>
-                  <TextInput style={styles.aiInput} placeholder="Ask about staff, expansion, finances..." placeholderTextColor={colors.textMuted} value={aiChatInput} onChangeText={setAiChatInput} />
-                  <TouchableOpacity style={styles.aiSendBtn} onPress={askAI}><Text style={styles.aiSendBtnText}>→</Text></TouchableOpacity>
+                  <TextInput 
+                    style={styles.aiInput} 
+                    placeholder="Ask about staff, expansion, finances..." 
+                    placeholderTextColor={colors.textMuted} 
+                    value={aiChatInput} 
+                    onChangeText={setAiChatInput}
+                    onSubmitEditing={() => askAI()}
+                    returnKeyType="send"
+                    multiline
+                  />
+                  <TouchableOpacity style={styles.aiSendBtn} onPress={() => askAI()} disabled={aiLoading}>
+                    <Text style={styles.aiSendBtnText}>{aiLoading ? '...' : '→'}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -6835,5 +7098,101 @@ const styles = StyleSheet.create({
   buyPropertyButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   helperText: { color: colors.textMuted, fontSize: 11, marginBottom: 12 },
 
+  // Floating AI Button Styles
+  floatingAiButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  floatingAiIcon: { fontSize: 24, marginRight: 8 },
+  floatingAiLabel: { color: colors.background, fontSize: 14, fontWeight: '700' },
+
+  // Quick Actions Styles
+  quickActionsScroll: { 
+    maxHeight: 50, 
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  quickActionBtn: {
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quickActionText: { color: colors.textPrimary, fontSize: 12, fontWeight: '500' },
+
+  // Enhanced AI Chat Styles
+  aiConversationScroll: { 
+    flex: 1, 
+    marginBottom: 10,
+    maxHeight: 350,
+  },
+  aiWelcomeBox: {
+    backgroundColor: colors.surfaceLight,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  aiWelcomeText: { 
+    color: colors.textPrimary, 
+    fontSize: 14, 
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  aiWelcomeSubtext: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  chatBubble: {
+    maxWidth: '85%',
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  userBubble: {
+    backgroundColor: colors.primary,
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+  },
+  aiBubble: {
+    backgroundColor: colors.surfaceLight,
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
+  },
+  chatBubbleLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: colors.textMuted,
+  },
+  chatBubbleText: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  aiThinking: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+
 });
+
 
