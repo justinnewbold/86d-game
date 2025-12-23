@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Setup, Scenario, Screen, Tab, GameSpeed, Location } from '../types';
+import {
+  VersionedSaveGame,
+  createVersionedSave,
+  migrateSave,
+  needsMigration,
+  CURRENT_SAVE_VERSION,
+} from '../utils/saveGameMigration';
 
 // Initial setup state
 const initialSetup: Setup = {
@@ -13,6 +20,12 @@ const initialSetup: Setup = {
   experience: 'none',
   difficulty: 'normal',
 };
+
+// AI conversation message type
+export interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export interface Notification {
   id: number;
@@ -38,6 +51,7 @@ export interface GameStoreState {
   scenarioResult: { success: boolean; outcome: unknown } | null;
   aiMessage: string;
   aiLoading: boolean;
+  aiConversationHistory: ConversationMessage[];
 
   // Notifications
   notifications: Notification[];
@@ -50,6 +64,9 @@ export interface GameStoreState {
   autoSaveEnabled: boolean;
   showTips: boolean;
 
+  // Save games
+  savedGames: VersionedSaveGame[];
+
   // Actions
   setScreen: (screen: Screen) => void;
   setOnboardingStep: (step: number) => void;
@@ -61,12 +78,20 @@ export interface GameStoreState {
   setScenarioResult: (result: { success: boolean; outcome: unknown } | null) => void;
   setAiMessage: (message: string) => void;
   setAiLoading: (loading: boolean) => void;
+  setAiConversationHistory: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void;
   setGameSpeed: (speed: GameSpeed) => void;
   setTheme: (theme: string) => void;
   addNotification: (type: string, message: string) => void;
   getActiveLocation: () => Location | null;
   resetSetup: () => void;
   resetGame: () => void;
+
+  // Save game actions
+  saveGame: (slot: number) => void;
+  loadGame: (save: VersionedSaveGame) => void;
+  deleteSave: (slot: number) => void;
+  exportSave: (slot: number) => string | null;
+  importSave: (jsonString: string) => boolean;
 }
 
 // Game store with persistence
@@ -90,6 +115,7 @@ export const useGameStore = create<GameStoreState>()(
       scenarioResult: null,
       aiMessage: '',
       aiLoading: false,
+      aiConversationHistory: [],
 
       // Notifications
       notifications: [],
@@ -101,6 +127,9 @@ export const useGameStore = create<GameStoreState>()(
       soundEnabled: true,
       autoSaveEnabled: true,
       showTips: true,
+
+      // Save games
+      savedGames: [],
 
       // Actions
       setScreen: (screen) => set({ screen }),
@@ -119,6 +148,10 @@ export const useGameStore = create<GameStoreState>()(
       setScenarioResult: (result) => set({ scenarioResult: result }),
       setAiMessage: (message) => set({ aiMessage: message }),
       setAiLoading: (loading) => set({ aiLoading: loading }),
+      setAiConversationHistory: (updater) =>
+        set((state) => ({
+          aiConversationHistory: updater(state.aiConversationHistory),
+        })),
       setGameSpeed: (speed) => set({ gameSpeed: speed }),
       setTheme: (theme) => set({ currentTheme: theme }),
 
@@ -154,10 +187,74 @@ export const useGameStore = create<GameStoreState>()(
           scenario: null,
           scenarioResult: null,
           aiMessage: '',
+          aiConversationHistory: [],
         }),
+
+      // Save game actions with versioning
+      saveGame: (slot) => {
+        const { setup, game } = get();
+        if (!game) return;
+
+        const versionedSave = createVersionedSave(slot, setup as any, game as any);
+        set((state) => ({
+          savedGames: [
+            ...state.savedGames.filter((s) => s.slot !== slot),
+            versionedSave,
+          ].sort((a, b) => a.slot - b.slot),
+        }));
+      },
+
+      loadGame: (save) => {
+        // Migrate save if needed
+        const migratedSave = needsMigration(save) ? migrateSave(save) : save;
+
+        set({
+          setup: migratedSave.setup as any,
+          game: migratedSave.game as any,
+          activeLocationId:
+            (migratedSave.game as any)?.locations?.length > 0
+              ? (migratedSave.game as any).locations[0].id
+              : null,
+          screen: 'dashboard',
+          aiConversationHistory: [],
+        });
+      },
+
+      deleteSave: (slot) => {
+        set((state) => ({
+          savedGames: state.savedGames.filter((s) => s.slot !== slot),
+        }));
+      },
+
+      exportSave: (slot) => {
+        const { savedGames } = get();
+        const save = savedGames.find((s) => s.slot === slot);
+        if (!save) return null;
+        return JSON.stringify(save, null, 2);
+      },
+
+      importSave: (jsonString) => {
+        try {
+          const parsed = JSON.parse(jsonString);
+          if (!parsed.slot || !parsed.setup || !parsed.game) {
+            return false;
+          }
+          const migratedSave = migrateSave(parsed);
+          set((state) => ({
+            savedGames: [
+              ...state.savedGames.filter((s) => s.slot !== migratedSave.slot),
+              migratedSave,
+            ].sort((a, b) => a.slot - b.slot),
+          }));
+          return true;
+        } catch {
+          return false;
+        }
+      },
     }),
     {
       name: '86d-game-storage',
+      version: 1, // Add version for store migration
       partialize: (state) => ({
         // Only persist these fields
         setup: state.setup,
@@ -167,6 +264,7 @@ export const useGameStore = create<GameStoreState>()(
         soundEnabled: state.soundEnabled,
         autoSaveEnabled: state.autoSaveEnabled,
         showTips: state.showTips,
+        savedGames: state.savedGames,
       }),
     }
   )
