@@ -13,7 +13,10 @@ import {
   Animated,
 } from 'react-native';
 import { useGameStore } from '../stores/gameStore';
-import { DIFFICULTY_LEVELS } from '../constants';
+import { DIFFICULTY_MODES } from '../constants';
+
+// Alias for backwards compatibility
+const DIFFICULTY_LEVELS = DIFFICULTY_MODES;
 import { AccessibleButton, AccessibleText, announceForAccessibility } from '../components/common/A11yWrapper';
 
 // Get colors from theme
