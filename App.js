@@ -2602,12 +2602,12 @@ function AppContent() {
     for (let i = 0; i < weekCovers; i++) {
       const rand = Math.random();
       let cumulative = 0;
-      let type = CUSTOMER_TYPES[0];
+      let customerType = CUSTOMER_TYPES[0];
       for (const ct of CUSTOMER_TYPES) {
         cumulative += ct.frequency;
-        if (rand <= cumulative) { type = ct; break; }
+        if (rand <= cumulative) { customerType = ct; break; }
       }
-      totalSpend += location.avgTicket * type.spendMod * (0.9 + Math.random() * 0.2);
+      totalSpend += location.avgTicket * customerType.spendMod * (0.9 + Math.random() * 0.2);
     }
     
     const dineInRevenue = totalSpend;
@@ -2700,25 +2700,37 @@ function AppContent() {
   const checkCompetition = useCallback(() => {
     if (!game) return;
 
-    // Randomly spawn new competitor every ~20 weeks
-    if (game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6) {
-      const newCompetitor = generateCompetitor(setup.cuisine, setup.location);
-      setGame(g => ({
-        ...g,
-        competitors: [...g.competitors, newCompetitor],
-      }));
-      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
-    }
+    // Check if we should spawn a new competitor
+    const shouldSpawnCompetitor = game.week > 0 && game.week % 20 === 0 && Math.random() > 0.6;
+    const newCompetitor = shouldSpawnCompetitor ? generateCompetitor(setup.cuisine, setup.location) : null;
 
-    // Update competitor strengths
-    setGame(g => ({
-      ...g,
-      competitors: (g.competitors || []).map(c => ({
+    // Single setGame call to avoid race conditions
+    setGame(g => {
+      // Start with existing competitors or empty array
+      let updatedCompetitors = (g.competitors || []);
+
+      // Add new competitor if spawned
+      if (newCompetitor) {
+        updatedCompetitors = [...updatedCompetitors, newCompetitor];
+      }
+
+      // Update competitor strengths and filter out weak ones
+      updatedCompetitors = updatedCompetitors.map(c => ({
         ...c,
         reputation: Math.min(95, Math.max(10, c.reputation + (Math.random() - 0.5) * 5)),
         weeksOpen: c.weeksOpen + 1,
-      })).filter(c => c.reputation > 15 || Math.random() > 0.1), // Weak competitors might close
-    }));
+      })).filter(c => c.reputation > 15 || Math.random() > 0.1);
+
+      return {
+        ...g,
+        competitors: updatedCompetitors,
+      };
+    });
+
+    // Set AI message outside of setGame to avoid side effects
+    if (newCompetitor) {
+      setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
+    }
   }, [game, setup]);
 
   // PHASE 4: MILESTONES (moved before processWeek)
@@ -2928,7 +2940,7 @@ function AppContent() {
         if (s.minLocations && totalLocations < s.minLocations) return false;
         if (s.maxLocations && totalLocations > s.maxLocations) return false;
         if (s.minFranchises && totalFranchises < s.minFranchises) return false;
-        if (s.minReputation && updatedLocations[0].reputation < s.minReputation) return false;
+        if (s.minReputation && updatedLocations.length > 0 && updatedLocations[0].reputation < s.minReputation) return false;
         if (s.minValuation && empireValuation < s.minValuation) return false;
         // Phase 6: Investor requirements
         if (s.requiresInvestors && !hasInvestors) return false;
@@ -3793,7 +3805,10 @@ function AppContent() {
   const loadGame = (save) => {
     setSetup(save.setup);
     setGame(save.game);
-    setActiveLocationId(save.game.locations[0].id);
+    // Safely set active location ID, defaulting to first location if available
+    if (save.game?.locations?.length > 0) {
+      setActiveLocationId(save.game.locations[0].id);
+    }
     setScreen('dashboard');
     setSaveModal(false);
   };
