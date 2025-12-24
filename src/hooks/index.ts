@@ -10,3 +10,9 @@ export {
   useGameAutoAdvance,
   calculateEmpireValuation,
 } from './useGameLoop';
+
+export { useUndoRedo, createGameCommand, CommandTypes } from './useUndoRedo';
+export type { CommandType } from './useUndoRedo';
+
+export { useThemeDetection, useThemeColors, commonThemeColors } from './useThemeDetection';
+export type { ThemeMode } from './useThemeDetection';
