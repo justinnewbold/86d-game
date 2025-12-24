@@ -10,3 +10,6 @@ export * from './panels';
 
 // Tutorial components
 export * from './tutorial';
+
+// UI components (shared primitives)
+export * from './ui';

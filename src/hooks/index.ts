@@ -3,3 +3,16 @@ export type { ShortcutHandler, ShortcutMap, GameShortcut } from './useKeyboardSh
 
 export { useConfirmDialog } from './useConfirmDialog';
 export type { ConfirmDialogOptions, UseConfirmDialogReturn } from './useConfirmDialog';
+
+export {
+  processLocationWeek,
+  getEconomicMultipliers,
+  useGameAutoAdvance,
+  calculateEmpireValuation,
+} from './useGameLoop';
+
+export { useUndoRedo, createGameCommand, CommandTypes } from './useUndoRedo';
+export type { CommandType } from './useUndoRedo';
+
+export { useThemeDetection, useThemeColors, commonThemeColors } from './useThemeDetection';
+export type { ThemeMode } from './useThemeDetection';

@@ -61,6 +61,11 @@ export interface Location {
   lastWeekRevenue: number;
   lastWeekProfit: number;
   lastWeekCovers: number;
+  // Loan tracking per location
+  loans?: Loan[];
+  // Economic multipliers
+  economicRevenueMultiplier?: number;
+  economicCostMultiplier?: number;
 }
 
 export interface WeeklyRecord {
@@ -95,6 +100,8 @@ export interface Loan {
   amount: number;
   remaining: number;
   weeksRemaining: number;
+  weeklyPayment: number;
+  rate?: number;
 }
 
 export interface Competitor {
@@ -320,3 +327,84 @@ export type Screen = 'welcome' | 'onboarding' | 'dashboard' | 'gameover' | 'win'
 export type Tab = 'overview' | 'staff' | 'ops' | 'finance' | 'empire';
 
 export type GameSpeed = 'pause' | 'slow' | 'normal' | 'fast';
+
+// Type aliases for backwards compatibility
+export type LocationState = Location;
+export type SetupState = Setup;
+export type GameStateType = GameState;
+
+// Conversation message for AI chat
+export interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// AI Quick Action
+export interface AIQuickAction {
+  label: string;
+  prompt: string;
+}
+
+// Achievement definition
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  condition: (game: GameState) => boolean;
+}
+
+// Notification type
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'achievement' | 'milestone';
+  message: string;
+  timestamp: number;
+}
+
+// Save game slot
+export interface SaveSlot {
+  slot: number;
+  name: string;
+  date: string;
+  week: number;
+  cash: number;
+  setup: Setup;
+  game: GameState;
+  version?: string;
+  checksum?: string;
+}
+
+// Theme colors
+export interface ThemeColors {
+  background: string;
+  surface: string;
+  surfaceLight: string;
+  primary: string;
+  accent: string;
+  success: string;
+  warning: string;
+  info: string;
+  purple: string;
+  pink: string;
+  cyan: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  border: string;
+}
+
+// Command for undo/redo
+export interface GameCommand {
+  type: string;
+  payload: unknown;
+  timestamp: number;
+  description: string;
+}
+
+// Analytics event
+export interface AnalyticsEvent {
+  event: string;
+  properties?: Record<string, unknown>;
+  timestamp: number;
+}
