@@ -60,3 +60,6 @@ export * from './multiplayer.js';
 
 // US Locations (Cities, States, Economic Data)
 export * from './usLocations.js';
+
+// City-Specific Features (Scenarios, Synergies, Weather, Labor)
+export * from './cityFeatures.js';
