@@ -10,3 +10,4 @@ export * from './soundManager';
 export * from './analytics';
 export * from './cloudSync';
 export * from './performanceMonitor';
+export * from './locationResearch';

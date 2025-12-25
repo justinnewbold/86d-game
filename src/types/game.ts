@@ -66,6 +66,10 @@ export interface Location {
   // Economic multipliers
   economicRevenueMultiplier?: number;
   economicCostMultiplier?: number;
+  // City/State location data
+  city?: string;
+  state?: string;
+  locationEconomicData?: LocationEconomicData;
 }
 
 export interface WeeklyRecord {
@@ -270,6 +274,47 @@ export interface KPIRecord {
   metrics: Record<string, number>;
 }
 
+// Location economic modifiers from AI research
+export interface LocationEconomicData {
+  city: string;
+  state: string;
+  // Base modifiers (from constants)
+  costOfLiving: number;
+  wageMultiplier: number;
+  rentMultiplier: number;
+  ticketMultiplier: number;
+  trafficMultiplier: number;
+  competitionLevel: number;
+  foodCostMultiplier: number;
+  tier: number;
+  // AI-researched detailed data (loaded in background)
+  aiResearched?: boolean;
+  researchedAt?: string;
+  // Detailed wage data
+  minWage?: number;
+  avgRestaurantWage?: number;
+  avgManagerSalary?: number;
+  // Real estate data
+  avgCommercialRentSqFt?: number;
+  avgBuildoutCostSqFt?: number;
+  // Market data
+  avgTicketCasual?: number;
+  avgTicketFineDining?: number;
+  restaurantsPerCapita?: number;
+  // Economic context
+  unemploymentRate?: number;
+  medianHouseholdIncome?: number;
+  touristDestination?: boolean;
+  majorEmployers?: string[];
+  // Fun facts for flavor
+  foodScene?: string;
+  localSpecialties?: string[];
+  bestNeighborhoods?: string[];
+}
+
+// Status of location research
+export type LocationResearchStatus = 'pending' | 'loading' | 'complete' | 'error';
+
 export interface Setup {
   cuisine: string | null;
   capital: number;
@@ -279,6 +324,11 @@ export interface Setup {
   goal: string;
   experience: string;
   difficulty: string;
+  // New location fields
+  city: string;
+  state: string;
+  locationData?: LocationEconomicData;
+  locationResearchStatus?: LocationResearchStatus;
 }
 
 export interface Scenario {

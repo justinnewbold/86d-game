@@ -2007,10 +2007,23 @@ const MiniChart = ({ data, color, height = 40 }) => {
 };
 
 // Create new location object
-const createLocation = (id, name, locationType, market, cuisine, startingCash) => {
+const createLocation = (id, name, locationType, market, cuisine, startingCash, locationEconomicData = null, cityName = '', stateName = '') => {
   const type = LOCATION_TYPES.find(t => t.id === locationType);
   const mkt = MARKETS.find(m => m.id === market);
   const cuisineData = CUISINES.find(c => c.id === cuisine) || CUISINES[0]; // Fallback to first cuisine
+
+  // Apply location economic modifiers if available
+  const rentMultiplier = locationEconomicData?.rentMultiplier || 1.0;
+  const wageMultiplier = locationEconomicData?.wageMultiplier || 1.0;
+  const ticketMultiplier = locationEconomicData?.ticketMultiplier || 1.0;
+  const trafficMultiplier = locationEconomicData?.trafficMultiplier || 1.0;
+  const foodCostMultiplier = locationEconomicData?.foodCostMultiplier || 1.0;
+
+  // Base values modified by location type AND city economics
+  const baseRent = Math.floor(3000 * (type?.rentMod || 1) * rentMultiplier);
+  const baseCovers = Math.floor(30 * (type?.trafficMod || 1) * trafficMultiplier);
+  const baseTicket = Math.round(cuisineData.avgTicket * ticketMultiplier * 2) / 2; // Round to nearest $0.50
+  const baseFoodCost = Math.min(0.45, Math.max(0.20, cuisineData.foodCost * foodCostMultiplier));
 
   return {
     id,
@@ -2018,6 +2031,11 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
     locationType,
     market,
     isGhostKitchen: type?.deliveryOnly || false,
+
+    // City/State info
+    city: cityName,
+    state: stateName,
+    locationEconomicData,
 
     // Financials
     cash: startingCash,
@@ -2027,7 +2045,7 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
 
     // Operations
     staff: [],
-    menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: cuisineData.avgTicket, cost: cuisineData.avgTicket * cuisineData.foodCost, popular: true, is86d: false }],
+    menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: baseTicket, cost: baseTicket * baseFoodCost, popular: true, is86d: false }],
     equipment: [],
     upgrades: [],
     marketing: { channels: ['social_organic'], socialFollowers: 50 },
@@ -2037,18 +2055,21 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
     // Metrics
     reputation: 50,
     morale: 70,
-    covers: Math.floor(30 * (type?.trafficMod || 1)),
+    covers: baseCovers,
     weeksOpen: 0,
 
     // Manager
     manager: null,
     managerAutonomy: 0.5, // 0-1, how much AI decides for this location
 
-    // Costs
-    rent: Math.floor(3000 * (type?.rentMod || 1)),
-    avgTicket: cuisineData.avgTicket,
-    foodCostPct: cuisineData.foodCost,
-    
+    // Costs (modified by city economics)
+    rent: baseRent,
+    avgTicket: baseTicket,
+    foodCostPct: baseFoodCost,
+
+    // Wage multiplier for staff costs
+    economicWageMultiplier: wageMultiplier,
+
     // Last week
     lastWeekRevenue: 0,
     lastWeekProfit: 0,
@@ -2251,6 +2272,10 @@ function AppContent() {
     goal: 'survive',
     experience: 'none',
     difficulty: 'normal',
+    city: '',
+    state: '',
+    locationData: null,
+    locationResearchStatus: 'pending',
   });
   
   // Game State
@@ -2416,11 +2441,19 @@ function AppContent() {
       setup.location,
       setup.market,
       setup.cuisine,
-      setup.capital * 0.7 // 70% goes to first location, 30% reserve
+      setup.capital * 0.7, // 70% goes to first location, 30% reserve
+      setup.locationData,
+      setup.city,
+      setup.state
     );
     
+    // Apply location wage multiplier to starting staff wage
+    const baseWage = 16;
+    const wageMultiplier = setup.locationData?.wageMultiplier || 1.0;
+    const adjustedWage = Math.round(baseWage * wageMultiplier);
+
     firstLocation.staff = [
-      { id: 1, name: generateName(), role: 'Line Cook', wage: 16, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
+      { id: 1, name: generateName(), role: 'Line Cook', wage: adjustedWage, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
     ];
     
     const initialGame = {
@@ -3630,7 +3663,64 @@ function AppContent() {
       } catch (e) {}
     })();
   }, []);
-  
+
+  // Background location research - starts when game begins with a city selected
+  useEffect(() => {
+    if (screen === 'dashboard' && game && setup.city && setup.state && setup.locationResearchStatus === 'pending') {
+      // Mark as loading
+      setSetup(prev => ({ ...prev, locationResearchStatus: 'loading' }));
+
+      // Start background research
+      (async () => {
+        try {
+          const response = await fetch('/api/location-research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city: setup.city, state: setup.state }),
+          });
+
+          if (response.ok) {
+            const researchData = await response.json();
+            // Update setup with researched data
+            setSetup(prev => ({
+              ...prev,
+              locationData: { ...prev.locationData, ...researchData, aiResearched: true },
+              locationResearchStatus: 'complete',
+            }));
+
+            // Update the first location with the new data (metrics will be recalculated on next week advance)
+            setGame(prev => {
+              if (!prev || !prev.locations?.[0]) return prev;
+              const updatedLocations = prev.locations.map((loc, idx) => {
+                if (idx === 0) {
+                  return {
+                    ...loc,
+                    locationEconomicData: { ...loc.locationEconomicData, ...researchData, aiResearched: true },
+                  };
+                }
+                return loc;
+              });
+              return { ...prev, locations: updatedLocations };
+            });
+
+            // Show notification about research completion
+            setNotifications(prev => [...prev, {
+              id: Date.now(),
+              type: 'info',
+              message: `Market research complete for ${setup.city}, ${setup.state}!`,
+              timestamp: Date.now(),
+            }]);
+          } else {
+            setSetup(prev => ({ ...prev, locationResearchStatus: 'error' }));
+          }
+        } catch (error) {
+          console.warn('Location research failed:', error);
+          setSetup(prev => ({ ...prev, locationResearchStatus: 'error' }));
+        }
+      })();
+    }
+  }, [screen, game, setup.city, setup.state, setup.locationResearchStatus]);
+
   // Prestige System
   const calculatePrestigePoints = () => {
     if (!game) return 0;
@@ -4393,13 +4483,21 @@ function AppContent() {
         <View style={styles.empireHeader}>
           <View style={styles.empireHeaderLeft}>
             <Text style={styles.empireName}>{setup.name}</Text>
-            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}</Text>
+            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}{setup.city && setup.state ? ` • ${setup.city}, ${setup.state}` : ''}</Text>
           </View>
           <View style={styles.empireHeaderRight}>
             <Text style={styles.empireValuation}>{formatCurrency(game.empireValuation)}</Text>
             <Text style={styles.empireValuationLabel}>Empire Value</Text>
           </View>
         </View>
+
+        {/* Location Research Status Banner */}
+        {setup.locationResearchStatus === 'loading' && (
+          <View style={styles.researchBanner}>
+            <ActivityIndicator size="small" color={colors.info} style={{ marginRight: 8 }} />
+            <Text style={styles.researchBannerText}>Researching {setup.city}, {setup.state} market data...</Text>
+          </View>
+        )}
 
         {/* Location Selector (if multiple) */}
         {isMultiLocation && (
@@ -4919,6 +5017,9 @@ function AppContent() {
                     <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
                     <View style={styles.locationCardInfo}>
                       <Text style={styles.locationCardName}>{l.name}</Text>
+                      {l.city && l.state && (
+                        <Text style={styles.locationCardCity}>📍 {l.city}, {l.state}</Text>
+                      )}
                       <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
                     </View>
                     <View>
@@ -6530,6 +6631,10 @@ const styles = StyleSheet.create({
   empireValuation: { color: colors.success, fontSize: 20, fontWeight: '700' },
   empireValuationLabel: { color: colors.textMuted, fontSize: 10 },
 
+  // Research Banner
+  researchBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.info + '20', paddingVertical: 8, paddingHorizontal: 16 },
+  researchBannerText: { color: colors.info, fontSize: 12 },
+
   // Location Selector
   locationSelector: { backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   locationTab: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginRight: 8 },
@@ -6690,6 +6795,7 @@ const styles = StyleSheet.create({
   locationCardIcon: { fontSize: 24, marginRight: 12 },
   locationCardInfo: { flex: 1 },
   locationCardName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  locationCardCity: { color: colors.textSecondary, fontSize: 11, marginTop: 1 },
   locationCardDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   locationCardCash: { fontSize: 14, fontWeight: '600' },
   locationCardProfit: { fontSize: 11, marginTop: 2 },
