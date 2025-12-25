@@ -5,6 +5,14 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  CITY_SCENARIOS,
+  getCuisineSynergy,
+  getWeatherModifier,
+  getLaborMarket,
+  shouldTriggerCityScenario,
+} from './src/constants/cityFeatures.js';
+import { US_CITIES, US_STATES, CITY_TIERS } from './src/constants/usLocations.js';
 // Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
@@ -2007,10 +2015,23 @@ const MiniChart = ({ data, color, height = 40 }) => {
 };
 
 // Create new location object
-const createLocation = (id, name, locationType, market, cuisine, startingCash) => {
+const createLocation = (id, name, locationType, market, cuisine, startingCash, locationEconomicData = null, cityName = '', stateName = '') => {
   const type = LOCATION_TYPES.find(t => t.id === locationType);
   const mkt = MARKETS.find(m => m.id === market);
   const cuisineData = CUISINES.find(c => c.id === cuisine) || CUISINES[0]; // Fallback to first cuisine
+
+  // Apply location economic modifiers if available
+  const rentMultiplier = locationEconomicData?.rentMultiplier || 1.0;
+  const wageMultiplier = locationEconomicData?.wageMultiplier || 1.0;
+  const ticketMultiplier = locationEconomicData?.ticketMultiplier || 1.0;
+  const trafficMultiplier = locationEconomicData?.trafficMultiplier || 1.0;
+  const foodCostMultiplier = locationEconomicData?.foodCostMultiplier || 1.0;
+
+  // Base values modified by location type AND city economics
+  const baseRent = Math.floor(3000 * (type?.rentMod || 1) * rentMultiplier);
+  const baseCovers = Math.floor(30 * (type?.trafficMod || 1) * trafficMultiplier);
+  const baseTicket = Math.round(cuisineData.avgTicket * ticketMultiplier * 2) / 2; // Round to nearest $0.50
+  const baseFoodCost = Math.min(0.45, Math.max(0.20, cuisineData.foodCost * foodCostMultiplier));
 
   return {
     id,
@@ -2018,6 +2039,11 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
     locationType,
     market,
     isGhostKitchen: type?.deliveryOnly || false,
+
+    // City/State info
+    city: cityName,
+    state: stateName,
+    locationEconomicData,
 
     // Financials
     cash: startingCash,
@@ -2027,7 +2053,7 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
 
     // Operations
     staff: [],
-    menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: cuisineData.avgTicket, cost: cuisineData.avgTicket * cuisineData.foodCost, popular: true, is86d: false }],
+    menu: [{ id: Date.now(), name: generateMenuItem(cuisine), price: baseTicket, cost: baseTicket * baseFoodCost, popular: true, is86d: false }],
     equipment: [],
     upgrades: [],
     marketing: { channels: ['social_organic'], socialFollowers: 50 },
@@ -2037,18 +2063,21 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash) =
     // Metrics
     reputation: 50,
     morale: 70,
-    covers: Math.floor(30 * (type?.trafficMod || 1)),
+    covers: baseCovers,
     weeksOpen: 0,
 
     // Manager
     manager: null,
     managerAutonomy: 0.5, // 0-1, how much AI decides for this location
 
-    // Costs
-    rent: Math.floor(3000 * (type?.rentMod || 1)),
-    avgTicket: cuisineData.avgTicket,
-    foodCostPct: cuisineData.foodCost,
-    
+    // Costs (modified by city economics)
+    rent: baseRent,
+    avgTicket: baseTicket,
+    foodCostPct: baseFoodCost,
+
+    // Wage multiplier for staff costs
+    economicWageMultiplier: wageMultiplier,
+
     // Last week
     lastWeekRevenue: 0,
     lastWeekProfit: 0,
@@ -2251,6 +2280,10 @@ function AppContent() {
     goal: 'survive',
     experience: 'none',
     difficulty: 'normal',
+    city: '',
+    state: '',
+    locationData: null,
+    locationResearchStatus: 'pending',
   });
   
   // Game State
@@ -2288,7 +2321,7 @@ function AppContent() {
   const [expansionModal, setExpansionModal] = useState(false);
   const [franchiseModal, setFranchiseModal] = useState(false);
   const [empireModal, setEmpireModal] = useState(false);
-  const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city' });
+  const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city', city: '', state: '', useSameCity: true });
   
   // Phase 4: New modal states
   const [tutorialModal, setTutorialModal] = useState(false);
@@ -2416,11 +2449,19 @@ function AppContent() {
       setup.location,
       setup.market,
       setup.cuisine,
-      setup.capital * 0.7 // 70% goes to first location, 30% reserve
+      setup.capital * 0.7, // 70% goes to first location, 30% reserve
+      setup.locationData,
+      setup.city,
+      setup.state
     );
     
+    // Apply location wage multiplier to starting staff wage
+    const baseWage = 16;
+    const wageMultiplier = setup.locationData?.wageMultiplier || 1.0;
+    const adjustedWage = Math.round(baseWage * wageMultiplier);
+
     firstLocation.staff = [
-      { id: 1, name: generateName(), role: 'Line Cook', wage: 16, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
+      { id: 1, name: generateName(), role: 'Line Cook', wage: adjustedWage, skill: 5, weeks: 0, training: [], morale: 70, icon: '👨‍🍳', department: 'kitchen' }
     ];
     
     const initialGame = {
@@ -2578,9 +2619,15 @@ function AppContent() {
   // ============================================
   // LOCATION PROCESSING
   // ============================================
-  const processLocationWeek = useCallback((location, cuisine) => {
+  const processLocationWeek = useCallback((location, cuisine, currentWeek = 1) => {
     const type = LOCATION_TYPES.find(t => t.id === location.locationType);
-    
+
+    // Get city-specific bonuses (cuisine synergy and weather)
+    const locationState = location.state || '';
+    const cuisineId = cuisine?.id || '';
+    const synergy = getCuisineSynergy(cuisineId, locationState);
+    const weatherData = getWeatherModifier(locationState, currentWeek);
+
     // Calculate modifiers
     const equipCapacityMod = (location.equipment || []).reduce((sum, e) => sum + (EQUIPMENT.find(eq => eq.id === e)?.effect?.capacity || 0), 0);
     const upgradeCapacityMod = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.effect?.capacity || 0), 0);
@@ -2589,15 +2636,27 @@ function AppContent() {
     const staffQualityMod = locationStaff.length > 0 ? locationStaff.reduce((sum, s) => sum + s.skill, 0) / locationStaff.length / 20 : 0;
     const moraleMod = (location.morale - 50) / 200;
     const managerBonus = location.manager ? location.manager.skill * 0.02 : 0;
-    
+
+    // Cuisine synergy cover bonus
+    const cuisineSynergyCoverBonus = synergy.hasSynergy ? (synergy.coverBonus || 0) : 0;
+
+    // Weather modifier (affects covers)
+    const weatherCoverMod = weatherData.coverModifier || 0;
+
     // Covers calculation
     let weekCovers = location.isGhostKitchen ? 0 : Math.floor(location.covers * (type?.trafficMod || 1));
     weekCovers = Math.floor(weekCovers * (1 + equipCapacityMod + upgradeCapacityMod + marketingReachMod + staffQualityMod + managerBonus));
     weekCovers = Math.floor(weekCovers * (1 + location.reputation / 200));
     weekCovers = Math.floor(weekCovers * (1 + moraleMod));
+    weekCovers = Math.floor(weekCovers * (1 + cuisineSynergyCoverBonus)); // Cuisine synergy bonus
+    weekCovers = Math.floor(weekCovers * (1 + weatherCoverMod)); // Regional weather modifier
     weekCovers = Math.floor(weekCovers * (0.85 + Math.random() * 0.3));
     
     // Revenue calculation
+    // Apply cuisine synergy ticket bonus (if synergy gives 10% bonus, multiply by 1.10)
+    const synergyTicketMod = synergy.hasSynergy ? (1 + (synergy.ticketBonus || 0)) : 1;
+    const adjustedTicket = location.avgTicket * synergyTicketMod;
+
     let totalSpend = 0;
     for (let i = 0; i < weekCovers; i++) {
       const rand = Math.random();
@@ -2607,7 +2666,7 @@ function AppContent() {
         cumulative += ct.frequency;
         if (rand <= cumulative) { customerType = ct; break; }
       }
-      totalSpend += location.avgTicket * customerType.spendMod * (0.9 + Math.random() * 0.2);
+      totalSpend += adjustedTicket * customerType.spendMod * (0.9 + Math.random() * 0.2);
     }
     
     const dineInRevenue = totalSpend;
@@ -2639,7 +2698,9 @@ function AppContent() {
     
     // Costs (also affected by economic conditions)
     const economicCostMultiplier = location.economicCostMultiplier || 1;
-    const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
+    // Apply cuisine synergy food cost reduction (if synergy gives 10% reduction, multiply by 0.90)
+    const synergyFoodCostMod = synergy.hasSynergy ? (1 - (synergy.foodCostReduction || 0)) : 1;
+    const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier * synergyFoodCostMod;
     const laborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
     const rent = location.rent;
     const utilities = Math.floor(rent * 0.15);
@@ -2670,6 +2731,13 @@ function AppContent() {
       covers: weekCovers + deliveryOrders,
     }].slice(-52);
     
+    // Calculate reputation change with cuisine synergy bonus (applies once at location start, then diminishes)
+    let reputationChange = weekProfit > 0 ? 1 : -1;
+    // Apply one-time synergy reputation boost in early weeks
+    if (synergy.hasSynergy && synergy.reputationBonus && location.weeksOpen < 4) {
+      reputationChange += Math.floor(synergy.reputationBonus / 4); // Spread over first 4 weeks
+    }
+
     return {
       ...location,
       cash: location.cash + weekProfit,
@@ -2682,7 +2750,10 @@ function AppContent() {
       morale: Math.round(avgMorale),
       weeksOpen: location.weeksOpen + 1,
       weeklyHistory: newHistory,
-      reputation: Math.min(100, Math.max(0, location.reputation + (weekProfit > 0 ? 1 : -1))),
+      reputation: Math.min(100, Math.max(0, location.reputation + reputationChange)),
+      // Track weather events for this week
+      lastWeatherEvents: weatherData.events,
+      cuisineSynergy: synergy.hasSynergy ? synergy : null,
       delivery: { ...(location.delivery || {}), orders: (location.delivery?.orders || 0) + deliveryOrders },
     };
   }, []);
@@ -2794,8 +2865,9 @@ function AppContent() {
         economicCostMultiplier,
       }));
       
-      // Process all locations
-      const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine));
+      // Process all locations (pass current week for weather/seasonal effects)
+      const currentWeek = g.week + 1;
+      const updatedLocations = locationsWithEconomics.map(loc => processLocationWeek(loc, cuisine, currentWeek));
       
       // Calculate empire totals
       const totalLocationCash = updatedLocations.reduce((sum, l) => sum + l.cash, 0);
@@ -2954,7 +3026,41 @@ function AppContent() {
         const randomScenario = availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
         setTimeout(() => setScenario(randomScenario), 500);
       }
-      
+
+      // Check for city-specific scenarios (only for primary location)
+      const primaryLocation = updatedLocations[0];
+      if (primaryLocation?.city && primaryLocation?.state && weekNum > 1) {
+        const cityScenario = shouldTriggerCityScenario(
+          primaryLocation.city,
+          primaryLocation.state,
+          weekNum,
+          primaryLocation.reputation,
+          g.scenariosSeen
+        );
+        if (cityScenario) {
+          setTimeout(() => setScenario(cityScenario), 600);
+        }
+      }
+
+      // Show weather event notifications
+      const weatherEvents = updatedLocations[0]?.lastWeatherEvents || [];
+      if (weatherEvents.length > 0) {
+        weatherEvents.forEach(event => {
+          const eventMessages = {
+            hurricane_warning: '🌀 Hurricane warning! Covers reduced this week.',
+            polar_vortex: '❄️ Polar vortex! Extreme cold keeping customers home.',
+            nor_easter: '🌨️ Nor\'easter hitting the coast! Travel difficult.',
+            heat_wave: '🔥 Heat wave! Outdoor dining limited.',
+            ski_season: '⛷️ Ski season bringing tourists!',
+            rainy_season: '🌧️ Rainy season affecting foot traffic.',
+            earthquake: '🏚️ Minor earthquake! Some disruption.',
+          };
+          if (eventMessages[event]) {
+            setTimeout(() => addNotification(eventMessages[event], event.includes('season') ? 'info' : 'warning'), 300);
+          }
+        });
+      }
+
       // Check game end conditions
       const lowestCash = Math.min(...updatedLocations.map(l => l.cash), newCorporateCash);
       if (lowestCash < -50000) {
@@ -3037,14 +3143,35 @@ function AppContent() {
   
   const hireStaff = (template, locationId = null) => {
     const loc = locationId ? game.locations.find(l => l.id === locationId) : getActiveLocation();
-    if (!loc || loc.cash < template.wage * 40) return;
-    
+    if (!loc) return;
+
+    // Get labor market conditions for this location's state
+    const laborMarket = getLaborMarket(loc.state || '');
+
+    // Apply wage expectation modifier (higher in expensive markets)
+    const adjustedWage = Math.round(template.wage * (laborMarket.wageExpectation || 1));
+
+    // Check if we can afford hiring (4 weeks upfront)
+    if (loc.cash < adjustedWage * 40) return;
+
+    // Hiring difficulty affects candidate quality
+    // Difficulty > 1 means harder to find good candidates (more competition for workers)
+    // Difficulty < 1 means easier pool of candidates
+    const hiringDifficulty = laborMarket.hiringDifficulty || 1;
+
+    // Base skill range: 3-5, modified by labor market
+    // Tight markets: may get slightly lower skill (workers have options)
+    // Loose markets: may get slightly higher skill (more applicants to choose from)
+    const skillModifier = hiringDifficulty > 1 ? -0.5 : hiringDifficulty < 1 ? 0.5 : 0;
+    const baseSkill = 3 + Math.floor(Math.random() * 3) + skillModifier;
+    const finalSkill = Math.max(2, Math.min(6, Math.round(baseSkill)));
+
     const newStaff = {
       id: Date.now(),
       name: generateName(),
       role: template.role,
-      wage: template.wage,
-      skill: 3 + Math.floor(Math.random() * 3),
+      wage: adjustedWage,
+      skill: finalSkill,
       weeks: 0,
       training: [],
       morale: 65 + Math.floor(Math.random() * 20),
@@ -3058,7 +3185,7 @@ function AppContent() {
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
         ...l,
-        cash: l.cash - template.wage * 40,
+        cash: l.cash - adjustedWage * 40,
         staff: [...l.staff, newStaff],
       } : l),
       achievements: g.achievements.includes('first_hire') ? g.achievements : [...g.achievements, 'first_hire'],
@@ -3066,6 +3193,7 @@ function AppContent() {
     setStaffModal(false);
   };
 
+  // Corporate staff hire (uses national average wages, no local modifier)
   const hireCorporateStaff = (template) => {
     if (!game || game.corporateCash < template.wage * 40) return;
     
@@ -3278,15 +3406,41 @@ function AppContent() {
   const openNewLocation = () => {
     const type = LOCATION_TYPES.find(t => t.id === newLocationData.type);
     const mkt = MARKETS.find(m => m.id === newLocationData.market);
-    
+
     if (!type || !mkt || !game) return;
-    
+
     const totalCost = type.buildoutCost;
     if (game.corporateCash < totalCost) {
       alert('Not enough corporate cash for buildout!');
       return;
     }
-    
+
+    // Determine city/state for new location
+    const locationCity = newLocationData.useSameCity ? setup.city : newLocationData.city;
+    const locationState = newLocationData.useSameCity ? setup.state : newLocationData.state;
+
+    // Get location economic data (use primary location's data if same city, or fetch base data for new city)
+    let locationEconomicData = null;
+    if (newLocationData.useSameCity && setup.locationData) {
+      locationEconomicData = setup.locationData;
+    } else if (locationCity && locationState) {
+      // Get base city data from US_CITIES for different city
+      const cityData = US_CITIES.find(c => c.city === locationCity && c.state === locationState);
+      if (cityData) {
+        locationEconomicData = {
+          city: cityData.city,
+          state: cityData.state,
+          wageMultiplier: cityData.wageMultiplier,
+          rentMultiplier: cityData.rentMultiplier,
+          ticketMultiplier: cityData.ticketMultiplier,
+          trafficMultiplier: cityData.trafficMultiplier,
+          competitionLevel: cityData.competitionLevel,
+          foodCostMultiplier: cityData.foodCostMultiplier,
+          tier: cityData.tier,
+        };
+      }
+    }
+
     const newId = Math.max(...game.locations.map(l => l.id)) + 1;
     const newLocation = createLocation(
       newId,
@@ -3294,17 +3448,20 @@ function AppContent() {
       newLocationData.type,
       newLocationData.market,
       setup.cuisine,
-      totalCost * 0.3 // Starting operating cash
+      totalCost * 0.3, // Starting operating cash
+      locationEconomicData,
+      locationCity,
+      locationState
     );
-    
+
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash - totalCost,
       locations: [...g.locations, newLocation],
     }));
-    
+
     setExpansionModal(false);
-    setNewLocationData({ name: '', type: 'suburban_strip', market: 'same_city' });
+    setNewLocationData({ name: '', type: 'suburban_strip', market: 'same_city', city: '', state: '', useSameCity: true });
     
     // AI response
     setTimeout(async () => {
@@ -3630,7 +3787,64 @@ function AppContent() {
       } catch (e) {}
     })();
   }, []);
-  
+
+  // Background location research - starts when game begins with a city selected
+  useEffect(() => {
+    if (screen === 'dashboard' && game && setup.city && setup.state && setup.locationResearchStatus === 'pending') {
+      // Mark as loading
+      setSetup(prev => ({ ...prev, locationResearchStatus: 'loading' }));
+
+      // Start background research
+      (async () => {
+        try {
+          const response = await fetch('/api/location-research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city: setup.city, state: setup.state }),
+          });
+
+          if (response.ok) {
+            const researchData = await response.json();
+            // Update setup with researched data
+            setSetup(prev => ({
+              ...prev,
+              locationData: { ...prev.locationData, ...researchData, aiResearched: true },
+              locationResearchStatus: 'complete',
+            }));
+
+            // Update the first location with the new data (metrics will be recalculated on next week advance)
+            setGame(prev => {
+              if (!prev || !prev.locations?.[0]) return prev;
+              const updatedLocations = prev.locations.map((loc, idx) => {
+                if (idx === 0) {
+                  return {
+                    ...loc,
+                    locationEconomicData: { ...loc.locationEconomicData, ...researchData, aiResearched: true },
+                  };
+                }
+                return loc;
+              });
+              return { ...prev, locations: updatedLocations };
+            });
+
+            // Show notification about research completion
+            setNotifications(prev => [...prev, {
+              id: Date.now(),
+              type: 'info',
+              message: `Market research complete for ${setup.city}, ${setup.state}!`,
+              timestamp: Date.now(),
+            }]);
+          } else {
+            setSetup(prev => ({ ...prev, locationResearchStatus: 'error' }));
+          }
+        } catch (error) {
+          console.warn('Location research failed:', error);
+          setSetup(prev => ({ ...prev, locationResearchStatus: 'error' }));
+        }
+      })();
+    }
+  }, [screen, game, setup.city, setup.state, setup.locationResearchStatus]);
+
   // Prestige System
   const calculatePrestigePoints = () => {
     if (!game) return 0;
@@ -4393,13 +4607,27 @@ function AppContent() {
         <View style={styles.empireHeader}>
           <View style={styles.empireHeaderLeft}>
             <Text style={styles.empireName}>{setup.name}</Text>
-            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}</Text>
+            <Text style={styles.empireStats}>{totalUnits} Units • Week {game.week}{setup.city && setup.state ? ` • ${setup.city}, ${setup.state}` : ''}</Text>
           </View>
           <View style={styles.empireHeaderRight}>
             <Text style={styles.empireValuation}>{formatCurrency(game.empireValuation)}</Text>
             <Text style={styles.empireValuationLabel}>Empire Value</Text>
           </View>
         </View>
+
+        {/* Location Research Status Banner */}
+        {setup.locationResearchStatus === 'loading' && (
+          <View style={styles.researchBanner}>
+            <ActivityIndicator size="small" color={colors.info} style={{ marginRight: 8 }} />
+            <Text style={styles.researchBannerText}>Researching {setup.city}, {setup.state} market data...</Text>
+          </View>
+        )}
+        {setup.locationResearchStatus === 'complete' && setup.locationData && (
+          <TouchableOpacity style={[styles.researchBanner, { backgroundColor: colors.success + '20' }]} onPress={() => setResearchModal(true)}>
+            <Text style={styles.researchBannerText}>📊 {setup.city} Market Research Complete</Text>
+            <Text style={[styles.researchBannerText, { color: colors.success }]}>  Tap to view →</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Location Selector (if multiple) */}
         {isMultiLocation && (
@@ -4919,6 +5147,9 @@ function AppContent() {
                     <Text style={styles.locationCardIcon}>{LOCATION_TYPES.find(t => t.id === l.locationType)?.icon}</Text>
                     <View style={styles.locationCardInfo}>
                       <Text style={styles.locationCardName}>{l.name}</Text>
+                      {l.city && l.state && (
+                        <Text style={styles.locationCardCity}>📍 {l.city}, {l.state}</Text>
+                      )}
                       <Text style={styles.locationCardDetails}>{l.staff.length} staff • Rep: {l.reputation}% • {l.manager ? '✓ Managed' : '⚠️ No Manager'}</Text>
                     </View>
                     <View>
@@ -5141,8 +5372,8 @@ function AppContent() {
 
                 <Text style={styles.inputLabel}>Market</Text>
                 {MARKETS.map(m => (
-                  <TouchableOpacity 
-                    key={m.id} 
+                  <TouchableOpacity
+                    key={m.id}
                     style={[styles.marketOption, newLocationData.market === m.id && styles.marketSelected]}
                     onPress={() => setNewLocationData(d => ({ ...d, market: m.id }))}
                   >
@@ -5153,6 +5384,79 @@ function AppContent() {
                     </View>
                   </TouchableOpacity>
                 ))}
+
+                {/* City Selection for Expansion */}
+                <Text style={styles.inputLabel}>City</Text>
+                <TouchableOpacity
+                  style={[styles.cityToggleOption, newLocationData.useSameCity && styles.cityToggleSelected]}
+                  onPress={() => setNewLocationData(d => ({ ...d, useSameCity: true }))}
+                >
+                  <Text style={styles.cityToggleIcon}>📍</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cityToggleName, newLocationData.useSameCity && styles.cityToggleNameSelected]}>
+                      Same City ({setup.city}, {setup.state})
+                    </Text>
+                    <Text style={styles.cityToggleDesc}>Use existing market research and supplier relationships</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cityToggleOption, !newLocationData.useSameCity && styles.cityToggleSelected]}
+                  onPress={() => setNewLocationData(d => ({ ...d, useSameCity: false }))}
+                >
+                  <Text style={styles.cityToggleIcon}>🌎</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cityToggleName, !newLocationData.useSameCity && styles.cityToggleNameSelected]}>
+                      Different City
+                    </Text>
+                    <Text style={styles.cityToggleDesc}>Expand to a new market (different economics)</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {!newLocationData.useSameCity && (
+                  <View style={styles.citySelectContainer}>
+                    <Text style={styles.citySelectLabel}>Select a city:</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cityTierTabs}>
+                      {[1, 2, 3, 4, 5].map(tier => (
+                        <TouchableOpacity
+                          key={tier}
+                          style={[styles.tierTab, newLocationData.selectedTier === tier && styles.tierTabSelected]}
+                          onPress={() => setNewLocationData(d => ({ ...d, selectedTier: tier }))}
+                        >
+                          <Text style={[styles.tierTabText, newLocationData.selectedTier === tier && styles.tierTabTextSelected]}>
+                            {CITY_TIERS[tier]?.name || `Tier ${tier}`}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                      {US_CITIES.filter(c => newLocationData.selectedTier ? c.tier === newLocationData.selectedTier : true).slice(0, 15).map(c => (
+                        <TouchableOpacity
+                          key={`${c.city}-${c.state}`}
+                          style={[styles.cityOption, newLocationData.city === c.city && newLocationData.state === c.state && styles.cityOptionSelected]}
+                          onPress={() => setNewLocationData(d => ({ ...d, city: c.city, state: c.state }))}
+                        >
+                          <Text style={styles.cityOptionIcon}>{c.icon || '🏙️'}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.cityOptionName, newLocationData.city === c.city && newLocationData.state === c.state && styles.cityOptionNameSelected]}>
+                              {c.city}, {c.state}
+                            </Text>
+                            <Text style={styles.cityOptionStats}>
+                              Rent: {c.rentMultiplier.toFixed(1)}x • Wages: {c.wageMultiplier.toFixed(1)}x • Traffic: {c.trafficMultiplier.toFixed(1)}x
+                            </Text>
+                          </View>
+                          <Text style={[styles.cityTierBadge, { backgroundColor: CITY_TIERS[c.tier]?.color || colors.primary }]}>
+                            T{c.tier}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    {newLocationData.city && newLocationData.state && (
+                      <View style={styles.selectedCityPreview}>
+                        <Text style={styles.selectedCityText}>Selected: {newLocationData.city}, {newLocationData.state}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
 
                 <View style={styles.expansionSummary}>
                   <Text style={styles.expansionSummaryTitle}>Total Investment</Text>
@@ -5168,6 +5472,169 @@ function AppContent() {
                   <Text style={styles.expandButtonText}>OPEN LOCATION</Text>
                 </TouchableOpacity>
               </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Market Research Modal */}
+        <Modal visible={researchModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>📊 {setup.city} Market Research</Text>
+                <TouchableOpacity onPress={() => setResearchModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              {setup.locationData && (
+                <ScrollView style={{ maxHeight: 500 }}>
+                  <View style={styles.researchSection}>
+                    <Text style={styles.researchSectionTitle}>💰 Wages & Labor</Text>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Minimum Wage</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.minWage?.toFixed(2) || '—'}/hr</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Avg Restaurant Wage</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.avgRestaurantWage?.toFixed(2) || '—'}/hr</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Avg Manager Salary</Text>
+                      <Text style={styles.researchValue}>{formatCurrency(setup.locationData.avgManagerSalary || 55000)}/yr</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Wage Multiplier</Text>
+                      <Text style={[styles.researchValue, { color: setup.locationData.wageMultiplier > 1.1 ? colors.warning : colors.success }]}>
+                        {(setup.locationData.wageMultiplier || 1).toFixed(2)}x
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.researchSection}>
+                    <Text style={styles.researchSectionTitle}>🏢 Real Estate</Text>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Avg Commercial Rent</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.avgCommercialRentSqFt?.toFixed(0) || '—'}/sq ft/mo</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Avg Buildout Cost</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.avgBuildoutCostSqFt?.toFixed(0) || '—'}/sq ft</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Rent Multiplier</Text>
+                      <Text style={[styles.researchValue, { color: setup.locationData.rentMultiplier > 1.3 ? colors.accent : colors.success }]}>
+                        {(setup.locationData.rentMultiplier || 1).toFixed(2)}x
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.researchSection}>
+                    <Text style={styles.researchSectionTitle}>🍽️ Dining Market</Text>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Casual Dining Ticket</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.avgTicketCasual?.toFixed(0) || '—'}</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Fine Dining Ticket</Text>
+                      <Text style={styles.researchValue}>${setup.locationData.avgTicketFineDining?.toFixed(0) || '—'}</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Restaurants per 1K Residents</Text>
+                      <Text style={styles.researchValue}>{setup.locationData.restaurantsPerCapita?.toFixed(1) || '—'}</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Competition Level</Text>
+                      <Text style={[styles.researchValue, { color: setup.locationData.competitionLevel > 1.3 ? colors.warning : colors.success }]}>
+                        {(setup.locationData.competitionLevel || 1).toFixed(2)}x
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.researchSection}>
+                    <Text style={styles.researchSectionTitle}>📈 Economy</Text>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Median Household Income</Text>
+                      <Text style={styles.researchValue}>{formatCurrency(setup.locationData.medianHouseholdIncome || 65000)}</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Unemployment Rate</Text>
+                      <Text style={styles.researchValue}>{((setup.locationData.unemploymentRate || 0.04) * 100).toFixed(1)}%</Text>
+                    </View>
+                    <View style={styles.researchRow}>
+                      <Text style={styles.researchLabel}>Tourist Destination</Text>
+                      <Text style={styles.researchValue}>{setup.locationData.touristDestination ? '✓ Yes' : '✗ No'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.researchSection}>
+                    <Text style={styles.researchSectionTitle}>🎯 Game Multipliers</Text>
+                    <View style={styles.researchMultipliers}>
+                      <View style={styles.multiplierBadge}>
+                        <Text style={styles.multiplierLabel}>Traffic</Text>
+                        <Text style={[styles.multiplierValue, { color: setup.locationData.trafficMultiplier > 1 ? colors.success : colors.warning }]}>
+                          {(setup.locationData.trafficMultiplier || 1).toFixed(2)}x
+                        </Text>
+                      </View>
+                      <View style={styles.multiplierBadge}>
+                        <Text style={styles.multiplierLabel}>Ticket</Text>
+                        <Text style={[styles.multiplierValue, { color: setup.locationData.ticketMultiplier > 1 ? colors.success : colors.warning }]}>
+                          {(setup.locationData.ticketMultiplier || 1).toFixed(2)}x
+                        </Text>
+                      </View>
+                      <View style={styles.multiplierBadge}>
+                        <Text style={styles.multiplierLabel}>Food Cost</Text>
+                        <Text style={[styles.multiplierValue, { color: setup.locationData.foodCostMultiplier < 1.1 ? colors.success : colors.warning }]}>
+                          {(setup.locationData.foodCostMultiplier || 1).toFixed(2)}x
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {setup.locationData.foodScene && (
+                    <View style={styles.researchSection}>
+                      <Text style={styles.researchSectionTitle}>🍴 Local Food Scene</Text>
+                      <Text style={styles.researchDescription}>{setup.locationData.foodScene}</Text>
+                    </View>
+                  )}
+
+                  {setup.locationData.localSpecialties && setup.locationData.localSpecialties.length > 0 && (
+                    <View style={styles.researchSection}>
+                      <Text style={styles.researchSectionTitle}>🌟 Local Specialties</Text>
+                      <View style={styles.researchTags}>
+                        {setup.locationData.localSpecialties.map((specialty, i) => (
+                          <View key={i} style={styles.researchTag}><Text style={styles.researchTagText}>{specialty}</Text></View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {setup.locationData.bestNeighborhoods && setup.locationData.bestNeighborhoods.length > 0 && (
+                    <View style={styles.researchSection}>
+                      <Text style={styles.researchSectionTitle}>📍 Best Neighborhoods</Text>
+                      <View style={styles.researchTags}>
+                        {setup.locationData.bestNeighborhoods.map((neighborhood, i) => (
+                          <View key={i} style={styles.researchTag}><Text style={styles.researchTagText}>{neighborhood}</Text></View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {setup.locationData.majorEmployers && setup.locationData.majorEmployers.length > 0 && (
+                    <View style={styles.researchSection}>
+                      <Text style={styles.researchSectionTitle}>🏭 Major Employers</Text>
+                      <View style={styles.researchTags}>
+                        {setup.locationData.majorEmployers.map((employer, i) => (
+                          <View key={i} style={[styles.researchTag, { backgroundColor: colors.info + '30' }]}><Text style={styles.researchTagText}>{employer}</Text></View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {setup.locationData.aiResearched && (
+                    <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 16, fontSize: 12 }}>
+                      🤖 AI-researched data • Updated {new Date(setup.locationData.researchedAt).toLocaleDateString()}
+                    </Text>
+                  )}
+                </ScrollView>
+              )}
             </View>
           </View>
         </Modal>
@@ -6530,6 +6997,25 @@ const styles = StyleSheet.create({
   empireValuation: { color: colors.success, fontSize: 20, fontWeight: '700' },
   empireValuationLabel: { color: colors.textMuted, fontSize: 10 },
 
+  // Research Banner
+  researchBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.info + '20', paddingVertical: 8, paddingHorizontal: 16 },
+  researchBannerText: { color: colors.info, fontSize: 12 },
+
+  // Research Modal
+  researchSection: { backgroundColor: colors.surfaceLight, borderRadius: 8, padding: 12, marginBottom: 12 },
+  researchSectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 10 },
+  researchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
+  researchLabel: { color: colors.textSecondary, fontSize: 13 },
+  researchValue: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  researchDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
+  researchMultipliers: { flexDirection: 'row', justifyContent: 'space-around' },
+  multiplierBadge: { alignItems: 'center', padding: 8, backgroundColor: colors.surface, borderRadius: 8, minWidth: 80 },
+  multiplierLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 4 },
+  multiplierValue: { fontSize: 18, fontWeight: 'bold' },
+  researchTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  researchTag: { backgroundColor: colors.primary + '30', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  researchTagText: { color: colors.textPrimary, fontSize: 12 },
+
   // Location Selector
   locationSelector: { backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   locationTab: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginRight: 8 },
@@ -6690,6 +7176,7 @@ const styles = StyleSheet.create({
   locationCardIcon: { fontSize: 24, marginRight: 12 },
   locationCardInfo: { flex: 1 },
   locationCardName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  locationCardCity: { color: colors.textSecondary, fontSize: 11, marginTop: 1 },
   locationCardDetails: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   locationCardCash: { fontSize: 14, fontWeight: '600' },
   locationCardProfit: { fontSize: 11, marginTop: 2 },
@@ -6768,6 +7255,30 @@ const styles = StyleSheet.create({
   expandButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
   expandButtonDisabled: { backgroundColor: colors.surfaceLight },
   expandButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
+
+  // City Selection for Expansion
+  cityToggleOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  cityToggleSelected: { backgroundColor: colors.primary + '30', borderWidth: 1, borderColor: colors.primary },
+  cityToggleIcon: { fontSize: 20, marginRight: 12 },
+  cityToggleName: { color: colors.textPrimary, fontSize: 14 },
+  cityToggleNameSelected: { fontWeight: '600', color: colors.primary },
+  cityToggleDesc: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  citySelectContainer: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 10 },
+  citySelectLabel: { color: colors.textSecondary, fontSize: 13, marginBottom: 10 },
+  cityTierTabs: { marginBottom: 10 },
+  tierTab: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surfaceLight, borderRadius: 12, marginRight: 8 },
+  tierTabSelected: { backgroundColor: colors.primary },
+  tierTabText: { color: colors.textSecondary, fontSize: 12 },
+  tierTabTextSelected: { color: colors.background, fontWeight: '600' },
+  cityOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, padding: 10, borderRadius: 8, marginBottom: 6 },
+  cityOptionSelected: { backgroundColor: colors.success + '20', borderWidth: 1, borderColor: colors.success },
+  cityOptionIcon: { fontSize: 18, marginRight: 10 },
+  cityOptionName: { color: colors.textPrimary, fontSize: 13 },
+  cityOptionNameSelected: { fontWeight: '600', color: colors.success },
+  cityOptionStats: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  cityTierBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, color: colors.background, fontSize: 10, fontWeight: '700', overflow: 'hidden' },
+  selectedCityPreview: { backgroundColor: colors.success + '20', padding: 10, borderRadius: 8, marginTop: 10, alignItems: 'center' },
+  selectedCityText: { color: colors.success, fontSize: 13, fontWeight: '600' },
 
   // Modal Franchise
   franchiseIntro: { color: colors.textSecondary, fontSize: 14, marginBottom: 15 },
