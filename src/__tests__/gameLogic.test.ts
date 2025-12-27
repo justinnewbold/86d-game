@@ -29,8 +29,8 @@ const createMockLocation = (overrides = {}) => ({
   totalProfit: 20000,
   weeklyHistory: [],
   staff: [
-    { id: 1, name: 'Test Cook', role: 'Line Cook', wage: 16, skill: 5, weeks: 10, morale: 70, training: [], department: 'kitchen' },
-    { id: 2, name: 'Test Server', role: 'Server', wage: 10, skill: 6, weeks: 8, morale: 75, training: [], department: 'foh' },
+    { id: 1, name: 'Test Cook', role: 'Line Cook', wage: 16, skill: 5, weeks: 10, morale: 70, training: [] as string[], department: 'kitchen' as const, icon: '👨‍🍳' },
+    { id: 2, name: 'Test Server', role: 'Server', wage: 10, skill: 6, weeks: 8, morale: 75, training: [] as string[], department: 'foh' as const, icon: '🧑‍🍳' },
   ],
   menu: [
     { id: 1, name: 'Burger', price: 15, cost: 4.5, popular: true, is86d: false },

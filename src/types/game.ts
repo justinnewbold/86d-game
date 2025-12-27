@@ -61,6 +61,9 @@ export interface Location {
   lastWeekRevenue: number;
   lastWeekProfit: number;
   lastWeekCovers: number;
+  lastWeekFoodCost?: number;
+  lastWeekLaborCost?: number;
+  lastWeatherEvents?: string[];
   // Loan tracking per location
   loans?: Loan[];
   // Economic multipliers

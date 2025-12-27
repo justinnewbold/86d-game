@@ -205,9 +205,9 @@ export const triggerHaptic = async (type: HapticType = 'medium'): Promise<void> 
       if (type === 'selection') {
         await Haptics.selectionAsync();
       } else if (['success', 'warning', 'error'].includes(type)) {
-        await Haptics.notificationAsync(style as unknown as Haptics.NotificationFeedbackType);
+        await Haptics.notificationAsync(style as typeof Haptics.NotificationFeedbackType.Success);
       } else {
-        await Haptics.impactAsync(style as Haptics.ImpactFeedbackStyle);
+        await Haptics.impactAsync(style as typeof Haptics.ImpactFeedbackStyle.Medium);
       }
     } catch (e) {
       // Haptics not available

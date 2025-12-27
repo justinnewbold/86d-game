@@ -60,7 +60,7 @@ export const Skeleton = memo<SkeletonProps>(({
     <Animated.View
       style={[
         styles.skeleton,
-        { width, height, borderRadius, opacity },
+        { width: width as ViewStyle['width'], height, borderRadius, opacity },
         style,
       ]}
     />

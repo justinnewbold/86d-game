@@ -7,6 +7,22 @@ export default [
   js.configs.recommended,
   prettier,
   {
+    files: ['**/__tests__/**/*.js', '**/*.test.js', '**/*.spec.js'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        jest: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.js', '**/*.jsx'],
     plugins: {
       react,
@@ -43,6 +59,10 @@ export default [
         require: 'readonly',
         process: 'readonly',
         __dirname: 'readonly',
+        Response: 'readonly',
+        navigator: 'readonly',
+        AbortController: 'readonly',
+        Headers: 'readonly',
       },
     },
     settings: {

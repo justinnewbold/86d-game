@@ -2759,7 +2759,7 @@ function AppContent() {
   }, []);
 
   // Notification System (moved before processWeek to avoid temporal dead zone)
-  const addNotification = useCallback((type, message) => {
+  const addNotification = useCallback((message, type) => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, type, message }]);
     setTimeout(() => {
@@ -3538,7 +3538,7 @@ function AppContent() {
             : v
         ),
       }));
-      setAiMessage(`Great news! ${vendor.name} agreed to the ${deal.name}. That\'s going to save you money.`);
+      setAiMessage(`Great news! ${vendor.name} agreed to the ${deal.name}. That's going to save you money.`);
     } else {
       setGame(g => ({
         ...g,
@@ -3655,7 +3655,7 @@ function AppContent() {
     }
     
     setSellLocationModal(false);
-    setAiMessage(`Closed ${location.name}. Closing costs: ${formatCurrency(closingCost)}. Not every location works out - that\'s business.`);
+    setAiMessage(`Closed ${location.name}. Closing costs: ${formatCurrency(closingCost)}. Not every location works out - that's business.`);
   };
 
   // ============================================
@@ -3692,12 +3692,12 @@ function AppContent() {
       setThemesUsed([...themesUsed, themeId]);
       // Check for theme collector achievement
       if (themesUsed.length + 1 >= 5) {
-        addNotification('achievement', '🎨 Theme Collector achievement unlocked!');
+        addNotification('🎨 Theme Collector achievement unlocked!', 'achievement');
       }
     }
     try {
       storage.setItem('86d_theme', themeId);
-    } catch (e) {}
+    } catch { /* Storage unavailable */ }
   };
 
   // Auto-Advance System
@@ -3740,7 +3740,7 @@ function AppContent() {
           week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
         };
         storage.setItem('86d_autosave', JSON.stringify(autoSave));
-      } catch (e) {}
+      } catch { /* Storage unavailable */ }
     }
   }, [game?.week, autoSaveEnabled, game, setup]);
   
@@ -3768,7 +3768,7 @@ function AppContent() {
         const updated = [...existing, currentRun].slice(-50); // Keep last 50 runs
         await storage.setItem('86d_hall_of_fame', JSON.stringify(updated));
         setHallOfFame(updated);
-      } catch (e) {}
+      } catch { /* Storage unavailable */ }
     })();
   }, [game, setup]);
   
@@ -3784,7 +3784,7 @@ function AppContent() {
         const savedPrestigeStr = await storage.getItem('86d_prestige');
         const savedPrestige = parseInt(savedPrestigeStr || '0');
         setPrestigeLevel(savedPrestige);
-      } catch (e) {}
+      } catch { /* Storage unavailable */ }
     })();
   }, []);
 
@@ -3868,13 +3868,13 @@ function AppContent() {
     
     try {
       storage.setItem('86d_prestige', String(newPrestige));
-    } catch (e) {}
+    } catch { /* Storage unavailable */ }
     
     // Reset to welcome with prestige bonus message
     setGame(null);
     setScreen('welcome');
     setOnboardingStep(0);
-    addNotification('milestone', `New Game+ started! Prestige Level ${newPrestige}`);
+    addNotification(`New Game+ started! Prestige Level ${newPrestige}`, 'milestone');
   };
   
   // Get Prestige Bonus for current level
@@ -7436,7 +7436,7 @@ const styles = StyleSheet.create({
   statsValue: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   hofButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 20 },
   hofButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
-  versionText: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 20 },
+  settingsVersionText: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 20 },
 
   // Phase 5: Hall of Fame Styles
   hofCategory: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 12 },
@@ -7539,11 +7539,11 @@ const styles = StyleSheet.create({
   truckOptionInfo: { flex: 1 },
   truckOptionName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
   truckOptionDetails: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
-  eventOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
-  eventIcon: { fontSize: 24, marginRight: 12 },
-  eventInfo: { flex: 1 },
-  eventName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
-  eventDetails: { color: colors.textSecondary, fontSize: 11 },
+  truckEventOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  truckEventIcon: { fontSize: 24, marginRight: 12 },
+  truckEventInfo: { flex: 1 },
+  truckEventName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  truckEventDetails: { color: colors.textSecondary, fontSize: 11 },
 
   // Media Modal Styles
   mediaSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
@@ -7552,11 +7552,11 @@ const styles = StyleSheet.create({
   mediaInfo: { flex: 1 },
   mediaName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
   mediaDetails: { color: colors.success, fontSize: 11 },
-  dealOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
-  dealIcon: { fontSize: 24, marginRight: 12 },
-  dealInfo: { flex: 1 },
-  dealName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
-  dealDetails: { color: colors.textSecondary, fontSize: 11 },
+  mediaDealOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginBottom: 8 },
+  mediaDealIcon: { fontSize: 24, marginRight: 12 },
+  mediaDealInfo: { flex: 1 },
+  mediaDealName: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
+  mediaDealDetails: { color: colors.textSecondary, fontSize: 11 },
 
   // Exit Strategy Modal Styles
   exitSummary: { backgroundColor: colors.surfaceLight, padding: 15, borderRadius: 10, marginBottom: 15 },
@@ -7646,8 +7646,8 @@ const styles = StyleSheet.create({
   floatingAiLabel: { color: colors.background, fontSize: 14, fontWeight: '700' },
 
   // Quick Actions Styles
-  quickActionsScroll: { 
-    maxHeight: 50, 
+  quickActionsScroll: {
+    maxHeight: 50,
     marginBottom: 10,
     paddingHorizontal: 5,
   },
@@ -7660,7 +7660,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  quickActionText: { color: colors.textPrimary, fontSize: 12, fontWeight: '500' },
+  aiQuickActionText: { color: colors.textPrimary, fontSize: 12, fontWeight: '500' },
 
   // Enhanced AI Chat Styles
   aiConversationScroll: { 

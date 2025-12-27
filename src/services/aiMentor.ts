@@ -191,8 +191,8 @@ export const getAIMentorResponse = async (
       // Update conversation history
       setConversationHistory(prev => [
         ...prev,
-        { role: 'user', content: message },
-        { role: 'assistant', content: aiResponse },
+        { role: 'user' as const, content: message },
+        { role: 'assistant' as const, content: aiResponse },
       ].slice(-20));
 
       return aiResponse;

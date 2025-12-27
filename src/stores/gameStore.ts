@@ -19,6 +19,8 @@ const initialSetup: Setup = {
   goal: 'survive',
   experience: 'none',
   difficulty: 'normal',
+  city: '',
+  state: '',
 };
 
 // AI conversation message type

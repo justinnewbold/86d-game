@@ -23,7 +23,7 @@ export function validateRestaurantName(name) {
   }
 
   // Allow letters, numbers, spaces, and common punctuation
-  const validPattern = /^[a-zA-Z0-9\s'&\-\.]+$/;
+  const validPattern = /^[a-zA-Z0-9\s'&\-.]+$/;
   if (!validPattern.test(trimmed)) {
     return { valid: false, error: 'Name contains invalid characters' };
   }
