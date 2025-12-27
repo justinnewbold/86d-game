@@ -13,6 +13,7 @@ import {
   shouldTriggerCityScenario,
 } from './src/constants/cityFeatures.js';
 import { US_CITIES, US_STATES, CITY_TIERS } from './src/constants/usLocations.js';
+import { CashFlowDashboard } from './src/components/CashFlowDashboard';
 // Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
@@ -2738,6 +2739,98 @@ function AppContent() {
       reputationChange += Math.floor(synergy.reputationBonus / 4); // Spread over first 4 weeks
     }
 
+    // === EDUCATIONAL CASH FLOW TRACKING ===
+    // Initialize or update cash flow state (crucial lesson: profit ≠ cash)
+    const currentCashFlow = location.cashFlow || {
+      cashOnHand: location.cash,
+      pendingBills: [],
+      accountsReceivable: [],
+      cashFlowHistory: [],
+      weeksOfRunway: 12,
+      cashCrunchWarning: false,
+      creditLineAvailable: 25000,
+      creditLineUsed: 0,
+      creditLineInterestRate: 0.005,
+    };
+
+    // Calculate weekly cash burn (not the same as profit!)
+    const weeklyExpenses = totalCosts;
+    const weeklyIncome = totalRevenue;
+    const netCashFlow = weeklyIncome - weeklyExpenses;
+
+    // Track cash flow history (max 12 weeks)
+    const newCashFlowHistory = [
+      ...currentCashFlow.cashFlowHistory.slice(-11),
+      {
+        week: location.weeksOpen + 1,
+        totalCashIn: weeklyIncome,
+        totalCashOut: weeklyExpenses,
+        netCashFlow,
+        accountingProfit: weekProfit,
+        endingCash: location.cash + weekProfit,
+      },
+    ];
+
+    // Calculate runway (how many weeks until broke?)
+    const avgWeeklyBurn = newCashFlowHistory.length > 0
+      ? newCashFlowHistory.reduce((sum, w) => sum + Math.max(0, w.totalCashOut - w.totalCashIn), 0) / newCashFlowHistory.length
+      : weeklyExpenses;
+    const weeksOfRunway = avgWeeklyBurn > 0
+      ? Math.floor((location.cash + weekProfit) / avgWeeklyBurn)
+      : 52;
+
+    // Check for dangerous cash crunch (profitable but cash negative)
+    const cashCrunchWarning = weekProfit > 0 && netCashFlow < 0;
+
+    // Educational P&L breakdown
+    const lastWeekPL = {
+      revenue: {
+        food: dineInRevenue * 0.75,
+        beverage: dineInRevenue * 0.25,
+        delivery: deliveryRevenue,
+        catering: 0,
+        merchandise: 0,
+        total: totalRevenue,
+      },
+      cogs: {
+        foodCost: foodCost,
+        beverageCost: dineInRevenue * 0.25 * 0.22,
+        paperGoods: deliveryOrders * 0.75,
+        total: foodCost + (dineInRevenue * 0.25 * 0.22) + (deliveryOrders * 0.75),
+        percentage: foodCost / totalRevenue,
+      },
+      labor: {
+        wages: laborCost,
+        salaries: location.manager ? location.manager.wage * 45 : 0,
+        benefits: 0,
+        payrollTax: laborCost * 0.0765,
+        workerComp: laborCost * 0.04,
+        total: laborCost + (location.manager ? location.manager.wage * 45 : 0) + laborCost * 0.0765 + laborCost * 0.04,
+        percentage: laborCost / totalRevenue,
+      },
+      primeCost: foodCost + laborCost,
+      primeCostPercentage: (foodCost + laborCost) / totalRevenue,
+      operatingExpenses: {
+        rent: rent,
+        cam: rent * 0.15,
+        utilities: utilities,
+        insurance: rent * 0.08,
+        marketing: marketingCost,
+        repairs: totalRevenue * 0.015,
+        supplies: totalRevenue * 0.01,
+        technology: 50,
+        credit_card_fees: ccFees,
+        delivery_commissions: deliveryOrders * location.avgTicket * avgCommission,
+        professional_fees: 75,
+        licenses: 25,
+        miscellaneous: totalRevenue * 0.01,
+        total: rent + utilities + marketingCost + ccFees,
+        percentage: (rent + utilities + marketingCost + ccFees) / totalRevenue,
+      },
+      netProfit: weekProfit,
+      netProfitMargin: weekProfit / totalRevenue,
+    };
+
     return {
       ...location,
       cash: location.cash + weekProfit,
@@ -2746,6 +2839,8 @@ function AppContent() {
       lastWeekRevenue: totalRevenue,
       lastWeekProfit: weekProfit,
       lastWeekCovers: weekCovers + deliveryOrders,
+      lastWeekFoodCost: foodCost,
+      lastWeekLaborCost: laborCost,
       staff: updatedStaff,
       morale: Math.round(avgMorale),
       weeksOpen: location.weeksOpen + 1,
@@ -2755,6 +2850,15 @@ function AppContent() {
       lastWeatherEvents: weatherData.events,
       cuisineSynergy: synergy.hasSynergy ? synergy : null,
       delivery: { ...(location.delivery || {}), orders: (location.delivery?.orders || 0) + deliveryOrders },
+      // Educational systems
+      cashFlow: {
+        ...currentCashFlow,
+        cashOnHand: location.cash + weekProfit,
+        cashFlowHistory: newCashFlowHistory,
+        weeksOfRunway: Math.max(0, weeksOfRunway),
+        cashCrunchWarning,
+      },
+      lastWeekPL,
     };
   }, []);
 
@@ -3093,6 +3197,53 @@ function AppContent() {
       const locationsWithoutManagers = updatedLocations.filter(l => !l.manager).length;
       const burnoutChange = locationsWithoutManagers > 1 ? 8 : locationsWithoutManagers === 1 ? 3 : -2;
       
+      // === EDUCATIONAL TRACKING ===
+      // Aggregate cash flow metrics (educational focus)
+      const totalCashOnHand = updatedLocations.reduce(
+        (sum, loc) => sum + (loc.cashFlow?.cashOnHand || loc.cash || 0), 0
+      ) + newCorporateCash;
+
+      const avgRunway = updatedLocations.reduce(
+        (sum, loc) => sum + (loc.cashFlow?.weeksOfRunway || 12), 0
+      ) / Math.max(1, updatedLocations.length);
+
+      // Check for cash flow warnings
+      const cashFlowAlerts = updatedLocations.reduce((alerts, loc) => {
+        if (loc.cashFlow?.cashCrunchWarning) {
+          alerts.push({
+            type: 'profitable_but_negative_cash',
+            severity: 'critical',
+            message: `${loc.name}: Profitable on paper but burning cash!`,
+            consequence: 'This is the #1 reason restaurants fail.',
+          });
+        }
+        if ((loc.cashFlow?.weeksOfRunway || 12) < 4) {
+          alerts.push({
+            type: 'low_runway',
+            severity: 'warning',
+            message: `${loc.name}: Only ${loc.cashFlow?.weeksOfRunway || 0} weeks of cash left`,
+            consequence: 'Build reserves or reduce expenses immediately.',
+          });
+        }
+        // Prime cost warning
+        const primeCostPct = loc.lastWeekPL?.primeCostPercentage || 0;
+        if (primeCostPct > 0.70) {
+          alerts.push({
+            type: 'high_prime_cost',
+            severity: 'critical',
+            message: `${loc.name}: Prime cost at ${(primeCostPct * 100).toFixed(0)}%`,
+            consequence: 'Target is under 60%. You are losing money on every sale.',
+          });
+        }
+        return alerts;
+      }, []);
+
+      // Failure risk level
+      let failureRiskLevel = 'low';
+      if (avgRunway < 2) failureRiskLevel = 'critical';
+      else if (avgRunway < 4) failureRiskLevel = 'high';
+      else if (avgRunway < 8) failureRiskLevel = 'medium';
+
       return {
         ...g,
         week: weekNum,
@@ -3111,6 +3262,11 @@ function AppContent() {
         exitProgress: newExitProgress,
         economicCondition: newEconomicCondition,
         totalPropertyValue: updatedProperties.reduce((sum, p) => sum + p.value, 0),
+        // Educational tracking
+        cashFlowAlerts,
+        totalCashOnHand,
+        totalWeeksOfRunway: Math.floor(avgRunway),
+        failureRiskLevel,
       };
     });
     
@@ -5002,6 +5158,15 @@ function AppContent() {
             {/* FINANCE TAB */}
             {activeTab === 'finance' && loc && (
               <>
+                {/* Educational Cash Flow Dashboard */}
+                {loc.cashFlow && (
+                  <CashFlowDashboard
+                    location={loc}
+                    game={game}
+                    colors={colors}
+                  />
+                )}
+
                 {/* P&L Summary */}
                 <Text style={styles.sectionTitle}>Last Week P&L</Text>
                 <View style={styles.plCard}>

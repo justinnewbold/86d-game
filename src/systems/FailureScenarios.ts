@@ -41,7 +41,7 @@ export interface FailureScenario {
 
 export interface ScenarioTrigger {
   condition: string;
-  threshold: number;
+  threshold: number | string | boolean;
   operator: 'lt' | 'gt' | 'eq' | 'between';
 }
 
@@ -390,11 +390,28 @@ export function checkForFailureScenarios(
     // Check if all triggers are met
     const allTriggersMet = scenario.triggers.every(trigger => {
       const value = gameState[trigger.condition as keyof typeof gameState];
+      const threshold = trigger.threshold;
+
+      // Handle special threshold values that reference other gameState properties
+      let resolvedThreshold: number | string | boolean = threshold;
+      if (typeof threshold === 'string' && threshold in gameState) {
+        resolvedThreshold = gameState[threshold as keyof typeof gameState];
+      }
+
+      // Only compare if both are the same type
       switch (trigger.operator) {
-        case 'lt': return value < trigger.threshold;
-        case 'gt': return value > trigger.threshold;
-        case 'eq': return value === trigger.threshold;
-        default: return false;
+        case 'lt':
+          return typeof value === 'number' && typeof resolvedThreshold === 'number'
+            ? value < resolvedThreshold
+            : false;
+        case 'gt':
+          return typeof value === 'number' && typeof resolvedThreshold === 'number'
+            ? value > resolvedThreshold
+            : false;
+        case 'eq':
+          return value === resolvedThreshold;
+        default:
+          return false;
       }
     });
 

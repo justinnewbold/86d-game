@@ -1,4 +1,11 @@
 // Core game types
+// Import cash flow types from the educational systems
+import type { Bill, Receivable, WeeklyCashFlow, CashFlowAlert } from '../systems/CashFlowEngine';
+import type { RestaurantPL, PLAnalysis } from '../systems/RealisticFinancials';
+import type { MenuItem as EngineeringMenuItem, MenuAnalysis } from '../systems/MenuEngineering';
+
+// Re-export for convenience
+export type { Bill, Receivable, WeeklyCashFlow, CashFlowAlert, RestaurantPL, PLAnalysis, MenuAnalysis };
 
 export interface Cuisine {
   id: string;
@@ -30,6 +37,33 @@ export interface MenuItem {
   cost: number;
   popular: boolean;
   is86d: boolean;
+}
+
+// Cash flow state for a location (educational core)
+export interface LocationCashFlow {
+  cashOnHand: number;
+  pendingBills: Bill[];
+  accountsReceivable: Receivable[];
+  cashFlowHistory: WeeklyCashFlow[];
+  weeksOfRunway: number;
+  cashCrunchWarning: boolean;
+  // Credit line for emergencies
+  creditLineAvailable: number;
+  creditLineUsed: number;
+  creditLineInterestRate: number;
+}
+
+// Enhanced menu item with profitability tracking
+export interface MenuItemWithProfitability extends MenuItem {
+  // Recipe and cost tracking
+  recipeCost: number;
+  foodCostPercentage: number;
+  contributionMargin: number;
+  // Sales tracking
+  weeklyUnitsSold: number;
+  menuMix: number; // % of total sales
+  // Classification (Star, Puzzle, Plow Horse, Dog)
+  profitability: 'star' | 'puzzle' | 'plow_horse' | 'dog';
 }
 
 export interface Location {
@@ -73,6 +107,16 @@ export interface Location {
   city?: string;
   state?: string;
   locationEconomicData?: LocationEconomicData;
+
+  // === EDUCATIONAL SYSTEMS ===
+  // Cash flow tracking (separate from accounting profit!)
+  cashFlow?: LocationCashFlow;
+  // Last week's P&L breakdown (realistic model)
+  lastWeekPL?: RestaurantPL;
+  plAnalysis?: PLAnalysis;
+  // Menu engineering data
+  menuAnalysis?: MenuAnalysis;
+  enhancedMenu?: MenuItemWithProfitability[];
 }
 
 export interface WeeklyRecord {
@@ -216,6 +260,20 @@ export interface GameState {
   regularCustomers: number;
   weeksWithoutBreakdown: number;
   weeksMeetingKPIs: number;
+
+  // === EDUCATIONAL TRACKING ===
+  // Cash flow alerts across all locations
+  cashFlowAlerts?: CashFlowAlert[];
+  // Aggregate cash position (educational focus)
+  totalCashOnHand?: number;
+  totalWeeksOfRunway?: number;
+  // Failure risk indicators
+  failureRiskLevel?: 'low' | 'medium' | 'high' | 'critical';
+  failureWarnings?: string[];
+  // Educational insights shown to player
+  educationalInsights?: string[];
+  // Track lessons learned (for post-game analysis)
+  lessonsEncountered?: string[];
 }
 
 export interface Property {
