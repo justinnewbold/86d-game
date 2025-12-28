@@ -337,6 +337,10 @@ export function suggestPrice(
   atTargetMargin: number;
   vsCompetitor?: string;
 } {
+  // Guard against division by zero
+  if (targetFoodCostPct <= 0 || targetFoodCostPct > 1) {
+    targetFoodCostPct = 0.30; // Default to 30% food cost target
+  }
   const suggestedPrice = totalFoodCost / targetFoodCostPct;
   const roundedPrice = Math.ceil(suggestedPrice) - 0.01; // $X.99 pricing
 

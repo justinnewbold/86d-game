@@ -614,15 +614,19 @@ function getMetricValue(metric: string, location: Location, game: GameState): nu
   switch (metric) {
     case 'primeCost':
       // Calculate prime cost percentage
-      const weeklyRevenue = location.lastWeekRevenue || 1;
+      const weeklyRevenue = location.lastWeekRevenue || 0;
       const foodCost = (location.lastWeekFoodCost || 0);
       const laborCost = (location.lastWeekLaborCost || 0);
+      // If no revenue, return 100% prime cost (worst case)
+      if (weeklyRevenue <= 0) return 100;
       return ((foodCost + laborCost) / weeklyRevenue) * 100;
 
     case 'runway':
       // Weeks of cash runway
       const weeklyExpenses = location.rent + (location.staff?.reduce((s, st) => s + st.wage * 40, 0) || 0);
-      return weeklyExpenses > 0 ? location.cash / weeklyExpenses : 0;
+      // If no expenses, runway is infinite (return large number)
+      if (weeklyExpenses <= 0) return 999;
+      return location.cash / weeklyExpenses;
 
     case 'weeklyProfit':
       return location.lastWeekProfit || 0;

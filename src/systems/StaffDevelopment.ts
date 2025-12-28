@@ -542,21 +542,22 @@ export function processTrainingWeek(staff: DevelopedStaff): {
   updatedStaff: DevelopedStaff;
   completed: Certification | null;
 } {
-  if (!staff.inTraining) {
+  const training = staff.inTraining;
+  if (!training) {
     return { updatedStaff: staff, completed: null };
   }
 
-  const weeksRemaining = staff.inTraining.weeksRemaining - 1;
+  const weeksRemaining = training.weeksRemaining - 1;
 
   if (weeksRemaining <= 0) {
     // Training complete!
-    const cert = CERTIFICATIONS.find(c => c.id === staff.inTraining!.certificationId);
+    const cert = CERTIFICATIONS.find(c => c.id === training.certificationId);
 
     return {
       updatedStaff: {
         ...staff,
         inTraining: undefined,
-        certifications: [...staff.certifications, staff.inTraining.certificationId],
+        certifications: [...staff.certifications, training.certificationId],
         skill: Math.min(10, staff.skill + (cert?.benefits.skillBoost || 0) / 10),
         morale: Math.min(100, staff.morale + (cert?.benefits.moraleBoost || 0)),
         wage: staff.wage * (1 + (cert?.benefits.wageIncrease || 0) / 100),
@@ -570,7 +571,7 @@ export function processTrainingWeek(staff: DevelopedStaff): {
     updatedStaff: {
       ...staff,
       inTraining: {
-        ...staff.inTraining,
+        ...training,
         weeksRemaining,
       },
     },

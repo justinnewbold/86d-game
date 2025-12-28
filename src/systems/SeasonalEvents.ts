@@ -528,7 +528,8 @@ export function getSeason(weekOfYear: number): 'spring' | 'summer' | 'fall' | 'w
  * Get month from week of year
  */
 export function getMonthFromWeek(weekOfYear: number): number {
-  return Math.ceil(weekOfYear / 4.33);
+  // Cap month to 12 to prevent returning 13 for week 52
+  return Math.min(12, Math.ceil(weekOfYear / 4.33));
 }
 
 /**

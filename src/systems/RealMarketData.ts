@@ -306,8 +306,13 @@ export function calculateMenuItemImpact(
     }
   }
 
-  const currentMargin = (menuItem.price - currentCost) / menuItem.price;
-  const projectedMargin = (menuItem.price - projectedCost) / menuItem.price;
+  // Guard against division by zero if price is 0
+  const currentMargin = menuItem.price > 0
+    ? (menuItem.price - currentCost) / menuItem.price
+    : 0;
+  const projectedMargin = menuItem.price > 0
+    ? (menuItem.price - projectedCost) / menuItem.price
+    : 0;
 
   let alert: string | undefined;
   if (projectedMargin < currentMargin - 0.05) {

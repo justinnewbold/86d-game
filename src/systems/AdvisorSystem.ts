@@ -317,8 +317,8 @@ export function getActiveAdvice(
   );
 
   // Sort by priority
-  const priorityOrder = { 'critical': 0, 'warning': 1, 'tip': 2, 'encouragement': 3 };
-  triggeredAdvice.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  const priorityOrder: Record<string, number> = { 'critical': 0, 'warning': 1, 'tip': 2, 'encouragement': 3 };
+  triggeredAdvice.sort((a, b) => (priorityOrder[a.priority] ?? 999) - (priorityOrder[b.priority] ?? 999));
 
   return triggeredAdvice.slice(0, maxAdvice);
 }
@@ -338,8 +338,9 @@ export function formatAdvice(advice: AdvisorAdvice): {
   formattedQuote: string;
   badge: string;
   badgeColor: string;
-} {
-  const advisor = getAdvisor(advice.advisorId)!;
+} | null {
+  const advisor = getAdvisor(advice.advisorId);
+  if (!advisor) return null;
 
   const badges = {
     'critical': '🚨 CRITICAL',

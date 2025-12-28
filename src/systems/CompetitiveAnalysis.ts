@@ -266,11 +266,13 @@ export function analyzeMarket(
     totalMarketShare < 0.6 ? 'balanced' :
     totalMarketShare < 0.8 ? 'saturated' : 'oversaturated';
 
-  // Calculate market average price
-  const avgMarketPrice = competitors.reduce((sum, c) => sum + c.avgPrice, 0) / competitors.length;
+  // Calculate market average price (guard against empty competitors array)
+  const avgMarketPrice = competitors.length > 0
+    ? competitors.reduce((sum, c) => sum + c.avgPrice, 0) / competitors.length
+    : playerAvgPrice; // Default to player's price if no competitors
 
-  // Determine player price position
-  const priceRatio = playerAvgPrice / avgMarketPrice;
+  // Determine player price position (guard against zero avgMarketPrice)
+  const priceRatio = avgMarketPrice > 0 ? playerAvgPrice / avgMarketPrice : 1;
   const playerPricePosition =
     priceRatio < 0.8 ? 'budget' :
     priceRatio < 1.0 ? 'value' :
@@ -285,7 +287,9 @@ export function analyzeMarket(
   if (competitors.filter(c => c.type === 'chain').length > 2) {
     marketTrends.push('Chain-dominated market');
   }
-  const avgRating = competitors.reduce((sum, c) => sum + c.rating, 0) / competitors.length;
+  const avgRating = competitors.length > 0
+    ? competitors.reduce((sum, c) => sum + c.rating, 0) / competitors.length
+    : 3.5; // Default average rating
   if (avgRating > 4.0) {
     marketTrends.push('High quality expectations in this market');
   }
