@@ -170,10 +170,10 @@ export function calculateWeeklyPL(
   const paperGoods = deliveryOrders * 0.75; // ~$0.75 per delivery in packaging
 
   const totalCogs = foodCost + beverageCost + deliveryFoodCost + paperGoods;
-  const cogsPercentage = totalCogs / totalRevenue;
+  const cogsPercentage = totalRevenue > 0 ? totalCogs / totalRevenue : 0;
 
   const grossProfit = totalRevenue - totalCogs;
-  const grossMargin = grossProfit / totalRevenue;
+  const grossMargin = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
 
   // Labor (the silent killer)
   const wages = staffCosts.hourlyWages;
@@ -183,11 +183,11 @@ export function calculateWeeklyPL(
   const benefits = salaries * 0.15; // Benefits typically for managers only
 
   const totalLabor = wages + salaries + payrollTax + workerComp + benefits;
-  const laborPercentage = totalLabor / totalRevenue;
+  const laborPercentage = totalRevenue > 0 ? totalLabor / totalRevenue : 0;
 
   // PRIME COST (the most important number!)
   const primeCost = totalCogs + totalLabor;
-  const primeCostPercentage = primeCost / totalRevenue;
+  const primeCostPercentage = totalRevenue > 0 ? primeCost / totalRevenue : 0;
 
   // Operating Expenses
   const rent = fixedCosts.weeklyRent;
@@ -208,11 +208,11 @@ export function calculateWeeklyPL(
   const totalOpex = rent + cam + utilities + insurance + marketing + repairs +
                     supplies + technology + creditCardFees + deliveryCommissions +
                     professionalFees + licenses + miscellaneous;
-  const opexPercentage = totalOpex / totalRevenue;
+  const opexPercentage = totalRevenue > 0 ? totalOpex / totalRevenue : 0;
 
   // EBITDA
   const ebitda = grossProfit - totalLabor - totalOpex + deliveryCommissions; // Add back delivery (already netted)
-  const ebitdaMargin = ebitda / totalRevenue;
+  const ebitdaMargin = totalRevenue > 0 ? ebitda / totalRevenue : 0;
 
   // Below the line
   const depreciation = 100; // ~$5K/year equipment depreciation
@@ -221,7 +221,7 @@ export function calculateWeeklyPL(
 
   // NET PROFIT (the real number)
   const netProfit = ebitda - depreciation - interest - taxes;
-  const netProfitMargin = netProfit / totalRevenue;
+  const netProfitMargin = totalRevenue > 0 ? netProfit / totalRevenue : 0;
 
   return {
     revenue: {
@@ -322,8 +322,10 @@ export function analyzePL(pl: RestaurantPL): PLAnalysis {
   }
 
   // Occupancy Analysis
-  const occupancyPct = (pl.operatingExpenses.rent + pl.operatingExpenses.cam +
-                        pl.operatingExpenses.insurance) / pl.revenue.total;
+  const occupancyPct = pl.revenue.total > 0
+    ? (pl.operatingExpenses.rent + pl.operatingExpenses.cam +
+       pl.operatingExpenses.insurance) / pl.revenue.total
+    : 0;
   if (occupancyPct > INDUSTRY_BENCHMARKS.occupancy.danger) {
     issues.push({
       category: 'occupancy',

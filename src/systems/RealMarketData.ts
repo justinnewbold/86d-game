@@ -154,7 +154,7 @@ export function calculateRestaurantWages(
   minimumWage: number,
   laborMarketTightness: 'tight' | 'normal' | 'loose'
 ): {
-  lineCoook: number;
+  lineCook: number;
   prepCook: number;
   dishwasher: number;
   server: number;
@@ -171,7 +171,7 @@ export function calculateRestaurantWages(
   const baseRate = minimumWage * tightnessMultiplier;
 
   return {
-    lineCoook: baseRate * 1.25, // Cooks get 25% over base
+    lineCook: baseRate * 1.25, // Cooks get 25% over base
     prepCook: baseRate * 1.10,
     dishwasher: baseRate * 1.00,
     server: minimumWage * 0.5, // Tipped minimum (varies by state, simplified)
@@ -211,7 +211,7 @@ export async function getMarketData(city: string, state: string): Promise<Market
     labor: {
       minimumWage,
       avgRestaurantWage: minimumWage * colAdj.laborMult * 1.15,
-      avgCookWage: wages.lineCoook,
+      avgCookWage: wages.lineCook,
       avgServerWage: wages.server,
       avgManagerSalary: wages.manager * 52, // Annual
       unemploymentRate: laborMarketTightness === 'tight' ? 3.5 : laborMarketTightness === 'loose' ? 6.0 : 4.5,
