@@ -188,9 +188,11 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
   // Sort by priority and potential impact
   recommendations.sort((a, b) => {
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const priorityA = priorityOrder[a.priority] ?? 3;
+    const priorityB = priorityOrder[b.priority] ?? 3;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
     }
     return b.potentialImpact - a.potentialImpact;
   });

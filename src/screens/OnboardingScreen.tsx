@@ -147,7 +147,7 @@ const CapitalStep = memo<CapitalStepProps>(({ setup, setSetup }) => {
   const tierInfo = getTierInfo(setup.capital);
 
   const handleCustomApply = useCallback(() => {
-    const amount = parseInt(customInput) || 50000;
+    const amount = parseInt(customInput, 10) || 50000;
     setSetup(s => ({ ...s, capital: Math.max(50000, Math.min(100000000, amount)) }));
     setCustomMode(false);
     setCustomInput('');

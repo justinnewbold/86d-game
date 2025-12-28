@@ -98,7 +98,7 @@ export function calculateExpectedCovers(
   for (const [day, dayMult] of Object.entries(DAY_MULTIPLIERS)) {
     result[day] = {};
     for (const [hour, hourWeight] of Object.entries(pattern)) {
-      const hourNum = parseInt(hour);
+      const hourNum = parseInt(hour, 10);
       // Distribute weekly covers across hours based on pattern
       const coversThisHour = (avgWeeklyCovers / daysOpen) * dayMult *
         (hourWeight / totalPatternWeight) * Object.keys(pattern).length;
@@ -143,7 +143,7 @@ export function generateStaffingRequirements(
 
   for (const [day, hours] of Object.entries(expectedCovers)) {
     for (const [hourStr, covers] of Object.entries(hours)) {
-      const hour = parseInt(hourStr);
+      const hour = parseInt(hourStr, 10);
 
       const requiredKitchen = calculateRequiredStaff(covers, true);
       const requiredFOH = calculateRequiredStaff(covers, false);

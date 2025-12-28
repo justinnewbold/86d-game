@@ -139,7 +139,7 @@ export function generatePostMortem(
     totalWeeks: game.week,
     outcome,
     finalCash: location.cash,
-    peakCash: Math.max(...weeklySnapshots.map(s => s.cash)),
+    peakCash: weeklySnapshots.length > 0 ? Math.max(...weeklySnapshots.map(s => s.cash)) : location.cash,
     finalReputation: location.reputation,
     totalRevenue: location.totalRevenue || 0,
     totalProfit: location.totalProfit || 0,
