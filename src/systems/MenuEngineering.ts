@@ -130,13 +130,17 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
   // Generate recommendations
   const recommendations: MenuRecommendation[] = [];
 
+  // Helper to calculate margin percentage safely
+  const marginPct = (margin: number, price: number) =>
+    price > 0 ? ((margin / price) * 100).toFixed(0) : '0';
+
   // Star recommendations
   stars.forEach(item => {
     recommendations.push({
       item: item.name,
       category: 'star',
       action: 'maintain',
-      reason: `${item.name} is a star - high margin (${((item.contributionMargin / item.price) * 100).toFixed(0)}%) and popular (${(item.menuMix * 100).toFixed(1)}% of sales)`,
+      reason: `${item.name} is a star - high margin (${marginPct(item.contributionMargin, item.price)}%) and popular (${(item.menuMix * 100).toFixed(1)}% of sales)`,
       potentialImpact: 0,
       priority: 'low',
     });
@@ -144,12 +148,12 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
   // Puzzle recommendations (high margin, low sales - need promotion)
   puzzles.forEach(item => {
-    const potentialUplift = item.contributionMargin * (avgMenuMix * totalSold - item.weeklyUnitsSold);
+    const potentialUplift = item.contributionMargin * (avgMenuMix * totalSold - (item.weeklyUnitsSold || 0));
     recommendations.push({
       item: item.name,
       category: 'puzzle',
       action: 'promote',
-      reason: `${item.name} has great margins (${((item.contributionMargin / item.price) * 100).toFixed(0)}%) but low sales. Promote it, train servers to upsell, or reposition on menu.`,
+      reason: `${item.name} has great margins (${marginPct(item.contributionMargin, item.price)}%) but low sales. Promote it, train servers to upsell, or reposition on menu.`,
       potentialImpact: potentialUplift,
       priority: 'high',
     });
@@ -157,13 +161,13 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
   // Plow horse recommendations (popular but low margin - raise price or cut cost)
   plowHorses.forEach(item => {
-    const priceIncrease = item.price * 0.10; // 10% increase
-    const potentialUplift = priceIncrease * item.weeklyUnitsSold * 0.85; // Assume 15% sales drop
+    const priceIncrease = (item.price || 0) * 0.10; // 10% increase
+    const potentialUplift = priceIncrease * (item.weeklyUnitsSold || 0) * 0.85; // Assume 15% sales drop
     recommendations.push({
       item: item.name,
       category: 'plow_horse',
       action: 'reprice',
-      reason: `${item.name} sells well but margin is thin (${((item.contributionMargin / item.price) * 100).toFixed(0)}%). Consider a 10% price increase or reduce portion/cost.`,
+      reason: `${item.name} sells well but margin is thin (${marginPct(item.contributionMargin, item.price)}%). Consider a 10% price increase or reduce portion/cost.`,
       potentialImpact: potentialUplift,
       priority: 'medium',
     });
@@ -252,11 +256,11 @@ function generateInsights(
 
   // Pareto principle check
   const topItems = [...items].sort((a, b) =>
-    (b.contributionMargin * b.weeklyUnitsSold) - (a.contributionMargin * a.weeklyUnitsSold)
+    (b.contributionMargin * (b.weeklyUnitsSold || 0)) - (a.contributionMargin * (a.weeklyUnitsSold || 0))
   );
   const top20Pct = Math.max(1, Math.ceil(items.length * 0.2));
   const top20Contribution = topItems.slice(0, top20Pct).reduce(
-    (sum, i) => sum + (i.contributionMargin * i.weeklyUnitsSold), 0
+    (sum, i) => sum + (i.contributionMargin * (i.weeklyUnitsSold || 0)), 0
   );
   const top20PctOfProfit = totalContribution > 0 ? top20Contribution / totalContribution : 0;
 
@@ -311,7 +315,7 @@ export function calculateRecipeCost(ingredients: RecipeIngredient[]): {
   const breakdown = ingredients.map(i => ({
     ingredient: i.name,
     cost: i.totalCost,
-    pct: i.totalCost / totalCost,
+    pct: totalCost > 0 ? i.totalCost / totalCost : 0,
   })).sort((a, b) => b.cost - a.cost);
 
   return {
