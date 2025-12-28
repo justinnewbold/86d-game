@@ -352,9 +352,10 @@ export const CashFlowDashboard = memo<CashFlowDashboardProps>(({
   const pl = location.lastWeekPL;
   const lastWeekCashFlow = cashFlow?.cashFlowHistory?.[cashFlow.cashFlowHistory.length - 1];
 
-  // Calculate weekly burn rate
-  const weeklyBurn = cashFlow?.cashFlowHistory && cashFlow.cashFlowHistory.length > 0
-    ? cashFlow.cashFlowHistory.slice(-4).reduce((sum, w) => sum + w.totalCashOut, 0) / 4
+  // Calculate weekly burn rate (average of last 4 weeks, or fewer if not enough history)
+  const recentHistory = cashFlow?.cashFlowHistory?.slice(-4) || [];
+  const weeklyBurn = recentHistory.length > 0
+    ? recentHistory.reduce((sum, w) => sum + w.totalCashOut, 0) / recentHistory.length
     : location.rent + (location.staff || []).reduce((s, st) => s + st.wage * 40, 0);
 
   return (

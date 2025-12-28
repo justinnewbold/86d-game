@@ -380,9 +380,10 @@ export function processWeeklyCashFlow(
     cashFlowDifference,
   };
 
-  // Calculate runway
-  const avgWeeklyBurn = state.cashFlowHistory.length > 0
-    ? state.cashFlowHistory.slice(-4).reduce((s, w) => s + w.totalCashOut, 0) / 4
+  // Calculate runway (average of last 4 weeks, or fewer if not enough history)
+  const recentHistory = state.cashFlowHistory.slice(-4);
+  const avgWeeklyBurn = recentHistory.length > 0
+    ? recentHistory.reduce((s, w) => s + w.totalCashOut, 0) / recentHistory.length
     : cashOut.totalCashOut;
 
   const weeksOfRunway = calculateRunway(endingCash, avgWeeklyBurn, updatedBills);
