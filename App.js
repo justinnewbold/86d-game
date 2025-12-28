@@ -14,6 +14,8 @@ import {
 } from './src/constants/cityFeatures.js';
 import { US_CITIES, US_STATES, CITY_TIERS } from './src/constants/usLocations.js';
 import { CashFlowDashboard } from './src/components/CashFlowDashboard';
+import { checkForFailureScenarios, FAILURE_STATISTICS } from './src/systems/FailureScenarios';
+import { analyzeMenu, MENU_ENGINEERING_LESSONS } from './src/systems/MenuEngineering';
 // Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
@@ -3286,9 +3288,57 @@ function AppContent() {
         
         // Phase 4: Check milestones after week processing
         checkMilestones();
-        
+
         // Phase 4: Check competition
         checkCompetition();
+
+        // Educational: Check for failure scenarios
+        if (game.locations?.[0]) {
+          const loc = game.locations[0];
+          const failureState = {
+            cashOnHand: loc.cashFlow?.cashOnHand || loc.cash || 0,
+            weeklyPayroll: (loc.staff || []).reduce((s, st) => s + st.wage * 40, 0),
+            monthlyBills: (loc.rent || 0) * 4,
+            weeksOfRunway: loc.cashFlow?.weeksOfRunway || 12,
+            netProfitMargin: loc.lastWeekPL?.netProfitMargin || (loc.lastWeekProfit / Math.max(1, loc.lastWeekRevenue)),
+            kitchenMorale: loc.morale || 50,
+            reputationScore: loc.reputation || 50,
+            missedRentPayments: 0,
+            economicCondition: game.economicCondition || 'stable',
+          };
+
+          const triggeredScenarios = checkForFailureScenarios(failureState);
+          if (triggeredScenarios.length > 0) {
+            // Show the most severe scenario as a special event
+            const scenario = triggeredScenarios[0];
+            setTimeout(() => {
+              addNotification(`⚠️ ${scenario.name}: ${scenario.educationalLesson}`,
+                scenario.severity === 'fatal' ? 'error' : 'warning');
+            }, 1500);
+
+            // Apply consequences
+            triggeredScenarios.forEach(s => {
+              s.consequences.forEach(c => {
+                if (c.type === 'reputation' && typeof c.impact === 'number') {
+                  setGame(g => ({
+                    ...g,
+                    locations: g.locations.map((l, i) =>
+                      i === 0 ? { ...l, reputation: Math.max(0, l.reputation + c.impact) } : l
+                    )
+                  }));
+                }
+                if (c.type === 'cash' && typeof c.impact === 'number') {
+                  setGame(g => ({
+                    ...g,
+                    locations: g.locations.map((l, i) =>
+                      i === 0 ? { ...l, cash: l.cash + c.impact } : l
+                    )
+                  }));
+                }
+              });
+            });
+          }
+        }
       }
     }, 800);
   }, [game, setup, processLocationWeek, checkMilestones, checkCompetition]);
@@ -5107,6 +5157,54 @@ function AppContent() {
                     <Text style={styles.menuStatus}>{item.is86d ? '86\'d' : item.popular ? '⭐' : ''}</Text>
                   </TouchableOpacity>
                 ))}
+
+                {/* Menu Engineering Analysis */}
+                {(loc.menu || []).length >= 4 && (() => {
+                  const menuForAnalysis = (loc.menu || []).filter(m => !m.is86d).map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    foodCost: item.cost,
+                    weeklySales: item.popular ? 25 : 12,
+                    category: 'entree',
+                  }));
+                  const analysis = analyzeMenu(menuForAnalysis);
+                  return (
+                    <View style={[styles.menuEngCard, { backgroundColor: colors.surfaceLight }]}>
+                      <Text style={[styles.menuEngTitle, { color: colors.primary }]}>📊 Menu Engineering</Text>
+                      <Text style={[styles.menuEngSubtitle, { color: colors.textMuted }]}>
+                        Optimize your menu for profitability
+                      </Text>
+                      <View style={styles.menuEngGrid}>
+                        <View style={[styles.menuEngQuadrant, { backgroundColor: colors.success + '20' }]}>
+                          <Text style={styles.menuEngLabel}>⭐ Stars</Text>
+                          <Text style={[styles.menuEngCount, { color: colors.success }]}>{analysis.stars.length}</Text>
+                          <Text style={styles.menuEngHint}>High profit, popular</Text>
+                        </View>
+                        <View style={[styles.menuEngQuadrant, { backgroundColor: colors.warning + '20' }]}>
+                          <Text style={styles.menuEngLabel}>🧩 Puzzles</Text>
+                          <Text style={[styles.menuEngCount, { color: colors.warning }]}>{analysis.puzzles.length}</Text>
+                          <Text style={styles.menuEngHint}>High profit, low sales</Text>
+                        </View>
+                        <View style={[styles.menuEngQuadrant, { backgroundColor: colors.info + '20' }]}>
+                          <Text style={styles.menuEngLabel}>🐴 Plow Horses</Text>
+                          <Text style={[styles.menuEngCount, { color: colors.info }]}>{analysis.plowHorses.length}</Text>
+                          <Text style={styles.menuEngHint}>Low profit, popular</Text>
+                        </View>
+                        <View style={[styles.menuEngQuadrant, { backgroundColor: colors.accent + '20' }]}>
+                          <Text style={styles.menuEngLabel}>🐕 Dogs</Text>
+                          <Text style={[styles.menuEngCount, { color: colors.accent }]}>{analysis.dogs.length}</Text>
+                          <Text style={styles.menuEngHint}>Consider removing</Text>
+                        </View>
+                      </View>
+                      {analysis.recommendations.slice(0, 2).map((rec, i) => (
+                        <Text key={i} style={[styles.menuEngRec, { color: colors.textSecondary }]}>
+                          💡 {rec}
+                        </Text>
+                      ))}
+                    </View>
+                  );
+                })()}
 
                 {/* Equipment */}
                 <Text style={styles.sectionTitle}>Equipment</Text>
@@ -7882,6 +7980,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
     fontStyle: 'italic',
+  },
+
+  // Menu Engineering Styles
+  menuEngCard: {
+    padding: 15,
+    borderRadius: 12,
+    marginVertical: 10,
+  },
+  menuEngTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  menuEngSubtitle: {
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  menuEngGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  menuEngQuadrant: {
+    width: '48%',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  menuEngLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  menuEngCount: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  menuEngHint: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  menuEngRec: {
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 18,
   },
 
 });
