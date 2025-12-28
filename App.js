@@ -5164,9 +5164,17 @@ function AppContent() {
                     id: item.id,
                     name: item.name,
                     price: item.price,
-                    foodCost: item.cost,
-                    weeklySales: item.popular ? 25 : 12,
+                    totalFoodCost: item.cost,
+                    foodCostPercentage: item.cost / item.price,
+                    weeklyUnitsSold: item.popular ? 25 : 12,
                     category: 'entree',
+                    recipe: [],
+                    popularityRank: item.popular ? 1 : 5,
+                    contributionMargin: 0,
+                    menuMix: 0,
+                    profitability: 'star',
+                    isSignatureDish: item.popular || false,
+                    is86d: false,
                   }));
                   const analysis = analyzeMenu(menuForAnalysis);
                   return (

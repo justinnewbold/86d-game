@@ -79,11 +79,28 @@ export function classifyMenuItem(
  * Analyze entire menu and provide recommendations
  */
 export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
-  // Calculate averages
-  const totalSold = items.reduce((sum, i) => sum + i.weeklyUnitsSold, 0);
+  // Guard against empty arrays
+  if (items.length === 0) {
+    return {
+      items: [],
+      stars: [],
+      puzzles: [],
+      plowHorses: [],
+      dogs: [],
+      summary: {
+        totalItems: 0, stars: 0, puzzles: 0, plowHorses: 0, dogs: 0,
+        avgFoodCostPct: 0, avgContributionMargin: 0, totalWeeklyContribution: 0, starsContributionPct: 0,
+      },
+      recommendations: [],
+      educationalInsights: ['Add menu items to see analysis'],
+    };
+  }
+
+  // Calculate averages with division protection
+  const totalSold = items.reduce((sum, i) => sum + (i.weeklyUnitsSold || 0), 0);
   items.forEach(item => {
-    item.menuMix = item.weeklyUnitsSold / totalSold;
-    item.contributionMargin = item.price - item.totalFoodCost;
+    item.menuMix = totalSold > 0 ? (item.weeklyUnitsSold || 0) / totalSold : 0;
+    item.contributionMargin = (item.price || 0) - (item.totalFoodCost || 0);
   });
 
   const avgContributionMargin = items.reduce((sum, i) => sum + i.contributionMargin, 0) / items.length;
@@ -176,16 +193,20 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
   return {
     items: classified,
+    stars,
+    puzzles,
+    plowHorses,
+    dogs,
     summary: {
       totalItems: items.length,
       stars: stars.length,
       puzzles: puzzles.length,
       plowHorses: plowHorses.length,
       dogs: dogs.length,
-      avgFoodCostPct: items.reduce((s, i) => s + i.foodCostPercentage, 0) / items.length,
+      avgFoodCostPct: items.reduce((s, i) => s + (i.foodCostPercentage || 0), 0) / items.length,
       avgContributionMargin,
       totalWeeklyContribution: totalContribution,
-      starsContributionPct: starsContribution / totalContribution,
+      starsContributionPct: totalContribution > 0 ? starsContribution / totalContribution : 0,
     },
     recommendations,
     educationalInsights: generateInsights(classified, totalContribution, starsContribution),
@@ -194,6 +215,10 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
 export interface MenuAnalysis {
   items: (MenuItem & { profitability: MenuItemCategory })[];
+  stars: (MenuItem & { profitability: MenuItemCategory })[];
+  puzzles: (MenuItem & { profitability: MenuItemCategory })[];
+  plowHorses: (MenuItem & { profitability: MenuItemCategory })[];
+  dogs: (MenuItem & { profitability: MenuItemCategory })[];
   summary: {
     totalItems: number;
     stars: number;
@@ -229,11 +254,11 @@ function generateInsights(
   const topItems = [...items].sort((a, b) =>
     (b.contributionMargin * b.weeklyUnitsSold) - (a.contributionMargin * a.weeklyUnitsSold)
   );
-  const top20Pct = Math.ceil(items.length * 0.2);
+  const top20Pct = Math.max(1, Math.ceil(items.length * 0.2));
   const top20Contribution = topItems.slice(0, top20Pct).reduce(
     (sum, i) => sum + (i.contributionMargin * i.weeklyUnitsSold), 0
   );
-  const top20PctOfProfit = top20Contribution / totalContribution;
+  const top20PctOfProfit = totalContribution > 0 ? top20Contribution / totalContribution : 0;
 
   insights.push(
     `📊 Pareto Check: Your top ${top20Pct} items generate ${(top20PctOfProfit * 100).toFixed(0)}% of your contribution margin. ` +
