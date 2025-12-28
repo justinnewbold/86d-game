@@ -408,6 +408,17 @@ export function calculateBreakEven(
   const variableCostPct = foodCostPct + (laborCostPct * 0.5); // Only half of labor is truly variable
   const contributionMargin = 1 - variableCostPct;
 
+  // Guard against division by zero or negative contribution margin
+  if (contributionMargin <= 0) {
+    // Variable costs >= 100% means break-even is impossible
+    return { coversPerMonth: Infinity, revenuePerMonth: Infinity, coversPerWeek: Infinity };
+  }
+
+  // Guard against zero avgTicket
+  if (avgTicket <= 0) {
+    return { coversPerMonth: Infinity, revenuePerMonth: fixedCostsMonthly / contributionMargin, coversPerWeek: Infinity };
+  }
+
   const revenuePerMonth = fixedCostsMonthly / contributionMargin;
   const coversPerMonth = revenuePerMonth / avgTicket;
   const coversPerWeek = coversPerMonth / 4;

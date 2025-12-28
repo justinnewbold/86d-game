@@ -188,9 +188,11 @@ export function analyzeMenu(items: MenuItem[]): MenuAnalysis {
 
   // Sort by priority and potential impact
   recommendations.sort((a, b) => {
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const priorityA = priorityOrder[a.priority] ?? 3;
+    const priorityB = priorityOrder[b.priority] ?? 3;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
     }
     return b.potentialImpact - a.potentialImpact;
   });
@@ -337,6 +339,10 @@ export function suggestPrice(
   atTargetMargin: number;
   vsCompetitor?: string;
 } {
+  // Guard against division by zero
+  if (targetFoodCostPct <= 0 || targetFoodCostPct > 1) {
+    targetFoodCostPct = 0.30; // Default to 30% food cost target
+  }
   const suggestedPrice = totalFoodCost / targetFoodCostPct;
   const roundedPrice = Math.ceil(suggestedPrice) - 0.01; // $X.99 pricing
 
