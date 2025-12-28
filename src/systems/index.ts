@@ -275,6 +275,115 @@ export {
 } from './DecisionHistory';
 
 // ============================================
+// SEASONAL & CUSTOMER SYSTEMS
+// ============================================
+
+/**
+ * Seasonal Events & Calendar
+ * Holidays, weather, local events that affect business
+ * Use for: Weekly event checks, planning for peaks/valleys
+ */
+export {
+  type CalendarEvent,
+  type EventType,
+  type EventEffects,
+  type ActiveEvent,
+  type SeasonalState,
+  ALL_EVENTS,
+  HOLIDAY_EVENTS,
+  SEASONAL_EVENTS,
+  WEATHER_EVENTS,
+  LOCAL_EVENTS,
+  getSeason,
+  initializeSeasonalState,
+  processSeasonalWeek,
+  calculateCombinedEffects,
+  getUpcomingEvents,
+  applySeasonalEffects,
+  generateSeasonalCalendar,
+  SEASONAL_LESSONS,
+} from './SeasonalEvents';
+
+/**
+ * Customer Segmentation & Loyalty
+ * Different customer types with different behaviors
+ * Use for: Customer mix analysis, loyalty programs, marketing focus
+ */
+export {
+  type CustomerSegment,
+  type SegmentProfile,
+  type CustomerMix,
+  type Customer,
+  type LoyaltyTier,
+  type CustomerState,
+  SEGMENT_PROFILES,
+  DEFAULT_LOYALTY_TIERS,
+  initializeCustomerState,
+  calculateMixedTicket,
+  calculatePriceSensitivity,
+  predictPriceChangeImpact,
+  predictReviews,
+  processCustomerWeek,
+  analyzeSegments,
+  recommendMarketingFocus,
+  CUSTOMER_LESSONS,
+} from './CustomerSegmentation';
+
+// ============================================
+// EQUIPMENT & ASSET SYSTEMS
+// ============================================
+
+/**
+ * Equipment Lifecycle Management
+ * Depreciation, maintenance, breakdowns
+ * Use for: Capital planning, maintenance scheduling, repair decisions
+ */
+export {
+  type Equipment,
+  type EquipmentCategory,
+  type MaintenanceRecord,
+  type EquipmentBreakdown,
+  type RepairOption,
+  type EquipmentState,
+  EQUIPMENT_CATALOG,
+  initializeEquipmentState,
+  purchaseEquipment,
+  calculateDepreciation,
+  processEquipmentWeek,
+  performMaintenance,
+  repairBreakdown,
+  analyzeLeaseVsBuy,
+  generateEquipmentReport,
+  EQUIPMENT_LESSONS,
+} from './EquipmentLifecycle';
+
+// ============================================
+// GAMIFICATION SYSTEMS
+// ============================================
+
+/**
+ * Achievement & Milestone System
+ * Educational milestones with real-world context
+ * Use for: Progress tracking, learning reinforcement
+ */
+export {
+  type Achievement,
+  type AchievementCategory,
+  type UnlockedAchievement,
+  type AchievementState,
+  type AchievementProgress,
+  type AchievementRank,
+  ACHIEVEMENTS,
+  initializeAchievementState,
+  checkAchievements,
+  getVisibleAchievements,
+  getAchievementsByCategory,
+  generateAchievementSummary,
+  getRecommendedAchievements,
+  ACHIEVEMENT_LESSONS,
+} from './Achievements';
+
+// ============================================
 // QUICK REFERENCE: WHEN TO USE EACH SYSTEM
 // ============================================
 /**
@@ -283,25 +392,35 @@ export {
  * - CompetitiveAnalysis: Generate initial competitors
  * - SupplierRelationship: Set up initial suppliers
  * - DecisionHistory: Initialize history tracking
+ * - CustomerSegmentation: Initialize customer state
+ * - EquipmentLifecycle: Set up initial equipment
+ * - Achievements: Initialize achievement tracking
+ * - SeasonalEvents: Initialize seasonal state
  *
  * SCENARIO MODE:
  * - ScenarioMode: Get/initialize learning scenarios
  * - processScenarioWeek: Check progress each week
  *
  * EACH WEEK:
+ * - SeasonalEvents: Check for events, apply effects
  * - LaborScheduling: Validate/optimize schedule
  * - RealisticFinancials: Calculate P&L
  * - CashFlowEngine: Process cash flow
  * - CompetitiveAnalysis: Check for market events
  * - FailureScenarios: Check for triggered scenarios
+ * - CustomerSegmentation: Process customer dynamics
+ * - EquipmentLifecycle: Process wear, check breakdowns
  * - AdvisorSystem: Get contextual advice
  * - StaffDevelopment: Process training progress
  * - DecisionHistory: Record key decisions
+ * - Achievements: Check for new unlocks
  *
  * PLAYER DECISIONS:
  * - MenuEngineering: Menu changes
  * - StaffDevelopment: Training/promotion choices
  * - SupplierRelationship: Vendor selection
+ * - EquipmentLifecycle: Repair/replace/maintain
+ * - CustomerSegmentation: Marketing focus
  * - ScenarioConsequences: Crisis recovery choices
  * - DecisionHistory: Track and analyze choices
  *
@@ -314,6 +433,7 @@ export {
  * - PostMortem: Generate analysis report
  * - exportDecisionSummary: Share decision history
  * - generateScenarioSummary: Complete scenario review
+ * - generateAchievementSummary: Show accomplishments
  */
 
 // ============================================
