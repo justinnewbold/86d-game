@@ -110,6 +110,117 @@ const colors = {
 
 const formatCurrency = (v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${Math.round(v).toLocaleString()}`;
 const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
+const formatShortDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString();
+};
+
+const buildWeeklyRecap = ({
+  previousGame,
+  updatedLocations,
+  weekNum,
+  corporateCash,
+}) => {
+  if (!previousGame || !updatedLocations) return null;
+
+  const totalRevenue = updatedLocations.reduce((sum, l) => sum + (l.lastWeekRevenue || 0), 0);
+  const totalProfit = updatedLocations.reduce((sum, l) => sum + (l.lastWeekProfit || 0), 0);
+  const prevRevenue = previousGame.locations.reduce((sum, l) => sum + (l.lastWeekRevenue || 0), 0);
+  const prevProfit = previousGame.locations.reduce((sum, l) => sum + (l.lastWeekProfit || 0), 0);
+  const avgRunway = updatedLocations.reduce((sum, l) => sum + (l.cashFlow?.weeksOfRunway || 0), 0) / Math.max(1, updatedLocations.length);
+  const totalCashOnHand = updatedLocations.reduce((sum, l) => sum + (l.cashFlow?.cashOnHand || l.cash || 0), 0) + corporateCash;
+
+  const highlights = [];
+  if (updatedLocations.length > 0) {
+    const best = updatedLocations.reduce((bestLoc, l) => l.lastWeekProfit > bestLoc.lastWeekProfit ? l : bestLoc, updatedLocations[0]);
+    const worst = updatedLocations.reduce((worstLoc, l) => l.lastWeekProfit < worstLoc.lastWeekProfit ? l : worstLoc, updatedLocations[0]);
+    highlights.push(`Top performer: ${best.name} (${formatCurrency(best.lastWeekProfit)} profit)`);
+    if (updatedLocations.length > 1) {
+      highlights.push(`Needs attention: ${worst.name} (${formatCurrency(worst.lastWeekProfit)} profit)`);
+    }
+  }
+  if (prevRevenue > 0) {
+    const revenueDelta = totalRevenue - prevRevenue;
+    highlights.push(`Revenue ${revenueDelta >= 0 ? 'up' : 'down'} ${formatCurrency(Math.abs(revenueDelta))} vs last week`);
+  }
+
+  const insights = [];
+  if (totalProfit < 0) {
+    insights.push({
+      actionKey: 'review_finance',
+      actionLabel: 'Review finance tab',
+      title: 'Trim costs or boost sales',
+      detail: `Net profit was ${formatCurrency(totalProfit)}. Review labor, food cost, and pricing.`,
+    });
+  }
+  if (avgRunway < 4) {
+    insights.push({
+      actionKey: 'open_loans',
+      actionLabel: 'Explore financing',
+      title: 'Cash runway is tight',
+      detail: `Average runway is ${Math.max(0, Math.floor(avgRunway))} weeks. Reduce burn or raise cash.`,
+    });
+  }
+  if (updatedLocations.some(l => l.cashFlow?.cashCrunchWarning)) {
+    insights.push({
+      actionKey: 'open_analytics',
+      actionLabel: 'Open analytics',
+      title: 'Profitable but cash-negative',
+      detail: 'Cash flow is lagging profit. Watch inventory, delivery fees, and payment timing.',
+    });
+  }
+  if (updatedLocations.some(l => (l.lastWeekPL?.primeCostPercentage || 0) > 0.7)) {
+    insights.push({
+      actionKey: 'review_ops',
+      actionLabel: 'Review ops tab',
+      title: 'Prime cost is high',
+      detail: 'Target prime cost under 60%. Labor and food are squeezing margins.',
+    });
+  }
+  if (updatedLocations.some(l => l.morale < 50)) {
+    insights.push({
+      actionKey: 'open_staff',
+      actionLabel: 'Review staff',
+      title: 'Morale is slipping',
+      detail: 'Low morale can drag service and revenue. Consider training or staffing changes.',
+    });
+  }
+  if (insights.length === 0) {
+    insights.push({
+      title: 'Steady week',
+      detail: 'No major red flags. Look for growth opportunities or efficiency wins.',
+    });
+  }
+
+  return {
+    week: weekNum,
+    totals: {
+      revenue: totalRevenue,
+      profit: totalProfit,
+      cash: totalCashOnHand,
+      runway: Math.max(0, Math.floor(avgRunway)),
+    },
+    deltas: {
+      revenue: totalRevenue - prevRevenue,
+      profit: totalProfit - prevProfit,
+    },
+    highlights,
+    insights,
+  };
+};
+
+const buildScenarioTags = (outcome = {}) => {
+  const tags = [];
+  if (outcome.cash) tags.push(outcome.cash > 0 ? 'cash gain' : 'cash loss');
+  if (outcome.reputation) tags.push(outcome.reputation > 0 ? 'reputation up' : 'reputation down');
+  if (outcome.morale) tags.push(outcome.morale > 0 ? 'morale up' : 'morale down');
+  if (outcome.covers) tags.push(outcome.covers > 0 ? 'traffic up' : 'traffic down');
+  if (outcome.foodCostMod) tags.push(outcome.foodCostMod > 0 ? 'food cost up' : 'food cost down');
+  if (outcome.laborCostMod) tags.push(outcome.laborCostMod > 0 ? 'labor cost up' : 'labor cost down');
+  return tags.length > 0 ? tags : ['no material impact'];
+};
 
 // ============================================
 // AI MENTOR SYSTEM
@@ -2319,6 +2430,12 @@ function AppContent() {
   const [analyticsModal, setAnalyticsModal] = useState(false);
   const [loanModal, setLoanModal] = useState(false);
   const [saveModal, setSaveModal] = useState(false);
+  const [weeklyRecap, setWeeklyRecap] = useState(null);
+  const [showWeeklyRecap, setShowWeeklyRecap] = useState(false);
+  const [saveNameDrafts, setSaveNameDrafts] = useState({});
+  const [scenarioTimelineModal, setScenarioTimelineModal] = useState(false);
+  const [scenarioTimelineFilter, setScenarioTimelineFilter] = useState('all');
+  const [scenarioTimelineQuery, setScenarioTimelineQuery] = useState('');
   const [aiChatModal, setAiChatModal] = useState(false);
   const [aiChatInput, setAiChatInput] = useState('');
   const [expansionModal, setExpansionModal] = useState(false);
@@ -2489,6 +2606,7 @@ function AppContent() {
       // Progress
       achievements: ['first_week'],
       scenariosSeen: [],
+      scenarioHistory: [],
       profitStreak: 0,
       
       // Owner
@@ -2958,6 +3076,7 @@ function AppContent() {
     
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
     
+    let weeklyRecapData = null;
     setGame(g => {
       // Get current economic condition and its effects
       const currentCondition = ECONOMIC_CONDITIONS.find(e => e.id === g.economicCondition) || ECONOMIC_CONDITIONS[1]; // default to stable
@@ -3246,6 +3365,13 @@ function AppContent() {
       else if (avgRunway < 4) failureRiskLevel = 'high';
       else if (avgRunway < 8) failureRiskLevel = 'medium';
 
+      weeklyRecapData = buildWeeklyRecap({
+        previousGame: g,
+        updatedLocations,
+        weekNum,
+        corporateCash: newCorporateCash,
+      });
+
       return {
         ...g,
         week: weekNum,
@@ -3271,6 +3397,11 @@ function AppContent() {
         failureRiskLevel,
       };
     });
+
+    if (weeklyRecapData) {
+      setWeeklyRecap(weeklyRecapData);
+      setShowWeeklyRecap(true);
+    }
     
     // Get AI commentary
     setTimeout(async () => {
@@ -4111,7 +4242,20 @@ function AppContent() {
     setScenarioResult({ success, outcome });
     
     setGame(g => {
-      let updated = { ...g, scenariosSeen: [...g.scenariosSeen, scenario.id] };
+      const timelineEntry = {
+        id: Date.now(),
+        week: g.week,
+        title: scenario.title,
+        type: scenario.type,
+        success,
+        tags: buildScenarioTags(outcome),
+        result: success ? 'success' : 'failure',
+      };
+      let updated = {
+        ...g,
+        scenariosSeen: [...g.scenariosSeen, scenario.id],
+        scenarioHistory: [timelineEntry, ...(g.scenarioHistory || [])].slice(0, 50),
+      };
       
       // Handle empire-wide effects
       if (outcome.allLocations) {
@@ -4217,10 +4361,38 @@ function AppContent() {
   };
 
   const saveGame = (slot) => {
-    const save = { slot, date: new Date().toISOString(), setup, game };
-    setSavedGames(prev => [...prev.filter(s => s.slot !== slot), save]);
+    setSavedGames(prev => {
+      const existing = prev.find(s => s.slot === slot);
+      const name = (saveNameDrafts[slot] || existing?.name || setup.name || `Slot ${slot}`).trim();
+      const save = { slot, date: new Date().toISOString(), setup, game, name };
+      return [...prev.filter(s => s.slot !== slot), save];
+    });
     setSaveModal(false);
   };
+
+  const handleRecapAction = useCallback((actionKey) => {
+    switch (actionKey) {
+      case 'review_finance':
+        setActiveTab('finance');
+        break;
+      case 'review_ops':
+        setActiveTab('ops');
+        break;
+      case 'open_staff':
+        setActiveTab('staff');
+        setStaffModal(true);
+        break;
+      case 'open_loans':
+        setLoanModal(true);
+        break;
+      case 'open_analytics':
+        setAnalyticsModal(true);
+        break;
+      default:
+        break;
+    }
+    setShowWeeklyRecap(false);
+  }, []);
 
   const loadGame = (save) => {
     setSetup(save.setup);
@@ -5026,6 +5198,10 @@ function AppContent() {
                     <Text style={styles.quickActionIcon}>📊</Text>
                     <Text style={styles.quickActionText}>Analytics</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setShowWeeklyRecap(true)}>
+                    <Text style={styles.quickActionIcon}>🧾</Text>
+                    <Text style={styles.quickActionText}>Recap</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.quickAction} onPress={() => setSaveModal(true)}>
                     <Text style={styles.quickActionIcon}>💾</Text>
                     <Text style={styles.quickActionText}>Save</Text>
@@ -5041,6 +5217,10 @@ function AppContent() {
                   <TouchableOpacity style={styles.quickAction} onPress={() => setEventsModal(true)}>
                     <Text style={styles.quickActionIcon}>📅</Text>
                     <Text style={styles.quickActionText}>Events</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickAction} onPress={() => setScenarioTimelineModal(true)}>
+                    <Text style={styles.quickActionIcon}>🧭</Text>
+                    <Text style={styles.quickActionText}>Timeline</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.quickAction} onPress={() => setMilestonesModal(true)}>
                     <Text style={styles.quickActionIcon}>🏆</Text>
@@ -5607,6 +5787,144 @@ function AppContent() {
           </View>
         </Modal>
 
+        {/* Weekly Recap Modal */}
+        <Modal visible={showWeeklyRecap} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Weekly Recap</Text>
+                <TouchableOpacity onPress={() => setShowWeeklyRecap(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              {weeklyRecap ? (
+                <ScrollView>
+                  <Text style={styles.modalSubtitle}>Week {weeklyRecap.week}</Text>
+                  <View style={styles.recapStatsRow}>
+                    <View style={styles.recapStatCard}>
+                      <Text style={styles.recapStatLabel}>Revenue</Text>
+                      <Text style={styles.recapStatValue}>{formatCurrency(weeklyRecap.totals.revenue)}</Text>
+                      <Text style={[styles.recapStatDelta, { color: weeklyRecap.deltas.revenue >= 0 ? colors.success : colors.accent }]}>
+                        {weeklyRecap.deltas.revenue >= 0 ? '+' : '-'}{formatCurrency(Math.abs(weeklyRecap.deltas.revenue))}
+                      </Text>
+                    </View>
+                    <View style={styles.recapStatCard}>
+                      <Text style={styles.recapStatLabel}>Profit</Text>
+                      <Text style={[styles.recapStatValue, { color: weeklyRecap.totals.profit >= 0 ? colors.success : colors.accent }]}>
+                        {weeklyRecap.totals.profit >= 0 ? '+' : ''}{formatCurrency(weeklyRecap.totals.profit)}
+                      </Text>
+                      <Text style={[styles.recapStatDelta, { color: weeklyRecap.deltas.profit >= 0 ? colors.success : colors.accent }]}>
+                        {weeklyRecap.deltas.profit >= 0 ? '+' : '-'}{formatCurrency(Math.abs(weeklyRecap.deltas.profit))}
+                      </Text>
+                    </View>
+                    <View style={styles.recapStatCard}>
+                      <Text style={styles.recapStatLabel}>Cash</Text>
+                      <Text style={styles.recapStatValue}>{formatCurrency(weeklyRecap.totals.cash)}</Text>
+                      <Text style={styles.recapStatDelta}>{weeklyRecap.totals.runway} wks runway</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.recapSectionTitle}>Highlights</Text>
+                  {weeklyRecap.highlights.map((item, idx) => (
+                    <Text key={idx} style={styles.recapBullet}>• {item}</Text>
+                  ))}
+
+                  <Text style={styles.recapSectionTitle}>Actionable Insights</Text>
+                  {weeklyRecap.insights.map((item, idx) => (
+                    <View key={idx} style={styles.recapInsightCard}>
+                      <Text style={styles.recapInsightTitle}>{item.title}</Text>
+                      <Text style={styles.recapInsightDetail}>{item.detail}</Text>
+                      {item.actionKey && item.actionLabel && (
+                        <TouchableOpacity
+                          style={styles.recapInsightAction}
+                          onPress={() => handleRecapAction(item.actionKey)}
+                        >
+                          <Text style={styles.recapInsightActionText}>{item.actionLabel}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={styles.emptyText}>Play a week to generate your recap.</Text>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* Scenario Timeline Modal */}
+        <Modal visible={scenarioTimelineModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Scenario Timeline</Text>
+                <TouchableOpacity onPress={() => setScenarioTimelineModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Recent scenarios and outcomes</Text>
+              <View style={styles.timelineFilters}>
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'success', label: 'Success' },
+                  { id: 'failure', label: 'Failures' },
+                ].map(filter => (
+                  <TouchableOpacity
+                    key={filter.id}
+                    style={[styles.timelineFilterBtn, scenarioTimelineFilter === filter.id && styles.timelineFilterBtnActive]}
+                    onPress={() => setScenarioTimelineFilter(filter.id)}
+                  >
+                    <Text style={[styles.timelineFilterText, scenarioTimelineFilter === filter.id && styles.timelineFilterTextActive]}>
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={styles.timelineSearch}
+                placeholder="Filter by tag or title..."
+                placeholderTextColor={colors.textMuted}
+                value={scenarioTimelineQuery}
+                onChangeText={setScenarioTimelineQuery}
+              />
+              <ScrollView>
+                {(() => {
+                  const entries = game.scenarioHistory || [];
+                  const filtered = entries.filter(entry => {
+                    if (scenarioTimelineFilter !== 'all' && entry.result !== scenarioTimelineFilter) return false;
+                    if (!scenarioTimelineQuery.trim()) return true;
+                    const query = scenarioTimelineQuery.toLowerCase();
+                    const titleMatch = entry.title?.toLowerCase().includes(query);
+                    const tagMatch = (entry.tags || []).some(tag => tag.toLowerCase().includes(query));
+                    return titleMatch || tagMatch;
+                  });
+                  if (entries.length === 0) {
+                    return <Text style={styles.emptyText}>No scenarios yet. Advance a few weeks to see what happens.</Text>;
+                  }
+                  if (filtered.length === 0) {
+                    return <Text style={styles.emptyText}>No scenarios match that filter yet.</Text>;
+                  }
+                  return filtered.map(entry => (
+                    <View key={entry.id} style={styles.timelineCard}>
+                      <View style={styles.timelineHeader}>
+                        <Text style={styles.timelineWeek}>Week {entry.week}</Text>
+                        <Text style={[styles.timelineResult, entry.success ? styles.timelineSuccess : styles.timelineFailure]}>
+                          {entry.result.toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={styles.timelineTitle}>{entry.title}</Text>
+                      <Text style={styles.timelineType}>{entry.type?.toUpperCase() || 'SCENARIO'}</Text>
+                      <View style={styles.timelineTagRow}>
+                        {entry.tags.map(tag => (
+                          <View key={tag} style={styles.timelineTag}>
+                            <Text style={styles.timelineTagText}>{tag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ));
+                })()}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
         {/* Expansion Modal */}
         <Modal visible={expansionModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
@@ -6013,12 +6331,22 @@ function AppContent() {
               <ScrollView>
                 {[1, 2, 3].map(slot => {
                   const save = savedGames.find(s => s.slot === slot);
+                  const saveName = saveNameDrafts[slot] ?? save?.name ?? '';
                   return (
                     <View key={slot} style={styles.saveSlot}>
                       <Text style={styles.saveSlotTitle}>Slot {slot}</Text>
+                      <TextInput
+                        style={styles.saveNameInput}
+                        placeholder="Add a save name"
+                        placeholderTextColor={colors.textMuted}
+                        value={saveName}
+                        onChangeText={(text) => setSaveNameDrafts(prev => ({ ...prev, [slot]: text }))}
+                      />
                       {save ? (
                         <>
-                          <Text style={styles.saveSlotInfo}>{save.setup.name} • Week {save.game.week} • {save.game.locations.length} locations</Text>
+                          <Text style={styles.saveSlotInfo}>
+                            {(save.name || save.setup.name)} • Week {save.game.week} • {save.game.locations.length} locations • {formatShortDate(save.date)}
+                          </Text>
                           <View style={styles.saveSlotButtons}>
                             <TouchableOpacity style={styles.loadBtn} onPress={() => loadGame(save)}><Text style={styles.loadBtnText}>LOAD</Text></TouchableOpacity>
                             <TouchableOpacity style={styles.overwriteBtn} onPress={() => saveGame(slot)}><Text style={styles.overwriteBtnText}>OVERWRITE</Text></TouchableOpacity>
@@ -7575,12 +7903,46 @@ const styles = StyleSheet.create({
   saveSlotTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
   saveSlotInfo: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
   saveSlotButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  saveNameInput: { backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, borderRadius: 6, marginTop: 8, borderWidth: 1, borderColor: colors.border },
   loadBtn: { flex: 1, backgroundColor: colors.info, padding: 10, borderRadius: 6, alignItems: 'center' },
   loadBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
   overwriteBtn: { flex: 1, backgroundColor: colors.warning, padding: 10, borderRadius: 6, alignItems: 'center' },
   overwriteBtnText: { color: colors.background, fontSize: 12, fontWeight: '600' },
   saveBtn: { backgroundColor: colors.success, padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 10 },
   saveBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+
+  // Weekly Recap
+  recapStatsRow: { flexDirection: 'row', gap: 10, marginBottom: 15 },
+  recapStatCard: { flex: 1, backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8 },
+  recapStatLabel: { color: colors.textMuted, fontSize: 11, marginBottom: 4 },
+  recapStatValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  recapStatDelta: { color: colors.textSecondary, fontSize: 11, marginTop: 4 },
+  recapSectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700', marginTop: 10, marginBottom: 6 },
+  recapBullet: { color: colors.textSecondary, fontSize: 13, marginBottom: 4 },
+  recapInsightCard: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 8 },
+  recapInsightTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', marginBottom: 4 },
+  recapInsightDetail: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  recapInsightAction: { alignSelf: 'flex-start', marginTop: 8, backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  recapInsightActionText: { color: colors.background, fontSize: 11, fontWeight: '700' },
+
+  // Scenario Timeline
+  timelineCard: { backgroundColor: colors.surfaceLight, padding: 12, borderRadius: 8, marginBottom: 10 },
+  timelineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  timelineWeek: { color: colors.textMuted, fontSize: 11 },
+  timelineResult: { fontSize: 11, fontWeight: '700' },
+  timelineSuccess: { color: colors.success },
+  timelineFailure: { color: colors.accent },
+  timelineTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  timelineType: { color: colors.textSecondary, fontSize: 11, marginBottom: 6 },
+  timelineTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  timelineTag: { backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  timelineTagText: { color: colors.textSecondary, fontSize: 10 },
+  timelineFilters: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  timelineFilterBtn: { backgroundColor: colors.surfaceLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  timelineFilterBtnActive: { backgroundColor: colors.primary },
+  timelineFilterText: { color: colors.textSecondary, fontSize: 12 },
+  timelineFilterTextActive: { color: colors.background, fontWeight: '700' },
+  timelineSearch: { backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
 
   // Bottom Bar
   bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
@@ -8038,5 +8400,3 @@ const styles = StyleSheet.create({
   },
 
 });
-
-
