@@ -168,16 +168,30 @@ export function generatePostMortem(
 function buildWeeklySnapshots(location: Location, game: GameState): WeeklySnapshot[] {
   const history = location.weeklyHistory || [];
 
-  return history.map((week, index) => ({
-    week: week.week || index + 1,
-    revenue: week.revenue || 0,
-    profit: week.profit || 0,
-    cash: location.cash, // Approximation
-    reputation: location.reputation,
-    primeCostPct: 0.55 + Math.random() * 0.15, // Estimate
-    staffCount: location.staff?.length || 5,
-    morale: location.morale || 50,
-  }));
+  // Reconstruct approximate historical cash balances by walking backwards from current
+  let runningCash = location.cash;
+  const cashByWeek: number[] = new Array(history.length);
+  for (let i = history.length - 1; i >= 0; i--) {
+    cashByWeek[i] = runningCash;
+    runningCash = Math.max(0, runningCash - (history[i].profit || 0));
+  }
+
+  return history.map((week, index) => {
+    // WeeklyRecord may have extended fields from educational game loop
+    const extended = week as unknown as Record<string, unknown>;
+    return {
+      week: week.week || index + 1,
+      revenue: week.revenue || 0,
+      profit: week.profit || 0,
+      cash: cashByWeek[index] ?? location.cash,
+      reputation: (extended.reputation as number) ?? location.reputation,
+      primeCostPct: (extended.primeCostPct as number) ?? (week.revenue > 0
+        ? (((extended.foodCost as number) || 0) + ((extended.laborCost as number) || 0)) / week.revenue
+        : 0.60),
+      staffCount: (extended.staffCount as number) ?? location.staff?.length ?? 5,
+      morale: (extended.morale as number) ?? location.morale ?? 50,
+    };
+  });
 }
 
 function analyzeFinancials(

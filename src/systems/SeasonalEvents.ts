@@ -209,7 +209,7 @@ export const HOLIDAY_EVENTS: CalendarEvent[] = [
     impactDescription: '-40% covers as people stay home',
     timing: {
       month: 12,
-      weekOfMonth: 4,
+      weekOfMonth: 3,
       durationWeeks: 1,
     },
     effects: {

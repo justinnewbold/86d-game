@@ -1,11 +1,12 @@
 // Formatting utilities
 
-export const formatCurrency = (v: number): string =>
-  v >= 1000000
-    ? `$${(v / 1000000).toFixed(1)}M`
-    : v >= 1000
-      ? `$${(v / 1000).toFixed(0)}K`
-      : `$${Math.round(v).toLocaleString()}`;
+export const formatCurrency = (v: number): string => {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(1)}M`;
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(0)}K`;
+  return `${sign}$${Math.round(abs).toLocaleString()}`;
+};
 
 export const formatPct = (v: number): string => `${(v * 100).toFixed(1)}%`;
 

@@ -205,7 +205,7 @@ export function calculateScheduleSummary(
   const overstaffedPeriods: { day: string; hour: number; excessStaff: number }[] = [];
 
   for (const shift of shifts) {
-    const hours = shift.endHour - shift.startHour;
+    const hours = Math.max(0, shift.endHour - shift.startHour);
     const cost = hours * shift.hourlyWage;
 
     totalHours += hours;
@@ -261,7 +261,7 @@ export function generateOptimizedSchedule(
       shifts.push({
         id: `shift-${shiftId++}`,
         day,
-        startHour: openHour - 1, // Prep time
+        startHour: Math.max(0, openHour - 1), // Prep time
         endHour: closeHour,
         role: i === 0 ? 'cook' : i === 1 ? 'prep' : 'dishwasher',
         hourlyWage: wages[i === 0 ? 'cook' : i === 1 ? 'prep' : 'dishwasher'] || 15,
