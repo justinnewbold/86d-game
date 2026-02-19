@@ -132,8 +132,8 @@ export default async function handler(req) {
       systemInstruction += `\n\nNOTE: No active game - player is in welcome/onboarding phase. Give general advice about starting a restaurant.`;
     }
 
-    // Use Gemini 2.0 Flash for speed, with fallback
-    const models = ['gemini-2.0-flash-exp', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    // Use Gemini 2.5 Flash for speed, with fallback
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     let data = null;
     let lastError = null;
 
