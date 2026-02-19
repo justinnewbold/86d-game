@@ -19,7 +19,7 @@ export const SEASONAL_CHALLENGES = [
   {
     id: 'winter_2025', season: 'Winter 2025', icon: '❄️', name: 'Frostbite Challenge',
     description: 'Survive the winter rush while managing heating costs and holiday staff',
-    startDate: '2025-12-01', endDate: '2025-02-28',
+    startDate: '2025-12-01', endDate: '2026-02-28',
     objectives: [
       { id: 'holiday_rush', name: 'Holiday Rush', description: 'Process 5,000+ covers in December', target: 5000, stat: 'decemberCovers', reward: 25000 },
       { id: 'staff_retention', name: 'Holiday Spirit', description: 'Keep morale above 70% all season', target: 70, stat: 'minMorale', reward: 15000 },

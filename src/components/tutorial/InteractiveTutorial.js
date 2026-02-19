@@ -145,7 +145,7 @@ const InteractiveTutorial = memo(function InteractiveTutorial({
 
       // Start pulse animation for highlight
       if (step?.highlight) {
-        Animated.loop(
+        const pulse = Animated.loop(
           Animated.sequence([
             Animated.timing(pulseAnim, {
               toValue: 1.05,
@@ -158,7 +158,9 @@ const InteractiveTutorial = memo(function InteractiveTutorial({
               useNativeDriver: true,
             }),
           ])
-        ).start();
+        );
+        pulse.start();
+        return () => pulse.stop();
       }
     } else {
       fadeAnim.setValue(0);

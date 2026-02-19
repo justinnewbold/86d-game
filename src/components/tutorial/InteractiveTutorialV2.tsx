@@ -132,8 +132,9 @@ const Tooltip = memo<TooltipProps>(({
     }).start();
 
     // Pulse animation for action hints
+    let pulseLoop: Animated.CompositeAnimation | undefined;
     if (step.action) {
-      Animated.loop(
+      pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
             toValue: 1.05,
@@ -146,10 +147,12 @@ const Tooltip = memo<TooltipProps>(({
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      pulseLoop.start();
     }
 
     return () => {
+      pulseLoop?.stop();
       scaleAnim.setValue(0);
     };
   }, [step, scaleAnim, pulseAnim]);

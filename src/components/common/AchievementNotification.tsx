@@ -96,8 +96,9 @@ export const AchievementNotification = memo<AchievementNotificationProps>(({
     ]).start();
 
     // Glow animation for legendary/epic
+    let glowLoop: Animated.CompositeAnimation | null = null;
     if (achievement?.rarity === 'legendary' || achievement?.rarity === 'epic') {
-      Animated.loop(
+      glowLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
             toValue: 1,
@@ -110,11 +111,12 @@ export const AchievementNotification = memo<AchievementNotificationProps>(({
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      glowLoop.start();
     }
 
     // Icon bounce
-    Animated.loop(
+    const bounceLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(iconBounceAnim, {
           toValue: 1.2,
@@ -129,7 +131,13 @@ export const AchievementNotification = memo<AchievementNotificationProps>(({
         Animated.delay(1400),
       ]),
       { iterations: 2 }
-    ).start();
+    );
+    bounceLoop.start();
+
+    return () => {
+      glowLoop?.stop();
+      bounceLoop.stop();
+    };
   }, [position, slideAnim, scaleAnim, opacityAnim, glowAnim, iconBounceAnim, achievement?.rarity]);
 
   // Hide animation

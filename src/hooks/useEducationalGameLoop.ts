@@ -295,9 +295,11 @@ export function processGameWeek(
   const allInsights: string[] = [];
   const allAlerts: CashFlowAlert[] = [];
 
-  // Get economic multiplier
-  const economicMultiplier = game.economicCondition === 'boom' ? 1.15
-    : game.economicCondition === 'recession' ? 0.80
+  // Get economic multiplier (matching constants/business.js ECONOMIC_CONDITIONS)
+  const economicMultiplier = game.economicCondition === 'boom' ? 1.25
+    : game.economicCondition === 'recession' ? 0.75
+    : game.economicCondition === 'slowdown' ? 0.9
+    : game.economicCondition === 'inflation' ? 1.1
     : 1.0;
 
   // Process each location
@@ -350,7 +352,9 @@ export function processGameWeek(
     ),
     monthlyBills: updatedLocations.reduce((sum, loc) => sum + loc.rent * 4, 0),
     weeksOfRunway: avgRunway,
-    netProfitMargin: updatedLocations[0]?.lastWeekPL?.netProfitMargin || 0.05,
+    netProfitMargin: updatedLocations.reduce(
+      (sum, loc) => sum + (loc.lastWeekPL?.netProfitMargin || 0), 0
+    ) / Math.max(1, updatedLocations.length),
     kitchenMorale: updatedLocations.reduce(
       (sum, loc) => sum + loc.morale,
       0
