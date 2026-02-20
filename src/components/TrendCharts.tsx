@@ -325,12 +325,17 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ location, game, colors }) => 
     label: `W${week.week}`,
   }));
 
-  // Prepare prime cost data
-  const primeCostData = (location.weeklyHistory || []).map((week, idx) => {
-    const pl = location.lastWeekPL;
+  // Prepare prime cost data from weekly history
+  const primeCostData = (location.weeklyHistory || []).map((week) => {
+    const extended = week as unknown as Record<string, unknown>;
+    // Use historical prime cost if available, otherwise estimate from revenue/costs
+    const primeCostPct = (extended.primeCostPct as number)
+      ?? (week.revenue > 0 && (extended.foodCost || extended.laborCost)
+        ? (((extended.foodCost as number) || 0) + ((extended.laborCost as number) || 0)) / week.revenue
+        : location.lastWeekPL?.primeCostPercentage || 0.55);
     return {
       week: week.week,
-      primeCostPct: pl?.primeCostPercentage || 0.55,
+      primeCostPct,
     };
   });
 

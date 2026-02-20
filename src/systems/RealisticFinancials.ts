@@ -159,14 +159,15 @@ export function calculateWeeklyPL(
   const foodRevenue = weeklyCovers * avgTicket * 0.75; // 75% food
   const beverageRevenue = weeklyCovers * avgTicket * 0.25; // 25% bev
   const deliveryRevenueGross = deliveryOrders * deliveryAvgTicket;
-  const deliveryRevenuNet = deliveryRevenueGross * (1 - deliveryPlatformCommission);
+  const deliveryCommissions = deliveryRevenueGross * deliveryPlatformCommission;
+  const deliveryRevenueNet = deliveryRevenueGross - deliveryCommissions;
 
-  const totalRevenue = foodRevenue + beverageRevenue + deliveryRevenuNet;
+  const totalRevenue = foodRevenue + beverageRevenue + deliveryRevenueNet;
 
-  // COGS
+  // COGS - use net delivery revenue for food cost calculation to match revenue basis
   const foodCost = foodRevenue * menuFoodCostPct;
   const beverageCost = beverageRevenue * 0.22; // Drinks have ~22% COGS
-  const deliveryFoodCost = deliveryOrders * deliveryAvgTicket * menuFoodCostPct;
+  const deliveryFoodCost = deliveryRevenueNet * menuFoodCostPct;
   const paperGoods = deliveryOrders * 0.75; // ~$0.75 per delivery in packaging
 
   const totalCogs = foodCost + beverageCost + deliveryFoodCost + paperGoods;
@@ -189,7 +190,7 @@ export function calculateWeeklyPL(
   const primeCost = totalCogs + totalLabor;
   const primeCostPercentage = totalRevenue > 0 ? primeCost / totalRevenue : 0;
 
-  // Operating Expenses
+  // Operating Expenses (delivery commissions already netted from revenue, not in opex)
   const rent = fixedCosts.weeklyRent;
   const utilities = fixedCosts.weeklyUtilities;
   const insurance = fixedCosts.weeklyInsurance;
@@ -198,7 +199,6 @@ export function calculateWeeklyPL(
   const supplies = totalRevenue * 0.01; // 1% supplies
   const technology = 50; // ~$200/month for POS/software
   const creditCardFees = (foodRevenue + beverageRevenue) * 0.85 * creditCardRate; // 85% CC
-  const deliveryCommissions = deliveryRevenueGross * deliveryPlatformCommission;
   const professionalFees = 75; // ~$300/month accounting
   const licenses = 25; // ~$100/month amortized
   const miscellaneous = totalRevenue * 0.01;
@@ -206,12 +206,12 @@ export function calculateWeeklyPL(
   const cam = rent * 0.15; // CAM typically 15% of rent
 
   const totalOpex = rent + cam + utilities + insurance + marketing + repairs +
-                    supplies + technology + creditCardFees + deliveryCommissions +
+                    supplies + technology + creditCardFees +
                     professionalFees + licenses + miscellaneous;
   const opexPercentage = totalRevenue > 0 ? totalOpex / totalRevenue : 0;
 
   // EBITDA
-  const ebitda = grossProfit - totalLabor - totalOpex + deliveryCommissions; // Add back delivery (already netted)
+  const ebitda = grossProfit - totalLabor - totalOpex;
   const ebitdaMargin = totalRevenue > 0 ? ebitda / totalRevenue : 0;
 
   // Below the line
@@ -227,7 +227,7 @@ export function calculateWeeklyPL(
     revenue: {
       food: foodRevenue,
       beverage: beverageRevenue,
-      delivery: deliveryRevenuNet,
+      delivery: deliveryRevenueNet,
       catering: 0,
       merchandise: 0,
       total: totalRevenue,

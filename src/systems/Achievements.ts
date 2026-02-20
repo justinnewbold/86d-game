@@ -641,12 +641,15 @@ function getMetricValue(metric: string, location: Location, game: GameState): nu
       return location.weeksOpen;
 
     case 'staffRetention':
-      // Would need historical tracking
-      return 100; // Placeholder
+      // Approximate from stats: percentage of hired staff still employed
+      const hired = game.stats?.employeesHired || 0;
+      const fired = game.stats?.employeesFired || 0;
+      if (hired <= 0) return 100;
+      return Math.max(0, Math.min(100, ((hired - fired) / hired) * 100));
 
     case 'regularPercentage':
-      // Would come from CustomerSegmentation
-      return 25; // Placeholder
+      // Approximate from reputation and tenure (higher rep + longer open = more regulars)
+      return Math.min(60, (location.reputation * 0.4) + (Math.min(location.weeksOpen, 52) * 0.3));
 
     default:
       return 0;

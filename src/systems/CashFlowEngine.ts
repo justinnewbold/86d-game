@@ -154,13 +154,14 @@ export const REVENUE_TIMING = {
 export function calculateRunway(
   cashOnHand: number,
   weeklyBurn: number, // Average weekly cash out
-  pendingBills: Bill[]
+  pendingBills: Bill[],
+  currentWeek: number = 0
 ): number {
   if (weeklyBurn <= 0) return 52; // Cap at 1 year
 
-  // Factor in upcoming large bills
+  // Factor in upcoming large bills (due within next 4 weeks)
   const next4WeeksBills = pendingBills
-    .filter(b => !b.isPaid && b.dueWeek <= 4)
+    .filter(b => !b.isPaid && b.dueWeek > currentWeek && b.dueWeek <= currentWeek + 4)
     .reduce((sum, b) => sum + b.amount, 0);
 
   const adjustedCash = cashOnHand - next4WeeksBills;
@@ -386,7 +387,7 @@ export function processWeeklyCashFlow(
     ? recentHistory.reduce((s, w) => s + w.totalCashOut, 0) / recentHistory.length
     : cashOut.totalCashOut;
 
-  const weeksOfRunway = calculateRunway(endingCash, avgWeeklyBurn, updatedBills);
+  const weeksOfRunway = calculateRunway(endingCash, avgWeeklyBurn, updatedBills, currentWeek);
 
   // Cash crunch warning
   if (weeksOfRunway < 4) {

@@ -106,8 +106,8 @@ export function gameReducer(state, action) {
     case GAME_ACTIONS.ADVANCE_WEEK:
       return {
         ...state,
-        week: state.week + 1,
         ...action.payload,
+        week: state.week + 1,
       };
 
     case GAME_ACTIONS.UPDATE_LOCATION: {
@@ -150,13 +150,15 @@ export function gameReducer(state, action) {
       };
 
     case GAME_ACTIONS.PAY_LOAN: {
+      const { loanId, payment } = action.payload;
       return {
         ...state,
         loans: state.loans.map(loan =>
-          loan.id === action.payload.loanId
+          loan.id === loanId
             ? { ...loan, remaining: loan.remaining - 1 }
             : loan
         ).filter(loan => loan.remaining > 0),
+        corporateCash: state.corporateCash - (payment || 0),
       };
     }
 
@@ -201,7 +203,7 @@ export function gameReducer(state, action) {
                 cash: loc.cash - cost,
                 staff: (loc.staff || []).map(s =>
                   s.id === staffId
-                    ? { ...s, skill: Math.min(10, s.skill + training.skillBonus), training: training.id }
+                    ? { ...s, skill: Math.min(10, s.skill + (training.skillBoost || 0)), training: training.id }
                     : s
                 ),
               }

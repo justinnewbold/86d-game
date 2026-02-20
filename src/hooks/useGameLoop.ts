@@ -103,7 +103,9 @@ export const processLocationWeek = (
 
   // Costs
   const foodCost = totalRevenue * location.foodCostPct * economicCostMultiplier;
-  const laborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
+  const staffLaborCost = (location.staff || []).reduce((sum, s) => sum + s.wage * 40, 0);
+  const managerLaborCost = location.manager ? location.manager.wage * 45 : 0; // Managers work ~45hrs
+  const laborCost = staffLaborCost + managerLaborCost;
   const rent = location.rent;
   const utilities = Math.floor(rent * 0.15);
   const marketingCost = (location.marketing?.channels || []).reduce(

@@ -238,7 +238,7 @@ export const useGameStore = create<GameStoreState>()(
       importSave: (jsonString) => {
         try {
           const parsed = JSON.parse(jsonString);
-          if (!parsed.slot || !parsed.setup || !parsed.game) {
+          if (parsed.slot == null || !parsed.setup || !parsed.game) {
             return false;
           }
           const migratedSave = migrateSave(parsed);
@@ -263,6 +263,8 @@ export const useGameStore = create<GameStoreState>()(
         game: state.game,
         activeLocationId: state.activeLocationId,
         currentTheme: state.currentTheme,
+        difficulty: state.difficulty,
+        gameSpeed: state.gameSpeed,
         soundEnabled: state.soundEnabled,
         autoSaveEnabled: state.autoSaveEnabled,
         showTips: state.showTips,

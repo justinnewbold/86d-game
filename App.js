@@ -2355,13 +2355,13 @@ const calculateKPIs = (location, game) => {
   kpis.covers_per_hour = covers / hoursOpen;
   kpis.table_turn = 45 + Math.random() * 15;
   kpis.avg_check = revenue / Math.max(1, covers);
-  kpis.food_cost_pct = (foodCost / revenue) * 100;
-  kpis.labor_cost_pct = (laborCost / revenue) * 100;
+  kpis.food_cost_pct = revenue > 0 ? (foodCost / revenue) * 100 : 0;
+  kpis.labor_cost_pct = revenue > 0 ? (laborCost / revenue) * 100 : 0;
   kpis.prime_cost = kpis.food_cost_pct + kpis.labor_cost_pct;
-  kpis.profit_margin = ((revenue - foodCost - laborCost - (location.rent || 0)) / revenue) * 100;
+  kpis.profit_margin = revenue > 0 ? ((revenue - foodCost - laborCost - (location.rent || 0)) / revenue) * 100 : 0;
   kpis.rev_per_sqft = (revenue * 52) / sqft; // Annualized
   kpis.rev_per_seat = revenue / seats;
-  kpis.employee_turnover = 100 - (location.staff?.filter(s => s.weeksEmployed > 12).length / Math.max(1, location.staff?.length || 1) * 100);
+  kpis.employee_turnover = 100 - (location.staff?.filter(s => s.weeks > 12).length / Math.max(1, location.staff?.length || 1) * 100);
   kpis.customer_retention = 40 + (location.reputation || 50) * 0.4;
   kpis.online_rating = calculateOverallRating(location.reviews);
 
@@ -2917,7 +2917,7 @@ function AppContent() {
         beverageCost: dineInRevenue * 0.25 * 0.22,
         paperGoods: deliveryOrders * 0.75,
         total: foodCost + (dineInRevenue * 0.25 * 0.22) + (deliveryOrders * 0.75),
-        percentage: foodCost / totalRevenue,
+        percentage: totalRevenue > 0 ? foodCost / totalRevenue : 0,
       },
       labor: {
         wages: laborCost,
@@ -2926,10 +2926,10 @@ function AppContent() {
         payrollTax: laborCost * 0.0765,
         workerComp: laborCost * 0.04,
         total: laborCost + (location.manager ? location.manager.wage * 45 : 0) + laborCost * 0.0765 + laborCost * 0.04,
-        percentage: laborCost / totalRevenue,
+        percentage: totalRevenue > 0 ? laborCost / totalRevenue : 0,
       },
       primeCost: foodCost + laborCost,
-      primeCostPercentage: (foodCost + laborCost) / totalRevenue,
+      primeCostPercentage: totalRevenue > 0 ? (foodCost + laborCost) / totalRevenue : 0,
       operatingExpenses: {
         rent: rent,
         cam: rent * 0.15,
@@ -2945,10 +2945,10 @@ function AppContent() {
         licenses: 25,
         miscellaneous: totalRevenue * 0.01,
         total: rent + utilities + marketingCost + ccFees,
-        percentage: (rent + utilities + marketingCost + ccFees) / totalRevenue,
+        percentage: totalRevenue > 0 ? (rent + utilities + marketingCost + ccFees) / totalRevenue : 0,
       },
       netProfit: weekProfit,
-      netProfitMargin: weekProfit / totalRevenue,
+      netProfitMargin: totalRevenue > 0 ? weekProfit / totalRevenue : 0,
     };
 
     return {
@@ -3383,6 +3383,10 @@ function AppContent() {
         achievements: newAchievements,
         profitStreak: totalWeekProfit > 0 ? g.profitStreak + 1 : 0,
         burnout: Math.min(100, Math.max(0, g.burnout + burnoutChange)),
+        // Decrement loan terms and remove completed loans
+        loans: g.loans.map(l => ({ ...l, remaining: l.remaining - 1 })).filter(l => l.remaining > 0),
+        // Increment franchise tenure
+        franchises: g.franchises.map(f => ({ ...f, weeksActive: f.weeksActive + 1 })),
         // Phase 6 state updates
         cateringRevenue: (g.cateringRevenue || 0) + cateringRevenue,
         truckRevenue: (g.truckRevenue || 0) + truckRevenue,
@@ -3577,14 +3581,17 @@ function AppContent() {
     const staff = loc.staff.find(s => s.id === staffId);
     if (!staff || !staff.canManage) return;
     
-    setGame(g => ({
-      ...g,
-      locations: g.locations.map(l => l.id === loc.id ? {
-        ...l,
-        manager: staff,
-        staff: l.staff.map(s => s.id === staffId ? { ...s, wage: s.wage + 5, morale: Math.min(100, s.morale + 20) } : s),
-      } : l),
-    }));
+    setGame(g => {
+      const promotedStaff = { ...staff, wage: staff.wage + 5, morale: Math.min(100, staff.morale + 20) };
+      return {
+        ...g,
+        locations: g.locations.map(l => l.id === loc.id ? {
+          ...l,
+          manager: promotedStaff,
+          staff: l.staff.map(s => s.id === staffId ? promotedStaff : s),
+        } : l),
+      };
+    });
   };
 
   const startTraining = (program) => {
@@ -4027,8 +4034,8 @@ function AppContent() {
     setCurrentTheme(themeId);
     if (!themesUsed.includes(themeId)) {
       setThemesUsed([...themesUsed, themeId]);
-      // Check for theme collector achievement
-      if (themesUsed.length + 1 >= 5) {
+      // Check for theme collector achievement (fire only once, when exactly reaching 5)
+      if (themesUsed.length + 1 === 5) {
         addNotification('🎨 Theme Collector achievement unlocked!', 'achievement');
       }
     }
@@ -4079,7 +4086,7 @@ function AppContent() {
         storage.setItem('86d_autosave', JSON.stringify(autoSave));
       } catch { /* Storage unavailable */ }
     }
-  }, [game?.week, autoSaveEnabled, game, setup]);
+  }, [game?.week, autoSaveEnabled]);
   
   // Hall of Fame Update
   const updateHallOfFame = useCallback(() => {
@@ -4263,33 +4270,37 @@ function AppContent() {
           let loc = { ...l };
           if (outcome.reputation) loc.reputation = Math.min(100, Math.max(0, loc.reputation + outcome.reputation));
           if (outcome.morale) loc.morale = Math.min(100, Math.max(0, loc.morale + outcome.morale));
-          if (outcome.covers) loc.covers += outcome.covers;
-          if (outcome.foodCostMod) loc.foodCostPct += outcome.foodCostMod;
+          if (outcome.covers) loc.covers = Math.max(0, loc.covers + outcome.covers);
+          if (outcome.foodCostMod) loc.foodCostPct = Math.min(0.60, Math.max(0.10, loc.foodCostPct + outcome.foodCostMod));
           if (outcome.laborCostMod) {
             loc.staff = loc.staff.map(s => ({ ...s, wage: Math.round(s.wage * (1 + outcome.laborCostMod)) }));
           }
           return loc;
         });
       }
-      
+
       // Handle single location effects
       if (!outcome.allLocations) {
-        const loc = getActiveLocation();
-        if (loc) {
+        // Use activeLocationId from closure to find the location in the current state
+        const activeLocId = updated.locations.find(l => l.id === activeLocationId)?.id || updated.locations[0]?.id;
+        if (activeLocId) {
           updated.locations = updated.locations.map(l => {
-            if (l.id !== loc.id) return l;
+            if (l.id !== activeLocId) return l;
             let newLoc = { ...l };
             if (outcome.cash) newLoc.cash += outcome.cash;
             if (outcome.reputation) newLoc.reputation = Math.min(100, Math.max(0, newLoc.reputation + outcome.reputation));
             if (outcome.morale) newLoc.morale = Math.min(100, Math.max(0, newLoc.morale + outcome.morale));
-            if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
-            if (outcome.covers) newLoc.covers += outcome.covers;
-            if (outcome.followers) newLoc.marketing.socialFollowers += outcome.followers;
+            if (outcome.covers) newLoc.covers = Math.max(0, newLoc.covers + outcome.covers);
+            if (outcome.followers) {
+              newLoc.marketing = { ...newLoc.marketing, socialFollowers: (newLoc.marketing?.socialFollowers || 0) + outcome.followers };
+            }
             return newLoc;
           });
+          // Burnout update (outside map to avoid side-effects in iteration)
+          if (outcome.burnout) updated.burnout = Math.min(100, Math.max(0, updated.burnout + outcome.burnout));
         }
       }
-      
+
       // Corporate cash effects
       if (outcome.cash && outcome.allLocations) {
         updated.corporateCash += outcome.cash;

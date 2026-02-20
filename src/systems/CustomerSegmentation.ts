@@ -444,8 +444,8 @@ export function predictReviews(
   // Convert sentiment to rating (1-5 scale)
   const expectedRating = Math.max(1, Math.min(5, 1 + (avgSentiment / 25)));
 
-  const positiveReviews = Math.floor(expectedReviews * (avgSentiment / 100));
-  const negativeReviews = expectedReviews - positiveReviews;
+  const positiveReviews = Math.max(0, Math.min(expectedReviews, Math.floor(expectedReviews * (avgSentiment / 100))));
+  const negativeReviews = Math.max(0, expectedReviews - positiveReviews);
 
   return {
     expectedReviews,
