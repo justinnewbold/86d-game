@@ -42,6 +42,13 @@
 - recap_viewed, recap_dismissed
 - insight_clicked
 
+## Status
+- [x] Tutorial steps, triggers, exit criteria — `InteractiveTutorial.js`, `InteractiveTutorialV2.tsx`
+- [x] Weekly recap data model + UI — `buildWeeklyRecap` in `App.js`, `showWeeklyRecap` state
+- [x] Insight rule engine — embedded in `buildWeeklyRecap` (up to 5 prioritized action tips)
+- [ ] Save slot naming + last played metadata — not yet implemented
+- [ ] Analytics events (`tutorial_start`, `tutorial_complete`, `recap_viewed`, `insight_clicked`) — not yet implemented
+
 ## Open Questions
 - Should tutorial be mandatory for first run?
 - Should weekly recap be auto-opened or user-triggered?

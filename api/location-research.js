@@ -95,7 +95,7 @@ export default async function handler(req) {
     const userPrompt = `Research economic data for opening a restaurant in ${city}, ${state}.`;
 
     // Use Gemini 2.5 Flash for speed
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash'];
     let data = null;
     let lastError = null;
 

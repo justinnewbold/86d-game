@@ -168,12 +168,23 @@ export function generatePostMortem(
 function buildWeeklySnapshots(location: Location, game: GameState): WeeklySnapshot[] {
   const history = location.weeklyHistory || [];
 
-  // Reconstruct approximate historical cash balances by walking backwards from current
-  let runningCash = location.cash;
-  const cashByWeek: number[] = new Array(history.length);
-  for (let i = history.length - 1; i >= 0; i--) {
-    cashByWeek[i] = runningCash;
-    runningCash = Math.max(0, runningCash - (history[i].profit || 0));
+  // Use stored cash snapshots when available (newer saves).
+  // For older saves without stored cash, fall back to a backward-walk approximation
+  // from the current balance — note this approximation ignores lump-sum events
+  // (loans, equipment purchases, new location openings) so may be imprecise.
+  const hasCashSnapshots = history.length > 0 &&
+    typeof (history[history.length - 1] as unknown as Record<string, unknown>).cash === 'number';
+
+  let cashByWeek: number[];
+  if (hasCashSnapshots) {
+    cashByWeek = history.map(w => (w as unknown as Record<string, unknown>).cash as number);
+  } else {
+    let runningCash = location.cash;
+    cashByWeek = new Array(history.length);
+    for (let i = history.length - 1; i >= 0; i--) {
+      cashByWeek[i] = runningCash;
+      runningCash = Math.max(0, runningCash - (history[i].profit || 0));
+    }
   }
 
   return history.map((week, index) => {

@@ -239,6 +239,7 @@ export function processLocationWeekRealistic(
       revenue: weeklyPL.revenue.total,
       profit: weeklyPL.netProfit,
       covers: weeklyCovers + deliveryOrders,
+      cash: cashFlowResult.newState.cashOnHand,
     },
   ].slice(-52);
 

@@ -133,7 +133,7 @@ export default async function handler(req) {
     }
 
     // Use Gemini 2.5 Flash for speed, with fallback
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash'];
     let data = null;
     let lastError = null;
 
