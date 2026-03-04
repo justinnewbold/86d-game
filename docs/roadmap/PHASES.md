@@ -17,9 +17,9 @@ This document breaks the roadmap into delivery phases with concrete outcomes.
 - Reduce week-2 abandonment by 15%.
 
 ### Milestone Checklist
-- [ ] Define tutorial steps, triggers, and exit criteria.
-- [ ] Create recap data model + UI layout.
-- [ ] Add insight rule engine for top actions.
+- [x] Define tutorial steps, triggers, and exit criteria.
+- [x] Create recap data model + UI layout.
+- [x] Add insight rule engine for top actions.
 - [ ] Save slot naming + metadata UI.
 - [ ] Analytics events for tutorial, recap, insights.
 

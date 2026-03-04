@@ -148,6 +148,7 @@ export const processLocationWeek = (
       revenue: totalRevenue,
       profit: weekProfit,
       covers: weekCovers + deliveryOrders,
+      cash: location.cash + weekProfit,
     },
   ].slice(-52);
 
