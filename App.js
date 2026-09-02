@@ -5,6 +5,7 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
   CITY_SCENARIOS,
   getCuisineSynergy,
@@ -19,6 +20,38 @@ import { analyzeMenu, MENU_ENGINEERING_LESSONS } from './src/systems/MenuEnginee
 // Slider removed for web compatibility
 
 const { width } = Dimensions.get('window');
+
+// Single source of truth for the version shown in the UI
+const APP_VERSION = Constants.expoConfig?.version || '2.4.0';
+
+// API base URL. On web the Vercel serverless functions live on the same origin,
+// so a relative path works. Native builds (iOS/Android) have no origin, so they
+// need the deployed web URL. Set EXPO_PUBLIC_API_BASE_URL or expo.extra.apiBaseUrl.
+const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  Constants.expoConfig?.extra?.apiBaseUrl ||
+  ''
+).replace(/\/$/, '');
+
+// Default onboarding state. Used for the initial state AND for every restart so
+// no field (difficulty, city, research status) is ever silently dropped.
+const DEFAULT_SETUP = {
+  cuisine: null,
+  capital: 75000,
+  name: '',
+  location: 'urban_neighborhood',
+  market: 'same_city',
+  goal: 'survive',
+  experience: 'none',
+  difficulty: 'normal',
+  city: '',
+  state: '',
+  locationData: null,
+  locationResearchStatus: 'pending',
+};
+
+const SAVE_SLOTS_KEY = '86d_saves';
+const AUTOSAVE_KEY = '86d_autosave';
 
 // Platform-safe reload function
 const reloadApp = async () => {
@@ -108,7 +141,14 @@ const colors = {
   textPrimary: '#FFFFFF', textSecondary: '#A3A3A3', textMuted: '#737373', border: '#333333',
 };
 
-const formatCurrency = (v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${Math.round(v).toLocaleString()}`;
+const formatCurrency = (v) => {
+  const n = Number.isFinite(v) ? v : 0;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(1)}M`;
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(0)}K`;
+  return `${sign}$${Math.round(abs).toLocaleString()}`;
+};
 const formatPct = (v) => `${(v * 100).toFixed(1)}%`;
 const formatShortDate = (value) => {
   if (!value) return '';
@@ -304,7 +344,7 @@ const getAIMentorResponse = async (context, game, setup, conversationHistory = [
   const prompt = context;
 
   try {
-    const response = await fetch('/api/ai', {
+    const response = await fetch(`${API_BASE_URL}/api/ai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -448,55 +488,6 @@ const SPEED_OPTIONS = [
   { id: '4x', name: '4x', icon: '⏭️', interval: 750 },
   { id: '10x', name: '10x', icon: '🚀', interval: 300 },
 ];
-
-// THEME SYSTEM
-const THEMES = {
-  dark: {
-    id: 'dark', name: 'Dark (Default)', icon: '🌙',
-    colors: {
-      background: '#0D0D0D', surface: '#1A1A1A', surfaceLight: '#252525',
-      primary: '#F59E0B', accent: '#DC2626', success: '#10B981', warning: '#F97316',
-      info: '#3B82F6', purple: '#8B5CF6', pink: '#EC4899', cyan: '#06B6D4',
-      textPrimary: '#FFFFFF', textSecondary: '#A3A3A3', textMuted: '#737373', border: '#333333',
-    }
-  },
-  midnight: {
-    id: 'midnight', name: 'Midnight Blue', icon: '🌃',
-    colors: {
-      background: '#0a192f', surface: '#112240', surfaceLight: '#1d3557',
-      primary: '#64ffda', accent: '#f72585', success: '#00b894', warning: '#ff7675',
-      info: '#74b9ff', purple: '#a29bfe', pink: '#fd79a8', cyan: '#00cec9',
-      textPrimary: '#ccd6f6', textSecondary: '#8892b0', textMuted: '#495670', border: '#233554',
-    }
-  },
-  retro: {
-    id: 'retro', name: 'Retro Arcade', icon: '🕹️',
-    colors: {
-      background: '#1a1a2e', surface: '#16213e', surfaceLight: '#0f3460',
-      primary: '#e94560', accent: '#ff6b6b', success: '#00ff41', warning: '#ffd93d',
-      info: '#00fff5', purple: '#9b59b6', pink: '#ff00ff', cyan: '#00ffff',
-      textPrimary: '#ffffff', textSecondary: '#94a3b8', textMuted: '#64748b', border: '#334155',
-    }
-  },
-  coffee: {
-    id: 'coffee', name: 'Coffee House', icon: '☕',
-    colors: {
-      background: '#1c1610', surface: '#2c221a', surfaceLight: '#3d2e23',
-      primary: '#c49a6c', accent: '#8b4513', success: '#228b22', warning: '#d2691e',
-      info: '#4682b4', purple: '#9370db', pink: '#bc8f8f', cyan: '#5f9ea0',
-      textPrimary: '#f5deb3', textSecondary: '#d2b48c', textMuted: '#a0896c', border: '#4a3728',
-    }
-  },
-  neon: {
-    id: 'neon', name: 'Neon Nights', icon: '💜',
-    colors: {
-      background: '#0d0221', surface: '#190535', surfaceLight: '#2b0a4d',
-      primary: '#ff00ff', accent: '#00ffff', success: '#39ff14', warning: '#ff6600',
-      info: '#00bfff', purple: '#bf00ff', pink: '#ff1493', cyan: '#00ffff',
-      textPrimary: '#ffffff', textSecondary: '#e0b0ff', textMuted: '#9d4edd', border: '#4c1d95',
-    }
-  },
-};
 
 // ============================================
 // EXPANDED DATA SETS
@@ -1927,7 +1918,8 @@ const generateLocationName = (market, type) => {
 
 const calculateLocationValuation = (location, cuisine) => {
   const annualRevenue = (location.totalRevenue / Math.max(1, location.weeksOpen)) * 52;
-  const revenueMult = location.reputation > 80 ? 3 : location.reputation > 60 ? 2.5 : 2;
+  // Independent restaurants trade at roughly 0.4-0.8x annual sales depending on reputation
+  const revenueMult = location.reputation > 80 ? 0.8 : location.reputation > 60 ? 0.6 : 0.4;
   const equipmentValue = (location.equipment?.length || 0) * 3000;
   const upgradeValue = (location.upgrades || []).reduce((sum, u) => sum + (UPGRADES.find(up => up.id === u)?.cost || 0) * 0.5, 0);
   return Math.round(annualRevenue * revenueMult + equipmentValue + upgradeValue);
@@ -2143,7 +2135,10 @@ const createLocation = (id, name, locationType, market, cuisine, startingCash, l
 
   // Base values modified by location type AND city economics
   const baseRent = Math.floor(3000 * (type?.rentMod || 1) * rentMultiplier);
-  const baseCovers = Math.floor(30 * (type?.trafficMod || 1) * trafficMultiplier);
+  // Weekly covers. ~50/day is a modest neighborhood spot; scenario effects (+50 / -30 covers),
+  // milestones ($10K weeks) and the test fixtures all assume this scale. At 30/week the
+  // restaurant could never cover rent + one cook, so every game was a guaranteed loss.
+  const baseCovers = Math.floor(350 * (type?.trafficMod || 1) * trafficMultiplier);
   const baseTicket = Math.round(cuisineData.avgTicket * ticketMultiplier * 2) / 2; // Round to nearest $0.50
   const baseFoodCost = Math.min(0.45, Math.max(0.20, cuisineData.foodCost * foodCostMultiplier));
 
@@ -2385,23 +2380,16 @@ function AppContent() {
   const [onboardingStep, setOnboardingStep] = useState(0);
   
   // Setup State
-  const [setup, setSetup] = useState({
-    cuisine: null,
-    capital: 75000,
-    name: '',
-    location: 'urban_neighborhood',
-    market: 'same_city',
-    goal: 'survive',
-    experience: 'none',
-    difficulty: 'normal',
-    city: '',
-    state: '',
-    locationData: null,
-    locationResearchStatus: 'pending',
-  });
+  const [setup, setSetup] = useState(DEFAULT_SETUP);
+  const [citySearch, setCitySearch] = useState('');
+  const [cityTierFilter, setCityTierFilter] = useState(null);
   
   // Game State
   const [game, setGame] = useState(null);
+  // Always-current game reference for async callbacks (AI commentary, milestones)
+  // that fire after a week has been processed.
+  const gameRef = useRef(null);
+  useEffect(() => { gameRef.current = game; }, [game]);
   
   // Active Location (for multi-location management)
   const [activeLocationId, setActiveLocationId] = useState(null);
@@ -2424,7 +2412,6 @@ function AppContent() {
   const [staffModal, setStaffModal] = useState(false);
   const [trainingModal, setTrainingModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedLocation, setSelectedLocation] = useState(0);
   const [marketingModal, setMarketingModal] = useState(false);
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [analyticsModal, setAnalyticsModal] = useState(false);
@@ -2440,7 +2427,6 @@ function AppContent() {
   const [aiChatInput, setAiChatInput] = useState('');
   const [expansionModal, setExpansionModal] = useState(false);
   const [franchiseModal, setFranchiseModal] = useState(false);
-  const [empireModal, setEmpireModal] = useState(false);
   const [newLocationData, setNewLocationData] = useState({ name: '', type: 'suburban_strip', market: 'same_city', city: '', state: '', useSameCity: true });
   
   // Phase 4: New modal states
@@ -2458,10 +2444,8 @@ function AppContent() {
   const [hallOfFameModal, setHallOfFameModal] = useState(false);
   const [statsModal, setStatsModal] = useState(false);
   const [difficultyModal, setDifficultyModal] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState('dark');
   const [difficulty, setDifficulty] = useState('normal');
   const [gameSpeed, setGameSpeed] = useState('pause');
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [showTips, setShowTips] = useState(true);
   const [currentTip, setCurrentTip] = useState(0);
@@ -2469,7 +2453,6 @@ function AppContent() {
   const [hallOfFame, setHallOfFame] = useState([]);
   const [prestigeLevel, setPrestigeLevel] = useState(0);
   const [totalRunsCompleted, setTotalRunsCompleted] = useState(0);
-  const [themesUsed, setThemesUsed] = useState(['dark']);
   const autoAdvanceRef = useRef(null);
   
   // Phase 6: Advanced Business states
@@ -2480,8 +2463,6 @@ function AppContent() {
   const [realEstateModal, setRealEstateModal] = useState(false);
   const [exitStrategyModal, setExitStrategyModal] = useState(false);
   const [economyModal, setEconomyModal] = useState(false);
-  const [currentEconomy, setCurrentEconomy] = useState('stable');
-  const [economyWeeksRemaining, setEconomyWeeksRemaining] = useState(0);
   
   // Phase 7: Multiplayer & Social states
   const [socialModal, setSocialModal] = useState(false);
@@ -2549,8 +2530,31 @@ function AppContent() {
   const [completedAcquisitions, setCompletedAcquisitions] = useState([]);
   const [branchingScenario, setBranchingScenario] = useState(null);
   
-  // Save State
+  // Save State (persisted to storage so saves survive a reload / app restart)
   const [savedGames, setSavedGames] = useState([]);
+  const [savesLoaded, setSavesLoaded] = useState(false);
+  const [autoSave, setAutoSave] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const savesStr = await storage.getItem(SAVE_SLOTS_KEY);
+        const saves = JSON.parse(savesStr || '[]');
+        if (Array.isArray(saves)) setSavedGames(saves.filter(sv => sv && sv.game && sv.setup));
+        const autoStr = await storage.getItem(AUTOSAVE_KEY);
+        const auto = autoStr ? JSON.parse(autoStr) : null;
+        if (auto && auto.game && auto.setup) setAutoSave(auto);
+      } catch { /* Storage unavailable or corrupt */ }
+      setSavesLoaded(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!savesLoaded) return;
+    try {
+      storage.setItem(SAVE_SLOTS_KEY, JSON.stringify(savedGames));
+    } catch { /* Storage unavailable */ }
+  }, [savedGames, savesLoaded]);
 
   // Get active location
   const getActiveLocation = useCallback(() => {
@@ -2561,7 +2565,9 @@ function AppContent() {
   // Initialize Game
   const initGame = useCallback(() => {
     const cuisine = CUISINES.find(c => c.id === setup.cuisine) || CUISINES[0];
-    const locationType = LOCATION_TYPES.find(t => t.id === setup.location);
+    const difficultyMode = DIFFICULTY_MODES.find(d => d.id === setup.difficulty) || DIFFICULTY_MODES[1];
+    // Difficulty adjusts the war chest (easy gets a cushion, hard/nightmare start behind)
+    const startingCapital = Math.max(10000, setup.capital + (difficultyMode.startingBonus || 0));
 
     const firstLocation = createLocation(
       1,
@@ -2569,7 +2575,7 @@ function AppContent() {
       setup.location,
       setup.market,
       setup.cuisine,
-      setup.capital * 0.7, // 70% goes to first location, 30% reserve
+      startingCapital * 0.7, // 70% goes to first location, 30% reserve
       setup.locationData,
       setup.city,
       setup.state
@@ -2593,14 +2599,14 @@ function AppContent() {
       corporateStaff: [],
       
       // Finances
-      corporateCash: setup.capital * 0.3, // 30% corporate reserve
+      corporateCash: startingCapital * 0.3, // 30% corporate reserve
       totalRevenue: 0,
       totalProfit: 0,
       loans: [],
       equity: 100,
       
       // Empire metrics
-      empireValuation: setup.capital,
+      empireValuation: startingCapital,
       brandStrength: 50,
       
       // Progress
@@ -2725,6 +2731,12 @@ function AppContent() {
     
     setGame(initialGame);
     setActiveLocationId(1);
+    setActiveTab('overview');
+    setGameSpeed('pause');
+    setWeeklyRecap(null);
+    setShowWeeklyRecap(false);
+    setTutorialStep(0);
+    setShowTutorial(true);
     setScreen('dashboard');
     
     // Initial AI greeting - reset conversation history for new game
@@ -2993,6 +3005,7 @@ function AppContent() {
 
   // PHASE 4: COMPETITION SYSTEM (moved before processWeek)
   const checkCompetition = useCallback(() => {
+    const game = gameRef.current;
     if (!game) return;
 
     // Check if we should spawn a new competitor
@@ -3026,14 +3039,15 @@ function AppContent() {
     if (newCompetitor) {
       setAiMessage(`Heads up - a new competitor just opened nearby: ${newCompetitor.name}. Keep an eye on them.`);
     }
-  }, [game, setup]);
+  }, [setup]);
 
   // PHASE 4: MILESTONES (moved before processWeek)
   const checkMilestones = useCallback(() => {
+    const game = gameRef.current;
     if (!game) return;
 
     const newMilestones = [];
-    const loc = getActiveLocation();
+    const loc = game.locations?.find(l => l.id === activeLocationId) || game.locations?.[0];
     const totalStaff = (game.locations || []).reduce((sum, l) => sum + (l.staff?.length || 0), 0);
 
     MILESTONES.forEach(m => {
@@ -3066,22 +3080,25 @@ function AppContent() {
       const milestoneNames = newMilestones.map(m => m.name).join(', ');
       setAiMessage(`🎉 Milestone${newMilestones.length > 1 ? 's' : ''} unlocked: ${milestoneNames}! Bonus: ${formatCurrency(totalReward)}`);
     }
-  }, [game, getActiveLocation]);
+  }, [activeLocationId]);
 
   // ============================================
   // MAIN WEEK PROCESSING
   // ============================================
-  const processWeek = useCallback(async () => {
+  const processWeek = useCallback(async (options = {}) => {
     if (!game) return;
+    // onPress passes an event object; only an explicit { auto: true } counts
+    const isAutoAdvance = options && options.auto === true;
     
     const cuisine = CUISINES.find(c => c.id === setup.cuisine);
+    const difficultyMode = DIFFICULTY_MODES.find(d => d.id === setup.difficulty) || DIFFICULTY_MODES[1];
     
     let weeklyRecapData = null;
     setGame(g => {
-      // Get current economic condition and its effects
+      // Get current economic condition and its effects (combined with difficulty)
       const currentCondition = ECONOMIC_CONDITIONS.find(e => e.id === g.economicCondition) || ECONOMIC_CONDITIONS[1]; // default to stable
-      const economicRevenueMultiplier = currentCondition.revenueMultiplier;
-      const economicCostMultiplier = currentCondition.costMultiplier;
+      const economicRevenueMultiplier = currentCondition.revenueMultiplier * (difficultyMode.revenueMultiplier || 1);
+      const economicCostMultiplier = currentCondition.costMultiplier * (difficultyMode.costMultiplier || 1);
       
       // Apply economic effects to all locations before processing
       const locationsWithEconomics = g.locations.map(loc => ({
@@ -3102,17 +3119,32 @@ function AppContent() {
       // Process franchise royalties
       const franchiseRoyalties = g.franchises.reduce((sum, f) => sum + f.weeklyRoyalty, 0);
       
-      // PHASE 6: Catering Revenue
-      const cateringRevenue = g.cateringEnabled ? g.cateringContracts.reduce((sum, contract) => {
+      // PHASE 6: Catering Revenue (contracts run down and expire)
+      const activeContracts = g.cateringEnabled ? (g.cateringContracts || []).filter(c => (c.weeksRemaining ?? 1) > 0) : [];
+      const cateringRevenue = activeContracts.reduce((sum, contract) => {
         const contractData = CATERING_CONTRACTS.find(c => c.id === contract.id);
-        return sum + (contractData?.weeklyRevenue || 0);
-      }, 0) : 0;
+        return sum + (contractData?.weeklyRevenue || contract.weeklyRevenue || 0);
+      }, 0);
+      const updatedContracts = activeContracts
+        .map(c => ({ ...c, weeksRemaining: (c.weeksRemaining ?? 1) - 1 }))
+        .filter(c => c.weeksRemaining > 0);
       
-      // PHASE 6: Food Truck Revenue
-      const truckRevenue = g.foodTrucks.reduce((sum, truck) => {
+      // PHASE 6: Food Truck Revenue (booked events pay out this week, then clear)
+      const truckRevenue = (g.foodTrucks || []).reduce((sum, truck) => {
         const eventRevenue = truck.currentEvent ? (truck.eventRevenue || 800) : 0;
         return sum + eventRevenue;
       }, 0);
+      const truckMaintenance = (g.foodTrucks || []).reduce((sum, truck) => {
+        const truckData = FOOD_TRUCKS.find(t => t.id === truck.type);
+        return sum + (truckData?.maintenance || 0);
+      }, 0);
+      const updatedTrucks = (g.foodTrucks || []).map(truck => ({
+        ...truck,
+        weeklyRevenue: truck.currentEvent ? (truck.eventRevenue || 800) : 0,
+        events: truck.currentEvent ? [...(truck.events || []), truck.currentEvent] : (truck.events || []),
+        currentEvent: null,
+        eventRevenue: 0,
+      }));
       
       // PHASE 6: Media/Brand Deal Revenue
       const brandDealRevenue = g.brandDeals.reduce((sum, deal) => {
@@ -3153,6 +3185,7 @@ function AppContent() {
         + propertyAppreciation
         - loanPayments 
         - mortgagePayments
+        - truckMaintenance
         - corporateCosts 
         - marketCosts;
       
@@ -3190,10 +3223,12 @@ function AppContent() {
         }
       }
       
-      // PHASE 6: Media reputation boost
-      const mediaBoost = g.mediaAppearances.reduce((sum, app) => {
+      // PHASE 6: Media reputation boost - only recent appearances (last 8 weeks) still lift reputation
+      const mediaBoost = (g.mediaAppearances || []).reduce((sum, app) => {
         const media = MEDIA_OPPORTUNITIES.find(m => m.id === app.id);
-        return sum + (media?.reputationBoost || 0) * 0.1; // Decay over time
+        const weeksAgo = (g.week + 1) - (app.week || 0);
+        if (weeksAgo > 8) return sum;
+        return sum + (media?.reputationBoost || 0) * 0.1;
       }, 0);
       
       // Apply media boost to primary location reputation
@@ -3292,14 +3327,19 @@ function AppContent() {
         setTimeout(() => setScreen('gameover'), 100);
       }
       
-      // Check win conditions
+      // Check win conditions - EVERY target on the goal must be met (Legacy needs valuation AND units)
       const goal = GOALS.find(gl => gl.id === setup.goal);
-      if (goal && goal.id !== 'sandbox') {
-        if (goal.target.weeks && weekNum >= goal.target.weeks) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.cash && totalLocationCash + newCorporateCash >= goal.target.cash) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.locations && totalLocations >= goal.target.locations) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.totalUnits && totalUnits >= goal.target.totalUnits) setTimeout(() => setScreen('win'), 100);
-        if (goal.target.valuation && empireValuation >= goal.target.valuation) setTimeout(() => setScreen('win'), 100);
+      if (goal && goal.id !== 'sandbox' && lowestCash >= -50000) {
+        const current = {
+          weeks: weekNum,
+          cash: totalLocationCash + newCorporateCash,
+          locations: totalLocations,
+          totalUnits,
+          valuation: empireValuation,
+        };
+        const targets = Object.entries(goal.target || {});
+        const goalMet = targets.length > 0 && targets.every(([key, value]) => (current[key] || 0) >= value);
+        if (goalMet) setTimeout(() => setScreen('win'), 100);
       }
       
       // Phase 6: Exit strategy completion
@@ -3389,7 +3429,9 @@ function AppContent() {
         franchises: g.franchises.map(f => ({ ...f, weeksActive: f.weeksActive + 1 })),
         // Phase 6 state updates
         cateringRevenue: (g.cateringRevenue || 0) + cateringRevenue,
+        cateringContracts: updatedContracts,
         truckRevenue: (g.truckRevenue || 0) + truckRevenue,
+        foodTrucks: updatedTrucks,
         ownedProperties: updatedProperties,
         exitProgress: newExitProgress,
         economicCondition: newEconomicCondition,
@@ -3404,22 +3446,27 @@ function AppContent() {
 
     if (weeklyRecapData) {
       setWeeklyRecap(weeklyRecapData);
-      setShowWeeklyRecap(true);
+      // Don't pop the recap over the dashboard every tick while auto-advancing
+      if (!isAutoAdvance) setShowWeeklyRecap(true);
     }
     
-    // Get AI commentary
+    // Post-week processing runs against the UPDATED game (via ref), not the stale closure
     setTimeout(async () => {
-      if (game) {
-        setAiLoading(true);
-        const totalLocations = game.locations?.length || 1;
-        const context = totalLocations > 1
-          ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
-          : game.locations?.[0]?.lastWeekProfit > 0
-            ? 'Weekly summary - profitable week.'
-            : 'Weekly summary - lost money this week.';
-        const response = await getAIMentorResponse(context, game, setup, aiConversationHistory, setAiConversationHistory);
-        setAiMessage(response);
-        setAiLoading(false);
+      const latestGame = gameRef.current;
+      if (latestGame) {
+        // Skip the AI call while auto-advancing so fast speeds don't hammer the API
+        if (!isAutoAdvance) {
+          setAiLoading(true);
+          const totalLocations = latestGame.locations?.length || 1;
+          const context = totalLocations > 1
+            ? `Empire weekly summary - ${totalLocations} locations. Give brief multi-unit perspective.`
+            : latestGame.locations?.[0]?.lastWeekProfit > 0
+              ? 'Weekly summary - profitable week.'
+              : 'Weekly summary - lost money this week.';
+          const response = await getAIMentorResponse(context, latestGame, setup, aiConversationHistory, setAiConversationHistory);
+          setAiMessage(response);
+          setAiLoading(false);
+        }
         
         // Phase 4: Check milestones after week processing
         checkMilestones();
@@ -3428,7 +3475,8 @@ function AppContent() {
         checkCompetition();
 
         // Educational: Check for failure scenarios
-        if (game.locations?.[0]) {
+        const game = gameRef.current;
+        if (game?.locations?.[0]) {
           const loc = game.locations[0];
           const failureState = {
             cashOnHand: loc.cashFlow?.cashOnHand || loc.cash || 0,
@@ -3476,7 +3524,7 @@ function AppContent() {
         }
       }
     }, 800);
-  }, [game, setup, processLocationWeek, checkMilestones, checkCompetition]);
+  }, [game, setup, processLocationWeek, checkMilestones, checkCompetition, aiConversationHistory, addNotification]);
 
   // ============================================
   // ACTION HANDLERS
@@ -3493,7 +3541,10 @@ function AppContent() {
     const adjustedWage = Math.round(template.wage * (laborMarket.wageExpectation || 1));
 
     // Check if we can afford hiring (4 weeks upfront)
-    if (loc.cash < adjustedWage * 40) return;
+    if (loc.cash < adjustedWage * 40) {
+      addNotification(`Not enough cash at ${loc.name} to hire a ${template.role} (${formatCurrency(adjustedWage * 40)} needed)`, 'warning');
+      return;
+    }
 
     // Hiring difficulty affects candidate quality
     // Difficulty > 1 means harder to find good candidates (more competition for workers)
@@ -3536,7 +3587,11 @@ function AppContent() {
 
   // Corporate staff hire (uses national average wages, no local modifier)
   const hireCorporateStaff = (template) => {
-    if (!game || game.corporateCash < template.wage * 40) return;
+    if (!game) return;
+    if (game.corporateCash < template.wage * 40) {
+      addNotification(`Need ${formatCurrency(template.wage * 40)} corporate cash to hire a ${template.role}`, 'warning');
+      return;
+    }
     
     const newStaff = {
       id: Date.now(),
@@ -3597,7 +3652,11 @@ function AppContent() {
   const startTraining = (program) => {
     if (!selectedStaff || !game) return;
     const loc = getActiveLocation();
-    if (!loc || loc.cash < program.cost) return;
+    if (!loc) return;
+    if (loc.cash < program.cost) {
+      addNotification(`Not enough cash for ${program.name} (${formatCurrency(program.cost)})`, 'warning');
+      return;
+    }
     
     setGame(g => ({
       ...g,
@@ -3653,7 +3712,11 @@ function AppContent() {
 
   const buyEquipment = (eq) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < eq.cost || (loc.equipment || []).includes(eq.id)) return;
+    if (!loc || (loc.equipment || []).includes(eq.id)) return;
+    if (loc.cash < eq.cost) {
+      addNotification(`Not enough cash for ${eq.name} (${formatCurrency(eq.cost)})`, 'warning');
+      return;
+    }
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
@@ -3666,7 +3729,11 @@ function AppContent() {
 
   const buyUpgrade = (up) => {
     const loc = getActiveLocation();
-    if (!loc || loc.cash < up.cost || (loc.upgrades || []).includes(up.id)) return;
+    if (!loc || (loc.upgrades || []).includes(up.id)) return;
+    if (loc.cash < up.cost) {
+      addNotification(`Not enough cash for ${up.name} (${formatCurrency(up.cost)})`, 'warning');
+      return;
+    }
     setGame(g => ({
       ...g,
       locations: g.locations.map(l => l.id === loc.id ? {
@@ -3699,6 +3766,11 @@ function AppContent() {
     const platform = DELIVERY_PLATFORMS.find(p => p.id === platformId);
     const loc = getActiveLocation();
     if (!platform || !loc) return;
+    const alreadyActive = (loc.delivery?.platforms || []).includes(platformId);
+    if (!alreadyActive && loc.cash < platform.setup) {
+      addNotification(`Not enough cash for ${platform.name} setup (${formatCurrency(platform.setup)})`, 'warning');
+      return;
+    }
 
     setGame(g => ({
       ...g,
@@ -3719,7 +3791,11 @@ function AppContent() {
   const launchVirtualBrand = (brandId) => {
     const brand = VIRTUAL_BRANDS.find(b => b.id === brandId);
     const loc = getActiveLocation();
-    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId) || loc.cash < brand.setupCost) return;
+    if (!loc || !brand || (loc.virtualBrands || []).includes(brandId)) return;
+    if (loc.cash < brand.setupCost) {
+      addNotification(`Not enough cash to launch ${brand.name} (${formatCurrency(brand.setupCost)})`, 'warning');
+      return;
+    }
 
     setGame(g => ({
       ...g,
@@ -3734,12 +3810,23 @@ function AppContent() {
   const takeLoan = (loanId) => {
     const loan = LOANS.find(l => l.id === loanId);
     if (!loan || !game) return;
+    const difficultyMode = DIFFICULTY_MODES.find(d => d.id === setup.difficulty);
+    if (difficultyMode?.noLoans) {
+      addNotification('💀 Nightmare mode: no bank will touch you. Survive on your own cash.', 'warning');
+      return;
+    }
+    const equityCost = Math.round((loan.equity || 0) * 100); // LOANS store a fraction; game.equity is a percent
+    if (equityCost > 0 && game.equity - equityCost < 0) {
+      addNotification('You do not have enough equity left to give away.', 'warning');
+      return;
+    }
     setGame(g => ({
       ...g,
       corporateCash: g.corporateCash + loan.amount,
       loans: [...g.loans, { type: loanId, remaining: loan.term, principal: loan.amount }],
-      equity: g.equity - (loan.equity || 0),
+      equity: g.equity - equityCost,
     }));
+    addNotification(`💰 ${loan.name} funded: +${formatCurrency(loan.amount)} corporate cash, ${formatCurrency(loan.weeklyPayment)}/wk for ${loan.term} weeks`, 'info');
     setLoanModal(false);
   };
 
@@ -4025,26 +4112,9 @@ function AppContent() {
   // PHASE 5: SETTINGS & ENGAGEMENT FUNCTIONS
   // ============================================
   
-  // Theme Management
-  const getThemeColors = useCallback(() => {
-    return THEMES[currentTheme]?.colors || THEMES.dark.colors;
-  }, [currentTheme]);
-  
-  const changeTheme = (themeId) => {
-    setCurrentTheme(themeId);
-    if (!themesUsed.includes(themeId)) {
-      setThemesUsed([...themesUsed, themeId]);
-      // Check for theme collector achievement (fire only once, when exactly reaching 5)
-      if (themesUsed.length + 1 === 5) {
-        addNotification('🎨 Theme Collector achievement unlocked!', 'achievement');
-      }
-    }
-    try {
-      storage.setItem('86d_theme', themeId);
-    } catch { /* Storage unavailable */ }
-  };
-
-  // Auto-Advance System
+  // Auto-Advance System (the play screen is 'dashboard'; pauses for scenarios,
+  // the tutorial, the weekly recap, and whenever the game ends)
+  const tutorialActive = showTutorial && game && !game.tutorialComplete;
   useEffect(() => {
     if (autoAdvanceRef.current) {
       clearInterval(autoAdvanceRef.current);
@@ -4052,9 +4122,9 @@ function AppContent() {
     }
     
     const speedOption = SPEED_OPTIONS.find(s => s.id === gameSpeed);
-    if (speedOption?.interval && game && screen === 'game' && !scenario) {
+    if (speedOption?.interval && game && screen === 'dashboard' && !scenario && !tutorialActive && !showWeeklyRecap) {
       autoAdvanceRef.current = setInterval(() => {
-        processWeek();
+        processWeek({ auto: true });
       }, speedOption.interval);
     }
     
@@ -4063,7 +4133,12 @@ function AppContent() {
         clearInterval(autoAdvanceRef.current);
       }
     };
-  }, [gameSpeed, game, screen, scenario, processWeek]);
+  }, [gameSpeed, game, screen, scenario, tutorialActive, showWeeklyRecap, processWeek]);
+
+  // Leaving the dashboard (game over / win / restart) always stops the clock
+  useEffect(() => {
+    if (screen !== 'dashboard' && gameSpeed !== 'pause') setGameSpeed('pause');
+  }, [screen, gameSpeed]);
   
   // Tips Rotation
   useEffect(() => {
@@ -4077,16 +4152,17 @@ function AppContent() {
   
   // Auto-Save
   useEffect(() => {
-    if (autoSaveEnabled && game && game.week > 0 && game.week % 4 === 0) {
+    if (autoSaveEnabled && game && game.week > 0 && game.week % 4 === 0 && screen === 'dashboard') {
       try {
-        const autoSave = {
-          game, setup, savedAt: new Date().toISOString(), name: 'Auto-Save',
+        const snapshot = {
+          game, setup, date: new Date().toISOString(), name: 'Auto-Save',
           week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
         };
-        storage.setItem('86d_autosave', JSON.stringify(autoSave));
+        storage.setItem(AUTOSAVE_KEY, JSON.stringify(snapshot));
+        setAutoSave(snapshot);
       } catch { /* Storage unavailable */ }
     }
-  }, [game?.week, autoSaveEnabled]);
+  }, [game?.week, autoSaveEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Hall of Fame Update
   const updateHallOfFame = useCallback(() => {
@@ -4123,8 +4199,6 @@ function AppContent() {
         const hofStr = await storage.getItem('86d_hall_of_fame');
         const hof = JSON.parse(hofStr || '[]');
         setHallOfFame(hof);
-        const savedTheme = await storage.getItem('86d_theme');
-        if (savedTheme && THEMES[savedTheme]) setCurrentTheme(savedTheme);
         const savedPrestigeStr = await storage.getItem('86d_prestige');
         const savedPrestige = parseInt(savedPrestigeStr || '0');
         setPrestigeLevel(savedPrestige);
@@ -4141,7 +4215,7 @@ function AppContent() {
       // Start background research
       (async () => {
         try {
-          const response = await fetch('/api/location-research', {
+          const response = await fetch(`${API_BASE_URL}/api/location-research`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city: setup.city, state: setup.state }),
@@ -4152,7 +4226,7 @@ function AppContent() {
             // Update setup with researched data
             setSetup(prev => ({
               ...prev,
-              locationData: { ...prev.locationData, ...researchData, aiResearched: true },
+              locationData: { ...prev.locationData, ...researchData, aiResearched: true, researchedAt: new Date().toISOString() },
               locationResearchStatus: 'complete',
             }));
 
@@ -4215,9 +4289,7 @@ function AppContent() {
     } catch { /* Storage unavailable */ }
     
     // Reset to welcome with prestige bonus message
-    setGame(null);
-    setScreen('welcome');
-    setOnboardingStep(0);
+    restart();
     addNotification(`New Game+ started! Prestige Level ${newPrestige}`, 'milestone');
   };
   
@@ -4313,7 +4385,8 @@ function AppContent() {
       
       // New franchises
       if (outcome.newFranchises) {
-        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / updated.locations.length;
+        const avgRevenue = updated.locations.reduce((sum, l) => sum + (l.totalRevenue / Math.max(1, l.weeksOpen)), 0) / Math.max(1, updated.locations.length);
+        updated.franchises = [...(updated.franchises || [])];
         for (let i = 0; i < outcome.newFranchises; i++) {
           updated.franchises.push({
             id: Date.now() + i,
@@ -4405,25 +4478,71 @@ function AppContent() {
     setShowWeeklyRecap(false);
   }, []);
 
-  const loadGame = (save) => {
-    setSetup(save.setup);
-    setGame(save.game);
-    // Safely set active location ID, defaulting to first location if available
-    if (save.game?.locations?.length > 0) {
-      setActiveLocationId(save.game.locations[0].id);
-    }
-    setScreen('dashboard');
-    setSaveModal(false);
-  };
+  const loadGame = (save) => resumeSave(save);
 
   const restart = () => {
+    setGameSpeed('pause');
     setScreen('welcome');
     setOnboardingStep(0);
-    setSetup({ cuisine: null, capital: 75000, name: '', location: 'urban_neighborhood', market: 'same_city', goal: 'survive', experience: 'none' });
+    setSetup(DEFAULT_SETUP);
+    setCitySearch('');
+    setCityTierFilter(null);
     setGame(null);
+    setActiveLocationId(null);
+    setActiveTab('overview');
     setScenario(null);
     setScenarioResult(null);
+    setWeeklyRecap(null);
+    setShowWeeklyRecap(false);
+    setTutorialStep(0);
+    setShowTutorial(true);
     setAiMessage('');
+    setAiConversationHistory([]);
+  };
+
+  // Pick a city for the flagship location. Base multipliers come from the local
+  // city table immediately; the AI research call refines them once the game starts.
+  const selectCity = (cityData) => {
+    if (!cityData) {
+      setSetup(s => ({ ...s, city: '', state: '', locationData: null, locationResearchStatus: 'pending' }));
+      return;
+    }
+    setSetup(s => ({
+      ...s,
+      city: cityData.city,
+      state: cityData.state,
+      locationData: {
+        city: cityData.city,
+        state: cityData.state,
+        tier: cityData.tier,
+        wageMultiplier: cityData.wageMultiplier,
+        rentMultiplier: cityData.rentMultiplier,
+        ticketMultiplier: cityData.ticketMultiplier,
+        trafficMultiplier: cityData.trafficMultiplier,
+        competitionLevel: cityData.competitionLevel,
+        foodCostMultiplier: cityData.foodCostMultiplier,
+      },
+      locationResearchStatus: 'pending',
+    }));
+  };
+
+  // Load a save (slot or auto-save) from any screen
+  const resumeSave = (save) => {
+    if (!save?.game || !save?.setup) return;
+    setSetup({ ...DEFAULT_SETUP, ...save.setup });
+    setGame(save.game);
+    setActiveLocationId(save.game.locations?.[0]?.id ?? null);
+    setActiveTab('overview');
+    setGameSpeed('pause');
+    setScenario(null);
+    setScenarioResult(null);
+    setWeeklyRecap(null);
+    setShowWeeklyRecap(false);
+    setShowTutorial(!save.game.tutorialComplete);
+    setAiConversationHistory([]);
+    setAiMessage(`Welcome back to ${save.setup?.name || 'your restaurant'}. Week ${save.game.week}. Let's get back to work.`);
+    setSaveModal(false);
+    setScreen('dashboard');
   };
 
   // ============================================
@@ -4438,10 +4557,27 @@ function AppContent() {
           <View style={styles.welcomeDivider} />
           <Text style={styles.welcomeQuote}>"The restaurant business doesn't care about your dreams."</Text>
           <Text style={styles.welcomeSubtext}>Build your restaurant empire.{'\n'}Learn from an AI mentor.{'\n'}Scale or get 86'd.</Text>
-          <TouchableOpacity style={styles.startButton} onPress={() => setScreen('onboarding')}>
+          <TouchableOpacity style={styles.startButton} onPress={() => { restart(); setScreen('onboarding'); }}>
             <Text style={styles.startButtonText}>BUILD YOUR EMPIRE</Text>
           </TouchableOpacity>
-          <Text style={styles.versionText}>v13.0.0 • Global AI Chat Integration</Text>
+          {autoSave && (
+            <TouchableOpacity style={styles.continueButtonWelcome} onPress={() => resumeSave(autoSave)}>
+              <Text style={styles.continueButtonWelcomeText}>▶ CONTINUE {autoSave.setup?.name ? `"${autoSave.setup.name}"` : ''} • Week {autoSave.week ?? autoSave.game?.week}</Text>
+              <Text style={styles.continueButtonWelcomeSub}>Auto-save from {formatShortDate(autoSave.date || autoSave.savedAt)}</Text>
+            </TouchableOpacity>
+          )}
+          {savedGames.length > 0 && (
+            <View style={styles.welcomeSaves}>
+              <Text style={styles.welcomeSavesTitle}>SAVED GAMES</Text>
+              {[...savedGames].sort((a, b) => a.slot - b.slot).map(save => (
+                <TouchableOpacity key={save.slot} style={styles.welcomeSaveRow} onPress={() => resumeSave(save)}>
+                  <Text style={styles.welcomeSaveName} numberOfLines={1}>Slot {save.slot}: {save.name || save.setup?.name || 'Untitled'}</Text>
+                  <Text style={styles.welcomeSaveMeta}>Week {save.game?.week ?? 0} • {save.game?.locations?.length ?? 0} loc • {formatShortDate(save.date)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          <Text style={styles.versionText}>v{APP_VERSION}</Text>
         </View>
         
         {/* Floating AI Chat Button */}
@@ -4510,10 +4646,17 @@ function AppContent() {
       { title: 'Starting Capital', key: 'capital' },
       { title: 'Name Your Restaurant', key: 'name' },
       { title: 'First Location', key: 'location' },
+      { title: 'Pick Your City', key: 'city' },
       { title: 'Set Your Goal', key: 'goal' },
     ];
     const step = steps[onboardingStep];
-    const canContinue = step.key === 'cuisine' ? setup.cuisine : step.key === 'name' ? setup.name.length > 0 : true;
+    const canContinue = step.key === 'cuisine' ? !!setup.cuisine : step.key === 'name' ? setup.name.trim().length > 0 : true;
+    const cityQuery = citySearch.trim().toLowerCase();
+    const cityChoices = US_CITIES
+      .filter(c => !cityTierFilter || c.tier === cityTierFilter)
+      .filter(c => !cityQuery || c.city.toLowerCase().includes(cityQuery) || c.state.toLowerCase().includes(cityQuery)
+        || (US_STATES.find(st => st.code === c.state)?.name || '').toLowerCase().includes(cityQuery))
+      .slice(0, 20);
 
     return (
       <SafeAreaView style={styles.container}>
@@ -4531,7 +4674,8 @@ function AppContent() {
                 {step.key === 'capital' && "How much are you starting with? This is your war chest - first location plus corporate reserve."}
                 {step.key === 'name' && "What's your brand? This will be the foundation of your empire."}
                 {step.key === 'location' && "Where will you open your flagship location? This sets the tone for expansion."}
-                {step.key === 'goal' && "How big do you want to build? Single location survival or multi-state empire?"}
+                {step.key === 'city' && "Which city? Rent, wages, ticket prices and foot traffic all change with the market. Chef Marcus will research it in the background."}
+                {step.key === 'goal' && "How big do you want to build? Single location survival or multi-state empire? Then pick how forgiving the game should be."}
               </Text>
             </View>
 
@@ -4727,6 +4871,76 @@ function AppContent() {
               </View>
             )}
 
+            {step.key === 'city' && (
+              <View>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search city or state..."
+                  placeholderTextColor={colors.textMuted}
+                  value={citySearch}
+                  onChangeText={setCitySearch}
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cityTierTabs}>
+                  <TouchableOpacity
+                    style={[styles.tierTab, !cityTierFilter && styles.tierTabSelected]}
+                    onPress={() => setCityTierFilter(null)}
+                  >
+                    <Text style={[styles.tierTabText, !cityTierFilter && styles.tierTabTextSelected]}>All</Text>
+                  </TouchableOpacity>
+                  {[1, 2, 3, 4, 5].map(tier => (
+                    <TouchableOpacity
+                      key={tier}
+                      style={[styles.tierTab, cityTierFilter === tier && styles.tierTabSelected]}
+                      onPress={() => setCityTierFilter(tier)}
+                    >
+                      <Text style={[styles.tierTabText, cityTierFilter === tier && styles.tierTabTextSelected]}>
+                        {CITY_TIERS[tier]?.name || `Tier ${tier}`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                {setup.city ? (
+                  <View style={styles.selectedCityPreview}>
+                    <Text style={styles.selectedCityText}>📍 {setup.city}, {setup.state} • {CITY_TIERS[setup.locationData?.tier]?.name || 'Market'}</Text>
+                    <Text style={styles.cityOptionStats}>
+                      Rent {(setup.locationData?.rentMultiplier || 1).toFixed(2)}x • Wages {(setup.locationData?.wageMultiplier || 1).toFixed(2)}x • Traffic {(setup.locationData?.trafficMultiplier || 1).toFixed(2)}x • Ticket {(setup.locationData?.ticketMultiplier || 1).toFixed(2)}x
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.cityHint}>No city selected - national average economics will be used.</Text>
+                )}
+                <View style={styles.cityListContainer}>
+                  {cityChoices.map(c => {
+                    const selected = setup.city === c.city && setup.state === c.state;
+                    return (
+                      <TouchableOpacity
+                        key={`${c.city}-${c.state}`}
+                        style={[styles.cityOption, selected && styles.cityOptionSelected]}
+                        onPress={() => selectCity(c)}
+                      >
+                        <Text style={styles.cityOptionIcon}>{c.icon || '🏙️'}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.cityOptionName, selected && styles.cityOptionNameSelected]}>{c.city}, {c.state}</Text>
+                          <Text style={styles.cityOptionStats}>
+                            Rent: {c.rentMultiplier.toFixed(1)}x • Wages: {c.wageMultiplier.toFixed(1)}x • Traffic: {c.trafficMultiplier.toFixed(1)}x
+                          </Text>
+                        </View>
+                        <Text style={[styles.cityTierBadge, { backgroundColor: CITY_TIERS[c.tier]?.color || colors.primary }]}>T{c.tier}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {cityChoices.length === 0 && (
+                    <Text style={styles.emptyText}>No cities match "{citySearch}". Try a state name or clear the filter.</Text>
+                  )}
+                </View>
+                {setup.city ? (
+                  <TouchableOpacity style={styles.clearCityBtn} onPress={() => selectCity(null)}>
+                    <Text style={styles.clearCityBtnText}>Clear city (use national average)</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            )}
+
             {step.key === 'goal' && (
               <View style={styles.goalOptions}>
                 {GOALS.map(g => (
@@ -4735,6 +4949,33 @@ function AppContent() {
                     <Text style={styles.goalDesc}>{g.desc} • {g.difficulty}</Text>
                   </TouchableOpacity>
                 ))}
+
+                <Text style={styles.inputLabel}>Difficulty</Text>
+                <View style={styles.difficultyRow}>
+                  {DIFFICULTY_MODES.map(mode => {
+                    const selected = (setup.difficulty || 'normal') === mode.id;
+                    return (
+                      <TouchableOpacity
+                        key={mode.id}
+                        style={[styles.difficultyChip, selected && styles.difficultyChipSelected]}
+                        onPress={() => { setSetup(s => ({ ...s, difficulty: mode.id })); setDifficulty(mode.id); }}
+                      >
+                        <Text style={styles.difficultyChipIcon}>{mode.icon}</Text>
+                        <Text style={[styles.difficultyChipText, selected && styles.difficultyChipTextSelected]}>{mode.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {(() => {
+                  const mode = DIFFICULTY_MODES.find(d => d.id === (setup.difficulty || 'normal')) || DIFFICULTY_MODES[1];
+                  return (
+                    <Text style={styles.difficultyHint}>
+                      {mode.description} • Revenue {mode.revenueMultiplier > 1 ? '+' : ''}{Math.round((mode.revenueMultiplier - 1) * 100)}% • Costs {mode.costMultiplier > 1 ? '+' : ''}{Math.round((mode.costMultiplier - 1) * 100)}%
+                      {mode.startingBonus ? ` • Capital ${mode.startingBonus > 0 ? '+' : '-'}${formatCurrency(Math.abs(mode.startingBonus))}` : ''}
+                      {mode.noLoans ? ' • No loans' : ''}
+                    </Text>
+                  );
+                })()}
               </View>
             )}
 
@@ -5002,6 +5243,9 @@ function AppContent() {
             <Text style={styles.empireValuation}>{formatCurrency(game.empireValuation)}</Text>
             <Text style={styles.empireValuationLabel}>Empire Value</Text>
           </View>
+          <TouchableOpacity style={styles.settingsBtn} onPress={() => setSettingsModal(true)} accessibilityLabel="Settings">
+            <Text style={styles.settingsBtnText}>⚙️</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Location Research Status Banner */}
@@ -5022,11 +5266,11 @@ function AppContent() {
         {isMultiLocation && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.locationSelector}>
             <TouchableOpacity 
-              style={[styles.locationTab, !activeLocationId && styles.locationTabActive]} 
-              onPress={() => setEmpireModal(true)}
+              style={[styles.locationTab, activeTab === 'empire' && styles.locationTabActive]} 
+              onPress={() => setActiveTab('empire')}
             >
               <Text style={styles.locationTabIcon}>🏛️</Text>
-              <Text style={[styles.locationTabText, !activeLocationId && styles.locationTabTextActive]}>Empire</Text>
+              <Text style={[styles.locationTabText, activeTab === 'empire' && styles.locationTabTextActive]}>Empire</Text>
             </TouchableOpacity>
             {game.locations.map(l => (
               <TouchableOpacity 
@@ -5262,8 +5506,8 @@ function AppContent() {
                     <Text style={styles.quickActionIcon}>🏢</Text>
                     <Text style={styles.quickActionText}>Property</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: currentEconomy === 'recession' ? colors.accent : currentEconomy === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
-                    <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === currentEconomy)?.icon || '📊'}</Text>
+                  <TouchableOpacity style={[styles.quickAction, { backgroundColor: ['recession', 'depression'].includes(game.economicCondition) ? colors.accent : game.economicCondition === 'boom' ? colors.success : colors.surfaceLight }]} onPress={() => setEconomyModal(true)}>
+                    <Text style={styles.quickActionIcon}>{ECONOMIC_CONDITIONS.find(e => e.id === game.economicCondition)?.icon || '📊'}</Text>
                     <Text style={styles.quickActionText}>Economy</Text>
                   </TouchableOpacity>
                 </View>
@@ -5469,8 +5713,9 @@ function AppContent() {
                 <View style={styles.plCard}>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Revenue</Text><Text style={[styles.plValue, { color: colors.success }]}>{formatCurrency(loc.lastWeekRevenue)}</Text></View>
                   <View style={styles.plDivider} />
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
-                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Food Cost ({formatPct(loc.foodCostPct)})</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekFoodCost ?? loc.lastWeekRevenue * loc.foodCostPct)}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Labor</Text><Text style={styles.plValue}>-{formatCurrency(loc.lastWeekLaborCost ?? loc.staff.reduce((s, st) => s + st.wage * 40, 0))}</Text></View>
+                  <View style={styles.plRow}><Text style={styles.plLabel}>Utilities</Text><Text style={styles.plValue}>-{formatCurrency(Math.floor(loc.rent * 0.15))}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Rent</Text><Text style={styles.plValue}>-{formatCurrency(loc.rent)}</Text></View>
                   <View style={styles.plRow}><Text style={styles.plLabel}>Marketing</Text><Text style={styles.plValue}>-{formatCurrency(loc.marketing.channels.reduce((s, c) => s + (MARKETING_CHANNELS.find(m => m.id === c)?.costPerWeek || 0), 0))}</Text></View>
                   <View style={styles.plDivider} />
@@ -5627,7 +5872,18 @@ function AppContent() {
 
         {/* Bottom Action Bar */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.nextWeekButton} onPress={processWeek}>
+          <TouchableOpacity
+            style={[styles.speedBtn, gameSpeed !== 'pause' && styles.speedBtnActive]}
+            onPress={() => {
+              const idx = SPEED_OPTIONS.findIndex(sp => sp.id === gameSpeed);
+              setGameSpeed(SPEED_OPTIONS[(idx + 1) % SPEED_OPTIONS.length].id);
+            }}
+            accessibilityLabel="Game speed"
+          >
+            <Text style={styles.speedBtnIcon}>{SPEED_OPTIONS.find(sp => sp.id === gameSpeed)?.icon || '⏸️'}</Text>
+            <Text style={styles.speedBtnText}>{gameSpeed === 'pause' ? 'AUTO' : SPEED_OPTIONS.find(sp => sp.id === gameSpeed)?.name}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.nextWeekButton} onPress={() => processWeek()}>
             <Text style={styles.nextWeekButtonText}>▶ NEXT WEEK</Text>
           </TouchableOpacity>
         </View>
@@ -6637,21 +6893,8 @@ function AppContent() {
                 </TouchableOpacity>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={styles.settingsSection}>🎨 Theme</Text>
-                <View style={styles.themeGrid}>
-                  {Object.values(THEMES).map(theme => (
-                    <TouchableOpacity
-                      key={theme.id}
-                      style={[styles.themeOption, currentTheme === theme.id && styles.themeSelected]}
-                      onPress={() => changeTheme(theme.id)}
-                    >
-                      <Text style={styles.themeIcon}>{theme.icon}</Text>
-                      <Text style={[styles.themeName, currentTheme === theme.id && styles.themeNameSelected]}>{theme.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                
                 <Text style={styles.settingsSection}>⏩ Game Speed</Text>
+                <Text style={styles.helperText}>Auto-advance weeks. Pauses for scenarios, the tutorial, and the weekly recap.</Text>
                 <View style={styles.speedGrid}>
                   {SPEED_OPTIONS.map(speed => (
                     <TouchableOpacity
@@ -6666,16 +6909,6 @@ function AppContent() {
                 </View>
                 
                 <Text style={styles.settingsSection}>🎮 Preferences</Text>
-                <TouchableOpacity 
-                  style={styles.toggleRow}
-                  onPress={() => setSoundEnabled(!soundEnabled)}
-                >
-                  <Text style={styles.toggleLabel}>🔊 Sound Effects</Text>
-                  <View style={[styles.toggle, soundEnabled && styles.toggleActive]}>
-                    <View style={[styles.toggleKnob, soundEnabled && styles.toggleKnobActive]} />
-                  </View>
-                </TouchableOpacity>
-                
                 <TouchableOpacity 
                   style={styles.toggleRow}
                   onPress={() => setAutoSaveEnabled(!autoSaveEnabled)}
@@ -6706,9 +6939,23 @@ function AppContent() {
                   <Text style={styles.statsValue}>{hallOfFame.length}</Text>
                 </View>
                 <View style={styles.statsRow}>
-                  <Text style={styles.statsLabel}>Themes Unlocked</Text>
-                  <Text style={styles.statsValue}>{themesUsed.length}/5</Text>
+                  <Text style={styles.statsLabel}>Difficulty</Text>
+                  <Text style={styles.statsValue}>{DIFFICULTY_MODES.find(d => d.id === setup.difficulty)?.name || 'Normal'}</Text>
                 </View>
+                
+                <TouchableOpacity 
+                  style={styles.hofButton}
+                  onPress={() => { setSettingsModal(false); setSaveModal(true); }}
+                >
+                  <Text style={styles.hofButtonText}>💾 Save / Load Game</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.hofButton, { backgroundColor: colors.accent }]}
+                  onPress={() => { setSettingsModal(false); restart(); }}
+                >
+                  <Text style={styles.hofButtonText}>🚪 Quit to Main Menu</Text>
+                </TouchableOpacity>
                 
                 <TouchableOpacity 
                   style={styles.hofButton}
@@ -6717,7 +6964,7 @@ function AppContent() {
                   <Text style={styles.hofButtonText}>🏆 View Hall of Fame</Text>
                 </TouchableOpacity>
                 
-                <Text style={styles.versionText}>86'd v8.5.0 - Phase 6</Text>
+                <Text style={styles.versionText}>86'd v{APP_VERSION}</Text>
               </ScrollView>
             </View>
           </View>
@@ -6866,7 +7113,8 @@ function AppContent() {
                 <Text style={styles.sectionSubtitle}>Available Investors</Text>
                 {INVESTOR_TYPES.filter(inv => 
                   (game?.empireValuation || 0) >= inv.minValuation && 
-                  (game?.empireValuation || 0) <= inv.maxValuation
+                  (game?.empireValuation || 0) <= inv.maxValuation &&
+                  !(game?.investors || []).some(existing => existing.type === inv.id)
                 ).map(inv => (
                   <TouchableOpacity
                     key={inv.id}
@@ -6874,7 +7122,12 @@ function AppContent() {
                     onPress={() => {
                       const investAmount = Math.floor((inv.investment[0] + inv.investment[1]) / 2);
                       const equityAsk = Math.floor((inv.equityRange[0] + inv.equityRange[1]) / 2);
-                      if ((game?.equity || 100) >= equityAsk) {
+                      if ((game?.investors || []).some(existing => existing.type === inv.id)) return;
+                      if ((game?.equity || 100) < equityAsk) {
+                        addNotification(`You only own ${game?.equity || 100}% - not enough equity for ${inv.name}`, 'warning');
+                        return;
+                      }
+                      {
                         setGame(g => ({
                           ...g,
                           corporateCash: (g.corporateCash || 0) + investAmount,
@@ -6909,7 +7162,8 @@ function AppContent() {
                 
                 {INVESTOR_TYPES.filter(inv => 
                   (game?.empireValuation || 0) >= inv.minValuation && 
-                  (game?.empireValuation || 0) <= inv.maxValuation
+                  (game?.empireValuation || 0) <= inv.maxValuation &&
+                  !(game?.investors || []).some(existing => existing.type === inv.id)
                 ).length === 0 && (
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyStateText}>No investors interested at current valuation</Text>
@@ -6934,8 +7188,12 @@ function AppContent() {
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.cateringSummary}>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Catering Revenue:</Text>
-                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.cateringRevenue || 0)}/week</Text>
+                    <Text style={styles.statLabel}>Weekly Run-Rate:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency((game?.cateringContracts || []).reduce((sum, c) => sum + (CATERING_CONTRACTS.find(cc => cc.id === c.id)?.weeklyRevenue || 0), 0))}/week</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Lifetime Catering Revenue:</Text>
+                    <Text style={styles.statValue}>{formatCurrency(game?.cateringRevenue || 0)}</Text>
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>Active Contracts:</Text>
@@ -6950,6 +7208,8 @@ function AppContent() {
                       if ((game?.corporateCash || 0) >= 10000) {
                         setGame(g => ({ ...g, cateringEnabled: true, corporateCash: g.corporateCash - 10000 }));
                         addNotification('🍽️ Catering division launched! $10K invested.', 'success');
+                      } else {
+                        addNotification('Need $10K corporate cash to launch catering', 'warning');
                       }
                     }}
                   >
@@ -6960,10 +7220,11 @@ function AppContent() {
                 {game?.cateringEnabled && (
                   <>
                     <Text style={styles.sectionSubtitle}>Available Contracts</Text>
-                    {CATERING_CONTRACTS.filter(c => !game?.cateringContracts?.find(cc => cc.id === c.id)).map(contract => (
+                    {CATERING_CONTRACTS.map(contract => (
                       <TouchableOpacity
                         key={contract.id}
-                        style={styles.contractCard}
+                        style={[styles.contractCard, (game?.cateringContracts || []).some(cc => cc.id === contract.id) && styles.trainingCompleted]}
+                        disabled={(game?.cateringContracts || []).some(cc => cc.id === contract.id)}
                         onPress={() => {
                           setGame(g => ({
                             ...g,
@@ -6976,6 +7237,7 @@ function AppContent() {
                         <View style={styles.contractInfo}>
                           <Text style={styles.contractName}>{contract.name}</Text>
                           <Text style={styles.contractDetails}>{formatCurrency(contract.weeklyRevenue)}/week • {contract.term} weeks • {(contract.margin * 100).toFixed(0)}% margin</Text>
+                        {(() => { const active = (game?.cateringContracts || []).find(cc => cc.id === contract.id); return active ? <Text style={styles.contractRequirement}>✓ Active • {active.weeksRemaining} weeks left</Text> : null; })()}
                           <Text style={styles.contractRequirement}>⚠️ {contract.requirement}</Text>
                         </View>
                       </TouchableOpacity>
@@ -7015,8 +7277,12 @@ function AppContent() {
                     <Text style={styles.statValue}>{game?.foodTrucks?.length || 0} trucks</Text>
                   </View>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Weekly Revenue:</Text>
-                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(game?.truckRevenue || 0)}</Text>
+                    <Text style={styles.statLabel}>Booked This Week:</Text>
+                    <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency((game?.foodTrucks || []).reduce((sum, t) => sum + (t.currentEvent ? (t.eventRevenue || 0) : 0), 0))}</Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Lifetime Truck Revenue:</Text>
+                    <Text style={styles.statValue}>{formatCurrency(game?.truckRevenue || 0)}</Text>
                   </View>
                 </View>
                 
@@ -7028,7 +7294,11 @@ function AppContent() {
                         <Text style={styles.truckIcon}>{FOOD_TRUCKS.find(t => t.id === truck.type)?.icon || '🚚'}</Text>
                         <View style={styles.truckInfo}>
                           <Text style={styles.truckName}>{truck.name}</Text>
-                          <Text style={styles.truckDetails}>Weekly Revenue: {formatCurrency(truck.weeklyRevenue || 0)}</Text>
+                          <Text style={styles.truckDetails}>
+                            {truck.currentEvent
+                              ? `Booked: ${TRUCK_EVENTS.find(e => e.id === truck.currentEvent)?.name || 'Event'} (~${formatCurrency(truck.eventRevenue || 0)})`
+                              : `Idle • Last week: ${formatCurrency(truck.weeklyRevenue || 0)} • ${(truck.events || []).length} events run`}
+                          </Text>
                         </View>
                       </View>
                     ))}
@@ -7070,13 +7340,30 @@ function AppContent() {
                 
                 {game?.foodTrucks?.length > 0 && (
                   <>
-                    <Text style={styles.sectionSubtitle}>Book Events</Text>
+                    <Text style={styles.sectionSubtitle}>Book Events (one per idle truck, pays out next week)</Text>
                     {TRUCK_EVENTS.map(event => (
                       <TouchableOpacity
                         key={event.id}
                         style={styles.eventOption}
                         onPress={() => {
-                          addNotification(`🎪 Booked ${event.name}! Expected: ${formatCurrency(event.avgRevenue)}`, 'success');
+                          const idleIndex = (game?.foodTrucks || []).findIndex(t => !t.currentEvent);
+                          if (idleIndex === -1) {
+                            addNotification('All trucks are already booked this week', 'warning');
+                            return;
+                          }
+                          if ((game?.corporateCash || 0) < event.fee) {
+                            addNotification(`Need ${formatCurrency(event.fee)} for the ${event.name} vendor fee`, 'warning');
+                            return;
+                          }
+                          const truckData = FOOD_TRUCKS.find(t => t.id === game.foodTrucks[idleIndex].type);
+                          const capacityMod = truckData ? Math.min(1.5, Math.max(0.6, truckData.capacity / 200)) : 1;
+                          const expected = Math.round(event.avgRevenue * capacityMod * (0.8 + Math.random() * 0.4));
+                          setGame(g => ({
+                            ...g,
+                            corporateCash: g.corporateCash - event.fee,
+                            foodTrucks: g.foodTrucks.map((t, i) => i === idleIndex ? { ...t, currentEvent: event.id, eventRevenue: expected } : t),
+                          }));
+                          addNotification(`🎪 Booked ${event.name}! Fee ${formatCurrency(event.fee)} paid. Expected: ${formatCurrency(expected)} next week`, 'success');
                         }}
                       >
                         <Text style={styles.eventIcon}>{event.icon}</Text>
@@ -7120,7 +7407,7 @@ function AppContent() {
                 </View>
                 
                 <Text style={styles.sectionSubtitle}>Media Opportunities</Text>
-                {MEDIA_OPPORTUNITIES.filter(m => !m.minReputation || (getActiveLocation()?.reputation || 0) >= m.minReputation).map(media => (
+                {MEDIA_OPPORTUNITIES.filter(m => (!m.minReputation || (getActiveLocation()?.reputation || 0) >= m.minReputation) && !(game?.mediaAppearances || []).some(a => a.id === m.id)).map(media => (
                   <TouchableOpacity
                     key={media.id}
                     style={styles.mediaOption}
@@ -7142,7 +7429,7 @@ function AppContent() {
                 ))}
                 
                 <Text style={styles.sectionSubtitle}>Brand Deals</Text>
-                {BRAND_DEALS.filter(d => (getActiveLocation()?.reputation || 0) >= d.minReputation).map(deal => (
+                {BRAND_DEALS.filter(d => (getActiveLocation()?.reputation || 0) >= d.minReputation && !(game?.brandDeals || []).some(b => b.id === d.id)).map(deal => (
                   <TouchableOpacity
                     key={deal.id}
                     style={styles.dealOption}
@@ -7150,7 +7437,7 @@ function AppContent() {
                       setGame(g => ({
                         ...g,
                         corporateCash: g.corporateCash + (deal.advance || deal.fee || 0),
-                        brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week }],
+                        brandDeals: [...(g.brandDeals || []), { ...deal, signedWeek: g.week, active: true }],
                       }));
                       addNotification(`📝 Signed ${deal.name}! +${formatCurrency(deal.advance || deal.fee || 0)}`, 'success');
                       setMediaModal(false);
@@ -7217,6 +7504,10 @@ function AppContent() {
                           addNotification('🏆 Congratulations! You passed your empire to the next generation!', 'achievement');
                           setGame(g => ({ ...g, exitStrategy: exit.id, exitProgress: 100 }));
                         } else {
+                          if ((game?.corporateCash || 0) < exit.cost) {
+                            addNotification(`Need ${formatCurrency(exit.cost)} corporate cash to start ${exit.name}`, 'warning');
+                            return;
+                          }
                           setGame(g => ({ 
                             ...g, 
                             exitStrategy: exit.id, 
@@ -7266,7 +7557,7 @@ function AppContent() {
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 {ECONOMIC_CONDITIONS.map(condition => {
-                  const isActive = currentEconomy === condition.id;
+                  const isActive = (game?.economicCondition || 'stable') === condition.id;
                   return (
                     <View key={condition.id} style={[styles.economyCard, isActive && styles.economyCardActive]}>
                       <View style={styles.economyHeader}>
@@ -7374,12 +7665,15 @@ function AppContent() {
                 
                 {/* Buy Property Option */}
                 <Text style={[styles.sectionSubtitle, { marginTop: 20 }]}>Purchase Property</Text>
-                {(game?.locations?.length || 0) > 0 && (
+                {getActiveLocation()?.ownsProperty && (
+                  <Text style={styles.emptyStateText}>✓ You already own the building at {getActiveLocation()?.name}. Select another location to buy more property.</Text>
+                )}
+                {(game?.locations?.length || 0) > 0 && !getActiveLocation()?.ownsProperty && (
                   <View style={styles.buyPropertyCard}>
-                    <Text style={styles.buyPropertyTitle}>Buy Your Current Location</Text>
+                    <Text style={styles.buyPropertyTitle}>Buy Your Current Location ({getActiveLocation()?.name})</Text>
                     <Text style={styles.buyPropertyDesc}>Stop paying rent - build equity instead!</Text>
                     {(() => {
-                      const loc = game?.locations?.[selectedLocation || 0];
+                      const loc = getActiveLocation();
                       const propertyValue = (loc?.rent || 3000) * 12 * 10; // 10x annual rent
                       const downPayment = propertyValue * 0.25;
                       const mortgageAmount = propertyValue * 0.75;
@@ -7508,6 +7802,25 @@ const styles = StyleSheet.create({
   startButton: { backgroundColor: colors.primary, paddingHorizontal: 40, paddingVertical: 16, borderRadius: 8 },
   startButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
   versionText: { color: colors.textMuted, fontSize: 12, marginTop: 30 },
+  continueButtonWelcome: { marginTop: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.success, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, alignItems: 'center', maxWidth: '100%' },
+  continueButtonWelcomeText: { color: colors.success, fontSize: 14, fontWeight: '700' },
+  continueButtonWelcomeSub: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  welcomeSaves: { marginTop: 16, width: '100%', maxWidth: 360 },
+  welcomeSavesTitle: { color: colors.textMuted, fontSize: 11, letterSpacing: 1.5, textAlign: 'center', marginBottom: 6 },
+  welcomeSaveRow: { backgroundColor: colors.surface, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 6, borderWidth: 1, borderColor: colors.border },
+  welcomeSaveName: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  welcomeSaveMeta: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  cityHint: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginVertical: 10 },
+  cityListContainer: { marginTop: 8 },
+  clearCityBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 6 },
+  clearCityBtnText: { color: colors.textSecondary, fontSize: 13, textDecorationLine: 'underline' },
+  difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  difficultyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14 },
+  difficultyChipSelected: { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
+  difficultyChipIcon: { fontSize: 16 },
+  difficultyChipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  difficultyChipTextSelected: { color: colors.primary },
+  difficultyHint: { color: colors.textMuted, fontSize: 12, marginTop: 10, lineHeight: 18 },
 
   // Onboarding
   onboardingContainer: { flex: 1 },
@@ -7956,8 +8269,12 @@ const styles = StyleSheet.create({
   timelineSearch: { backgroundColor: colors.surface, color: colors.textPrimary, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
 
   // Bottom Bar
-  bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
-  nextWeekButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  bottomBar: { padding: 15, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  nextWeekButton: { flex: 1, backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
+  speedBtn: { backgroundColor: colors.surfaceLight, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', minWidth: 70, borderWidth: 1, borderColor: colors.border },
+  speedBtnActive: { borderColor: colors.success, backgroundColor: colors.success + '22' },
+  speedBtnIcon: { fontSize: 18 },
+  speedBtnText: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', marginTop: 2 },
   nextWeekButtonText: { color: colors.background, fontSize: 16, fontWeight: '700' },
 
   // ============================================

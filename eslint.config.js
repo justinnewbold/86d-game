@@ -4,12 +4,14 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 
 export default [
+  { ignores: ['dist/**', 'web-build/**', 'node_modules/**', '.expo/**', 'coverage/**'] },
   js.configs.recommended,
   prettier,
   {
-    files: ['**/__tests__/**/*.js', '**/*.test.js', '**/*.spec.js'],
+    files: ['**/__tests__/**/*.js', '**/*.test.js', '**/*.spec.js', 'jest.setup.js'],
     languageOptions: {
       globals: {
+        global: 'readonly',
         describe: 'readonly',
         it: 'readonly',
         test: 'readonly',

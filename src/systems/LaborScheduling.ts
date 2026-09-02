@@ -100,8 +100,9 @@ export function calculateExpectedCovers(
     for (const [hour, hourWeight] of Object.entries(pattern)) {
       const hourNum = parseInt(hour, 10);
       // Distribute weekly covers across hours based on pattern
+      // Each day's covers are spread across open hours by pattern weight
       const coversThisHour = (avgWeeklyCovers / daysOpen) * dayMult *
-        (hourWeight / totalPatternWeight) * Object.keys(pattern).length;
+        (hourWeight / totalPatternWeight);
       result[day][hourNum] = Math.round(coversThisHour);
     }
   }
