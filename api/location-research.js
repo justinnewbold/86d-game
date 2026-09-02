@@ -113,8 +113,11 @@ export default async function handler(req) {
               },
               generationConfig: {
                 temperature: 0.3, // Lower temperature for more factual responses
-                maxOutputTokens: 1000,
+                // Gemini 2.5 spends "thinking" tokens from the same budget; 1000 truncated the JSON mid-object
+                maxOutputTokens: 4096,
                 topP: 0.9,
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingBudget: 0 },
               }
             })
           }
@@ -150,8 +153,14 @@ export default async function handler(req) {
 
     // Parse the JSON response
     try {
-      // Remove any markdown code fences if present
-      const cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      // Remove any markdown code fences and anything outside the outermost object
+      let cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const start = cleanedText.indexOf('{');
+      const end = cleanedText.lastIndexOf('}');
+      if (start === -1 || end === -1 || end <= start) {
+        throw new Error('No JSON object in response');
+      }
+      cleanedText = cleanedText.slice(start, end + 1);
       const parsedData = JSON.parse(cleanedText);
 
       // Validate and sanitize the data
