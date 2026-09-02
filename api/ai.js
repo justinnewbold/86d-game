@@ -151,8 +151,10 @@ export default async function handler(req) {
               },
               generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 500,
+                // Gemini 2.5 spends "thinking" tokens from the same budget; keep room for the reply
+                maxOutputTokens: 1500,
                 topP: 0.95,
+                thinkingConfig: { thinkingBudget: 0 },
               }
             })
           }
