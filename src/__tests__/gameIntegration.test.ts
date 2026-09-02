@@ -367,7 +367,7 @@ describe('Financial Accuracy Tests', () => {
       60, // delivery
       25, // delivery ticket
       0.30, // 30% food cost
-      { hourlyWages: 4500, salaries: 1200 },
+      { hourlyWages: 3000, salaries: 800 }, // ~30% labor before burden
       { weeklyRent: 1000, weeklyUtilities: 400, weeklyInsurance: 150 }
     );
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "86'd",
     "slug": "86d-game",
-    "version": "2.3.1",
+    "version": "2.4.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -20,7 +20,9 @@
       "bundleIdentifier": "com.newbold.eightysixd",
       "buildNumber": "2",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSMicrophoneUsageDescription": "This app does not use the microphone."
       }
     },
@@ -44,7 +46,9 @@
       "expo-av"
     ],
     "extra": {
-      "eas": {}
+      "eas": {},
+      "apiBaseUrl": "",
+      "_apiBaseUrlNote": "Native builds need the deployed web URL here (e.g. https://86d.newbold.cloud) so the AI mentor and market research APIs are reachable. Web builds use same-origin."
     },
     "updates": {
       "fallbackToCacheTimeout": 0

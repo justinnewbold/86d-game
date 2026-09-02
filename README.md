@@ -4,8 +4,8 @@
 
 A cross-platform restaurant business simulator built with React Native + Expo. Runs on iOS, Android, and Web from a single codebase.
 
-![Version](https://img.shields.io/badge/version-2.2-orange)
-![Expo](https://img.shields.io/badge/Expo-54-blue)
+![Version](https://img.shields.io/badge/version-2.4-orange)
+![Expo](https://img.shields.io/badge/Expo-52-blue)
 ![Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-green)
 
 ## 🎮 Features

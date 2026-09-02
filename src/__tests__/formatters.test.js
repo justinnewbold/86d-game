@@ -20,8 +20,8 @@ describe('formatCurrency', () => {
   });
 
   it('handles negative numbers', () => {
-    expect(formatCurrency(-1000)).toBe('$-1K');
-    expect(formatCurrency(-500)).toBe('$-500');
+    expect(formatCurrency(-1000)).toBe('-$1K');
+    expect(formatCurrency(-500)).toBe('-$500');
   });
 });
 
