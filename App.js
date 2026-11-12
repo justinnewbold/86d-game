@@ -4224,10 +4224,13 @@ function AppContent() {
 
           if (response.ok) {
             const researchData = await response.json();
+            const { _source, ...locationResearch } = researchData;
+            const aiResearched = _source === 'ai';
+
             // Update setup with researched data
             setSetup(prev => ({
               ...prev,
-              locationData: { ...prev.locationData, ...researchData, aiResearched: true, researchedAt: new Date().toISOString() },
+              locationData: { ...prev.locationData, ...locationResearch, aiResearched, researchedAt: new Date().toISOString() },
               locationResearchStatus: 'complete',
             }));
 
@@ -4238,7 +4241,7 @@ function AppContent() {
                 if (idx === 0) {
                   return {
                     ...loc,
-                    locationEconomicData: { ...loc.locationEconomicData, ...researchData, aiResearched: true },
+                    locationEconomicData: { ...loc.locationEconomicData, ...locationResearch, aiResearched },
                   };
                 }
                 return loc;
@@ -4250,7 +4253,9 @@ function AppContent() {
             setNotifications(prev => [...prev, {
               id: Date.now(),
               type: 'info',
-              message: `Market research complete for ${setup.city}, ${setup.state}!`,
+              message: aiResearched
+                ? `AI market research complete for ${setup.city}, ${setup.state}!`
+                : `Using baseline market data for ${setup.city}, ${setup.state}.`,
               timestamp: Date.now(),
             }]);
           } else {
