@@ -9,7 +9,8 @@
     "deploymentEnabled": {
       "main": true,
       "master": true,
-      "claude/*": true
+      "claude/*": true,
+      "codex/*": true
     }
   },
   "github": {
