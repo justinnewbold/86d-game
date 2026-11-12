@@ -4152,13 +4152,14 @@ function AppContent() {
   
   // Auto-Save
   useEffect(() => {
-    if (autoSaveEnabled && game && game.week > 0 && game.week % 4 === 0 && screen === 'dashboard') {
+    if (autoSaveEnabled && game && game.week > 0 && screen === 'dashboard') {
       try {
         const snapshot = {
           game, setup, date: new Date().toISOString(), name: 'Auto-Save',
           week: game.week, cash: game.corporateCash + game.locations.reduce((s, l) => s + l.cash, 0),
         };
-        storage.setItem(AUTOSAVE_KEY, JSON.stringify(snapshot));
+        storage.setItem(AUTOSAVE_KEY, JSON.stringify(snapshot))
+          .catch(() => { /* Storage unavailable */ });
         setAutoSave(snapshot);
       } catch { /* Storage unavailable */ }
     }
@@ -6913,7 +6914,7 @@ function AppContent() {
                   style={styles.toggleRow}
                   onPress={() => setAutoSaveEnabled(!autoSaveEnabled)}
                 >
-                  <Text style={styles.toggleLabel}>💾 Auto-Save (every 4 weeks)</Text>
+                  <Text style={styles.toggleLabel}>💾 Auto-Save (every week)</Text>
                   <View style={[styles.toggle, autoSaveEnabled && styles.toggleActive]}>
                     <View style={[styles.toggleKnob, autoSaveEnabled && styles.toggleKnobActive]} />
                   </View>
