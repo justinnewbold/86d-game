@@ -45,6 +45,7 @@ on:
 jobs:
   build:
     name: EAS Build
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
