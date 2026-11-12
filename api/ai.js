@@ -52,6 +52,53 @@ IMPORTANT LIMITATIONS:
 - Never make up numbers - only reference what's in the game state
 - Don't overwhelm new players with advanced concepts`;
 
+const GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-2.5-flash',
+];
+
+const formatMoney = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return null;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const getFallbackAdvice = (gameState) => {
+  const restaurantName = gameState?.restaurant?.name || 'your restaurant';
+  const week = Number(gameState?.currentWeek) || 0;
+  const finances = gameState?.finances || {};
+  const locations = Array.isArray(gameState?.locations) ? gameState.locations : [];
+  const firstLocation = locations[0] || {};
+  const totalCash = Number(finances.totalCash) || Number(firstLocation.cash) || 0;
+  const weeklyExpenses = Number(finances.weeklyExpenses) || 0;
+  const lastWeekProfit = Number(firstLocation.lastWeekProfit) || 0;
+  const morale = Number(firstLocation.morale);
+
+  if (lastWeekProfit < 0) {
+    return `${restaurantName} lost ${formatMoney(Math.abs(lastWeekProfit))} last week. Hold expansion, review labor and food costs, and get the current location back to break-even first.`;
+  }
+
+  if (weeklyExpenses > 0 && totalCash / weeklyExpenses < 6) {
+    const runway = Math.max(0, Math.floor(totalCash / weeklyExpenses));
+    return `${restaurantName} has about ${runway} weeks of operating cash. Protect that runway this week by avoiding new fixed costs and watching every scheduled labor hour.`;
+  }
+
+  if (Number.isFinite(morale) && morale < 50) {
+    return `Morale at ${restaurantName} is ${Math.round(morale)}%. Fix the schedule or staffing pressure this week before turnover creates a more expensive problem.`;
+  }
+
+  if (week > 0 && totalCash > 0) {
+    return `Week ${week} at ${restaurantName}: you have ${formatMoney(totalCash)} in location cash. Keep building a six-week reserve before taking on another major expense.`;
+  }
+
+  return 'Start conservatively, protect at least six weeks of operating cash, and learn the numbers at your first location before expanding.';
+};
+
 export default async function handler(req) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -96,7 +143,9 @@ export default async function handler(req) {
   if (!apiKey) {
     console.error('GEMINI_API_KEY not configured');
     return new Response(JSON.stringify({
-      response: "I'm here to help, but my AI connection isn't configured yet. Here's my quick advice: Focus on cash flow first, staff second, and expansion last. Keep playing - I'll give you better tips when I'm fully online!"
+      response: getFallbackAdvice(gameState),
+      source: 'fallback',
+      reason: 'configuration'
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -133,17 +182,21 @@ export default async function handler(req) {
     }
 
     // Use Gemini 2.5 Flash for speed, with fallback
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash'];
+    const models = GEMINI_MODELS;
     let data = null;
     let lastError = null;
+    let successfulModel = null;
 
     for (const model of models) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey,
+            },
             body: JSON.stringify({
               contents,
               systemInstruction: {
@@ -154,7 +207,6 @@ export default async function handler(req) {
                 // Gemini 2.5 spends "thinking" tokens from the same budget; keep room for the reply
                 maxOutputTokens: 1500,
                 topP: 0.95,
-                thinkingConfig: { thinkingBudget: 0 },
               }
             })
           }
@@ -163,6 +215,7 @@ export default async function handler(req) {
         data = await response.json();
 
         if (!data.error) {
+          successfulModel = model;
           break; // Success, exit loop
         }
         lastError = data.error;
@@ -174,7 +227,9 @@ export default async function handler(req) {
     if (data?.error || !data) {
       console.error('Gemini API Error:', lastError || data?.error);
       return new Response(JSON.stringify({
-        response: "Running into some technical difficulties. Here's what I always say: watch your cash flow like a hawk. Every week you survive is a win."
+        response: getFallbackAdvice(gameState),
+        source: 'fallback',
+        reason: 'provider_unavailable'
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -184,7 +239,7 @@ export default async function handler(req) {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Keep pushing. Every week you survive is a win. Focus on the fundamentals: cash flow, staff morale, and customer satisfaction.";
 
-    return new Response(JSON.stringify({ response: text }), {
+    return new Response(JSON.stringify({ response: text, source: 'ai', model: successfulModel }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -194,7 +249,9 @@ export default async function handler(req) {
   } catch (error) {
     console.error('AI API Error:', error);
     return new Response(JSON.stringify({
-      response: "Technical issues on my end. You've got this - trust your instincts. Remember: great food isn't enough. It's about the whole operation."
+      response: getFallbackAdvice(gameState),
+      source: 'fallback',
+      reason: 'unexpected_error'
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

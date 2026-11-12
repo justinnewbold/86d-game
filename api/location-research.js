@@ -33,7 +33,7 @@ REQUIRED JSON STRUCTURE:
 }
 
 GUIDELINES:
-- Use realistic 2024/2025 data based on actual economic conditions
+- Use recent, realistic 2025/2026 data based on actual economic conditions
 - All multipliers should be relative to national average (1.0 = average)
 - Multipliers typically range from 0.7 (very low cost) to 2.5 (very high cost)
 - Consider cost of living, local economy, tourism, and food culture
@@ -95,17 +95,20 @@ export default async function handler(req) {
     const userPrompt = `Research economic data for opening a restaurant in ${city}, ${state}.`;
 
     // Use Gemini 2.5 Flash for speed
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash'];
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'];
     let data = null;
     let lastError = null;
 
     for (const model of models) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey,
+            },
             body: JSON.stringify({
               contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
               systemInstruction: {
@@ -117,7 +120,6 @@ export default async function handler(req) {
                 maxOutputTokens: 4096,
                 topP: 0.9,
                 responseMimeType: 'application/json',
-                thinkingConfig: { thinkingBudget: 0 },
               }
             })
           }
@@ -164,7 +166,7 @@ export default async function handler(req) {
       const parsedData = JSON.parse(cleanedText);
 
       // Validate and sanitize the data
-      const sanitizedData = sanitizeLocationData(parsedData);
+      const sanitizedData = { ...sanitizeLocationData(parsedData), _source: 'ai' };
 
       return new Response(JSON.stringify(sanitizedData), {
         status: 200,
@@ -193,6 +195,7 @@ export default async function handler(req) {
 function getFallbackData(city, state) {
   // Provide reasonable defaults that won't break gameplay
   return {
+    _source: 'fallback',
     minWage: 12.00,
     avgRestaurantWage: 15.50,
     avgManagerSalary: 55000,
